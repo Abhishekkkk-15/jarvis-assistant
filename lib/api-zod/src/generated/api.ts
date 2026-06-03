@@ -32,7 +32,8 @@ export const SendChatResponse = zod.object({
   "conversationId": zod.number(),
   "messageId": zod.number(),
   "model": zod.string().nullish(),
-  "tokensUsed": zod.number().nullish()
+  "tokensUsed": zod.number().nullish(),
+  "toolsUsed": zod.array(zod.string()).nullish()
 })
 
 

@@ -48,6 +48,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [isListening] = useLocalStorage('jarvisIsListening', false);
   const [isSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
   const [lastReply] = useLocalStorage('jarvisLastReply', '');
+  const [toolsUsed] = useLocalStorage<string[]>('jarvisToolsUsed', []);
 
   const [animation, setAnimation] = useState<CharacterAnimation>('idle');
   const [flipped, setFlipped] = useState(false);
@@ -438,6 +439,17 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
       {replyBubble && (
         <TypewriterBubble text={replyBubble} />
+      )}
+
+      {/* Accessories / Props */}
+      {isSpeaking && toolsUsed && toolsUsed.length > 0 && (
+        <div className="absolute -top-4 -right-4 z-10 drop-shadow-md animate-bounce">
+          {toolsUsed.includes('get_weather') && <span className="text-4xl">☂️</span>}
+          {toolsUsed.includes('search_web') && <span className="text-4xl">🔍</span>}
+          {toolsUsed.includes('calculate') && <span className="text-4xl">🧮</span>}
+          {toolsUsed.includes('run_command') && <span className="text-4xl">💻</span>}
+          {toolsUsed.includes('read_file') && <span className="text-4xl">📄</span>}
+        </div>
       )}
 
       <div style={{ transform: `scale(${squash.x}, ${squash.y})`, transition: 'transform 0.15s ease-out', width: '100%', height: '100%' }}>

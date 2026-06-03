@@ -9,6 +9,7 @@ export const JarvisMain: React.FC = () => {
   const [isListening, setIsListening] = useLocalStorage('jarvisIsListening', false);
   const [isSpeaking, setIsSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
   const [, setLastReply] = useLocalStorage('jarvisLastReply', '');
+  const [, setToolsUsed] = useLocalStorage<string[]>('jarvisToolsUsed', []);
   const [transcript, setTranscript] = useState('');
   const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
@@ -112,6 +113,7 @@ export const JarvisMain: React.FC = () => {
   const handleSendMessage = (text: string, imageBase64?: string) => {
     if (!text.trim()) return;
     setMessages(prev => [...prev, { role: 'user', content: text }]);
+    setToolsUsed([]); // Clear tools when starting a new message
     sendChat.mutate({
       data: { 
         message: text, 
@@ -125,6 +127,9 @@ export const JarvisMain: React.FC = () => {
         if (data.conversationId) setActiveConversationId(data.conversationId);
         setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
         setLastReply(data.reply);
+        if (data.toolsUsed && data.toolsUsed.length > 0) {
+          setToolsUsed(data.toolsUsed);
+        }
         if (!muted && settings?.voiceEnabled !== false) speak(data.reply);
       },
       onError: () => {

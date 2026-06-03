@@ -14,4 +14,6 @@ export interface ChatResponse {
   model?: string | null;
   /** @nullable */
   tokensUsed?: number | null;
+  /** @nullable */
+  toolsUsed?: string[] | null;
 }

@@ -265,10 +265,22 @@ CRITICAL INSTRUCTION: Once you have successfully called a tool (e.g. open_app) a
 
     // Run LangGraph Agent
     let agentResponse = "";
+    const toolsUsed: string[] = [];
     try {
       const agentResult = await agent.invoke({ messages: historyMessages }, { recursionLimit: 5 });
       const lastMessage = agentResult.messages[agentResult.messages.length - 1];
       agentResponse = String(lastMessage.content);
+      
+      // Extract tools used
+      for (const msg of agentResult.messages) {
+        if (msg._getType() === "ai" && (msg as AIMessage).tool_calls?.length) {
+          (msg as AIMessage).tool_calls?.forEach((tc: any) => {
+            if (tc.name && !toolsUsed.includes(tc.name)) {
+              toolsUsed.push(tc.name);
+            }
+          });
+        }
+      }
     } catch (err: any) {
       // Fallback if tool execution or LLM fails
       req.log.error({ err }, "Agentic loop failed, falling back to simple LLM call");
@@ -303,7 +315,7 @@ CRITICAL INSTRUCTION: Once you have successfully called a tool (e.g. open_app) a
       messageId: assistantMsg.id,
       model: modelName,
       tokensUsed: 0,
-      toolsUsed: [], // Could be extracted from agent.invoke result if needed
+      toolsUsed,
     });
   } catch (err) {
     req.log.error({ err }, "Chat request failed");

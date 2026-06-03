@@ -295,6 +295,10 @@ components:
           type: ["string", "null"]
         tokensUsed:
           type: ["integer", "null"]
+        toolsUsed:
+          type: ["array", "null"]
+          items:
+            type: string
 
     TranscribeResponse:
       type: object
