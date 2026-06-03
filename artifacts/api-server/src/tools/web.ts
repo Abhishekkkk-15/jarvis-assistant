@@ -1,7 +1,7 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import puppeteer from "puppeteer";
-import pdfParse from "pdf-parse";
+
 import fs from "fs/promises";
 import { YoutubeTranscript } from "youtube-transcript";
 import Parser from "rss-parser";
@@ -45,6 +45,9 @@ export const webTools = [
     func: async ({ file_path }) => {
       try {
         const dataBuffer = await fs.readFile(file_path);
+        // Dynamic import to prevent DOMMatrix ReferenceError on startup in Node 22
+        const pdfParseModule = await import("pdf-parse");
+        const pdfParse = (pdfParseModule as any).default || pdfParseModule;
         const data = await pdfParse(dataBuffer);
         return data.text.substring(0, 8000);
       } catch (e: any) { return `Error reading PDF: ${e.message}`; }

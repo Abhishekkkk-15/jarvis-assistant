@@ -4,7 +4,7 @@ import { Mic, MicOff, Volume2, VolumeX, Send, Activity, Zap } from 'lucide-react
 import { AudioVisualizer } from '../components/AudioVisualizer';
 import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-
+import ReactMarkdown from 'react-markdown';
 export const JarvisMain: React.FC = () => {
   const [isListening, setIsListening] = useLocalStorage('jarvisIsListening', false);
   const [isSpeaking, setIsSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
@@ -359,7 +359,21 @@ export const JarvisMain: React.FC = () => {
                       <p className="text-[10px] font-semibold opacity-60 mb-1 uppercase tracking-wide">
                         {msg.role === 'user' ? 'You' : 'JARVIS'}
                       </p>
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                      <div className="whitespace-pre-wrap">
+                        <ReactMarkdown
+                          components={{
+                            p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                            ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-2" {...props} />,
+                            ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-2" {...props} />,
+                            li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                            code: ({node, ...props}) => <code className="bg-black/10 px-1.5 py-0.5 rounded text-xs" {...props} />,
+                            pre: ({node, ...props}) => <pre className="bg-slate-800 text-slate-100 p-3 rounded-lg text-xs overflow-x-auto mb-2" {...props} />,
+                            a: ({node, ...props}) => <a target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline" {...props} />,
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   </div>
                 ))

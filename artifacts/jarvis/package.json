@@ -107,6 +107,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "react-markdown": "^9.0.1",
     "vosk-browser": "^0.0.8"
   }
 }
