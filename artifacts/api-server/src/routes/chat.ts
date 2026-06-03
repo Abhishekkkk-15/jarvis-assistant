@@ -160,9 +160,15 @@ router.post("/chat", async (req, res) => {
 
     const provider = parsed.data.provider ?? settings.selectedProvider;
     let modelName = parsed.data.model ?? settings.selectedModel;
-    if (provider === "groq" && (modelName === "llama3-70b-8192" || modelName === "llama3-8b-8192")) {
+    const hasImage = !!parsed.data.imageBase64;
+    
+    // Override model for vision capabilities if needed
+    if (provider === "groq" && hasImage) {
+      modelName = "llama-3.2-90b-vision-preview";
+    } else if (provider === "groq" && (modelName === "llama3-70b-8192" || modelName === "llama3-8b-8192")) {
       modelName = "llama-3.3-70b-versatile";
     }
+    
     const apiKey = provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
 
     if (!apiKey) {
@@ -238,7 +244,17 @@ CRITICAL INSTRUCTION: Once you have successfully called a tool (e.g. open_app) a
 
     // Add system message and current user message
     historyMessages.unshift(new SystemMessage(MASTER_PROMPT));
-    historyMessages.push(new HumanMessage(parsed.data.message));
+    
+    if (hasImage) {
+      historyMessages.push(new HumanMessage({
+        content: [
+          { type: "text", text: parsed.data.message },
+          { type: "image_url", image_url: { url: parsed.data.imageBase64! } }
+        ]
+      }));
+    } else {
+      historyMessages.push(new HumanMessage(parsed.data.message));
+    }
 
     // Store user message
     await db.insert(messagesTable).values({

@@ -479,6 +479,29 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
             </button>
           )}
           <button
+            className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+            onClick={async (e) => { 
+              e.stopPropagation(); 
+              setShowContextMenu(false); 
+              setAnimation('excited');
+              setReplyBubble('Analyzing screen...');
+              if (window.electronAPI) {
+                const imageBase64 = await window.electronAPI.captureScreen();
+                if (imageBase64) {
+                  window.dispatchEvent(new CustomEvent('jarvis-send-message', { 
+                    detail: { message: "What am I looking at right now?", imageBase64 } 
+                  }));
+                } else {
+                  setAnimation('confused');
+                  setReplyBubble('Failed to capture screen.');
+                  setTimeout(() => setReplyBubble(''), 3000);
+                }
+              }
+            }}
+          >
+            👁️ Analyze Screen
+          </button>
+          <button
             className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
             onClick={(e) => { e.stopPropagation(); setShowContextMenu(false); setLocation('/characters'); if (isMinimized) onOpen(); }}
           >

@@ -8,5 +8,6 @@ interface Window {
     };
     setIgnoreMouseEvents: (ignore: boolean) => void;
     setFullscreen: (isFullscreen: boolean) => void;
+    captureScreen: () => Promise<string | null>;
   };
 }

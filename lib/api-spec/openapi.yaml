@@ -277,6 +277,9 @@ components:
         provider:
           type: ["string", "null"]
           description: "groq | nvidia"
+        imageBase64:
+          type: ["string", "null"]
+          description: "Optional base64 image data for multimodal vision models"
 
     ChatResponse:
       type: object

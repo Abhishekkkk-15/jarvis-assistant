@@ -9,4 +9,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.send('set-ignore-mouse-events', ignore),
   setFullscreen: (isFullscreen: boolean) => ipcRenderer.send('set-fullscreen', isFullscreen),
+  captureScreen: () => ipcRenderer.invoke('capture-screen'),
 });

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, desktopCapturer } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -82,4 +82,21 @@ ipcMain.on('set-fullscreen', (event, isFullscreen) => {
   if (!win) return;
   win.setFullScreen(isFullscreen);
   win.setAlwaysOnTop(isFullscreen, 'pop-up-menu');
+});
+
+ipcMain.handle('capture-screen', async () => {
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: { width: 1280, height: 720 }, // scale down slightly for token limits
+    });
+    // usually sources[0] is the primary display
+    if (sources && sources.length > 0) {
+      return sources[0].thumbnail.toDataURL(); // base64 string
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to capture screen:', error);
+    return null;
+  }
 });

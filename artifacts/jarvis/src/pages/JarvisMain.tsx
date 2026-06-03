@@ -109,11 +109,17 @@ export const JarvisMain: React.FC = () => {
     }
   }, [isListening, audioStream]);
 
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = (text: string, imageBase64?: string) => {
     if (!text.trim()) return;
     setMessages(prev => [...prev, { role: 'user', content: text }]);
     sendChat.mutate({
-      data: { message: text, conversationId: activeConversationId || undefined, model: settings?.selectedModel, provider: settings?.selectedProvider }
+      data: { 
+        message: text, 
+        conversationId: activeConversationId || undefined, 
+        model: settings?.selectedModel, 
+        provider: settings?.selectedProvider,
+        imageBase64
+      }
     }, {
       onSuccess: (data) => {
         if (data.conversationId) setActiveConversationId(data.conversationId);
@@ -129,9 +135,9 @@ export const JarvisMain: React.FC = () => {
 
   useEffect(() => {
     const handleGlobalMessage = (e: any) => {
-      const { message } = e.detail;
+      const { message, imageBase64 } = e.detail;
       if (message) {
-        handleSendMessage(message);
+        handleSendMessage(message, imageBase64);
       }
     };
     window.addEventListener('jarvis-send-message', handleGlobalMessage);
