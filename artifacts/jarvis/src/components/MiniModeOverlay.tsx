@@ -443,7 +443,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       )}
 
       {/* Accessories / Props */}
-      {isSpeaking && toolsUsed && toolsUsed.length > 0 && (
+      {toolsUsed && toolsUsed.length > 0 && (
         <div className="absolute -top-4 -right-4 z-10 drop-shadow-md animate-bounce">
           {toolsUsed.includes('get_weather') && <span className="text-4xl">☂️</span>}
           {toolsUsed.includes('search_web') && <span className="text-4xl">🔍</span>}

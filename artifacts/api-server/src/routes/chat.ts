@@ -208,7 +208,8 @@ router.post("/chat", async (req, res) => {
 You are highly intelligent, polite, and efficient — much like Tony Stark's AI. 
 You can run shell commands, write files, open applications, and search the web.
 Always be concise unless detail is requested. When asked to perform OS actions, do so immediately using your tools.
-CRITICAL INSTRUCTION: Once you have successfully called a tool (e.g. open_app) and received a success message, you MUST NOT call that tool again. Immediately generate a final conversational response to the user acknowledging the action is complete.`;
+CRITICAL INSTRUCTION: You MUST use the native tool-calling feature to invoke tools. DO NOT output raw JSON blocks (e.g. {"function": "calculate"}).
+Once you have successfully called a tool (e.g. open_app) and received a success message, you MUST NOT call that tool again. Immediately generate a final conversational response to the user acknowledging the action is complete.`;
 
     // Get or create conversation
     let conversationId = parsed.data.conversationId ?? null;
@@ -271,7 +272,7 @@ CRITICAL INSTRUCTION: Once you have successfully called a tool (e.g. open_app) a
       const lastMessage = agentResult.messages[agentResult.messages.length - 1];
       agentResponse = String(lastMessage.content);
       
-      // Extract tools used
+      // Extract tools used from proper tool_calls
       for (const msg of agentResult.messages) {
         if (msg._getType() === "ai" && (msg as AIMessage).tool_calls?.length) {
           (msg as AIMessage).tool_calls?.forEach((tc: any) => {
@@ -279,6 +280,47 @@ CRITICAL INSTRUCTION: Once you have successfully called a tool (e.g. open_app) a
               toolsUsed.push(tc.name);
             }
           });
+        }
+      }
+
+      // Fallback: If the LLM hallucinated raw JSON instead of using tool_calls
+      if (!toolsUsed.length) {
+        const jsonMatch = agentResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const parsedJson = JSON.parse(jsonMatch[0]);
+            let toolName = parsedJson.function || parsedJson.tool || parsedJson.name;
+            let toolArgs = parsedJson.arguments || parsedJson;
+            
+            // Handle { tool_calls: [...] } format
+            if (!toolName && parsedJson.tool_calls && Array.isArray(parsedJson.tool_calls) && parsedJson.tool_calls.length > 0) {
+              toolName = parsedJson.tool_calls[0].function?.name || parsedJson.tool_calls[0].name;
+              toolArgs = parsedJson.tool_calls[0].function?.arguments || parsedJson.tool_calls[0].arguments;
+              if (typeof toolArgs === 'string') {
+                try { toolArgs = JSON.parse(toolArgs); } catch (e) {}
+              }
+            }
+            
+            if (toolName && typeof toolName === "string") {
+              const tool = tools.find(t => t.name === toolName);
+              if (tool) {
+                toolsUsed.push(toolName);
+                if (toolArgs.function) delete toolArgs.function;
+                if (toolArgs.tool) delete toolArgs.tool;
+                if (toolArgs.name) delete toolArgs.name;
+                
+                const result = await tool.invoke(toolArgs);
+                
+                // Query LLM again with the tool result
+                historyMessages.push(new AIMessage(agentResponse));
+                historyMessages.push(new HumanMessage(`Tool ${toolName} returned:\n${result}\nNow provide the final conversational answer.`));
+                const finalResult = await llm.invoke(historyMessages);
+                agentResponse = String(finalResult.content);
+              }
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
         }
       }
     } catch (err: any) {
