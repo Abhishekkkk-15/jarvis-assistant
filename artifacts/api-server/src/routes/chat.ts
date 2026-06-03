@@ -110,6 +110,23 @@ const tools = [
     },
   }),
   new DynamicStructuredTool({
+    name: "open_website",
+    description: "Opens a website URL in the user's default web browser.",
+    schema: z.object({ url: z.string() }),
+    func: async ({ url }: { url: string }) => {
+      let finalUrl = url.trim();
+      if (!finalUrl.startsWith("http://") && !finalUrl.startsWith("https://")) {
+        finalUrl = "https://" + finalUrl;
+      }
+      return new Promise((resolve) => {
+        child_process.exec(`start "" "${finalUrl}"`, (err) => {
+          if (err) resolve(`Failed to open website: ${err.message}`);
+          else resolve(`Website ${finalUrl} opened successfully.`);
+        });
+      });
+    },
+  }),
+  new DynamicStructuredTool({
     name: "read_file",
     description: "Reads the content of a local file.",
     schema: z.object({ file_path: z.string() }),

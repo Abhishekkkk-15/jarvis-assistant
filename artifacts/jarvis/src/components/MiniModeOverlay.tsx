@@ -450,6 +450,8 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
           {toolsUsed.includes('calculate') && <span className="text-4xl">🧮</span>}
           {toolsUsed.includes('run_command') && <span className="text-4xl">💻</span>}
           {toolsUsed.includes('read_file') && <span className="text-4xl">📄</span>}
+          {toolsUsed.includes('open_app') && <span className="text-4xl">🚀</span>}
+          {toolsUsed.includes('open_website') && <span className="text-4xl">🌐</span>}
         </div>
       )}
 
