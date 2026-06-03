@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { charactersMap, CharacterAnimation } from './characters/CharacterRenderer';
+import { charactersMap, CharacterAnimation, CustomCharacter, CustomCharacterRenderer } from './characters/CharacterRenderer';
 import { useLocation } from 'wouter';
 import { Maximize2 } from 'lucide-react';
 import { useAudioReactivity } from '@/hooks/useAudioReactivity';
@@ -49,6 +49,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [isSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
   const [lastReply] = useLocalStorage('jarvisLastReply', '');
   const [toolsUsed] = useLocalStorage<string[]>('jarvisToolsUsed', []);
+  const [customCharacters] = useLocalStorage<CustomCharacter[]>('jarvisCustomCharacters', []);
 
   const [animation, setAnimation] = useState<CharacterAnimation>('idle');
   const [flipped, setFlipped] = useState(false);
@@ -453,7 +454,15 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       )}
 
       <div style={{ transform: `scale(${squash.x}, ${squash.y})`, transition: 'transform 0.15s ease-out', width: '100%', height: '100%' }}>
-        <CharacterComponent animation={animation} size={120} flipped={flipped} />
+        {charId.startsWith('custom-') ? (() => {
+          const customChar = customCharacters.find(c => c.id === charId);
+          if (customChar) {
+            return <CustomCharacterRenderer character={customChar} animation={animation} size={120} flipped={flipped} />;
+          }
+          return <CharacterComponent animation={animation} size={120} flipped={flipped} />;
+        })() : (
+          <CharacterComponent animation={animation} size={120} flipped={flipped} />
+        )}
       </div>
 
       {isMinimized && !showContextMenu && (

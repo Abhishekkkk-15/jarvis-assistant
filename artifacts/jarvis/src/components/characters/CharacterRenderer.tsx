@@ -9,6 +9,12 @@ export interface CharacterProps {
   flipped?: boolean;
 }
 
+export interface CustomCharacter {
+  id: string;
+  name: string;
+  sprites: Partial<Record<CharacterAnimation, string>>;
+}
+
 const BaseCharacter: React.FC<{
   size: number;
   flipped: boolean;
@@ -457,4 +463,33 @@ export const charactersMap: Record<string, React.FC<CharacterProps>> = {
   'minion-bob': MinionBob,
   'space-bean': SpaceBean,
   'alien-dude': AlienDude,
+};
+
+export const CustomCharacterRenderer: React.FC<CharacterProps & { character: CustomCharacter }> = ({ 
+  animation = 'idle', 
+  size = 80, 
+  flipped = false,
+  character
+}) => {
+  // Fallback to idle sprite if the requested animation doesn't have an uploaded sprite
+  const spriteBase64 = character.sprites[animation] || character.sprites['idle'];
+
+  return (
+    <BaseCharacter size={size} flipped={flipped} animation={animation}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {spriteBase64 ? (
+          <img 
+            src={spriteBase64} 
+            alt={character.name} 
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            draggable={false}
+          />
+        ) : (
+          <div className="text-muted-foreground text-xs flex items-center justify-center text-center p-2">
+            No Sprite
+          </div>
+        )}
+      </div>
+    </BaseCharacter>
+  );
 };
