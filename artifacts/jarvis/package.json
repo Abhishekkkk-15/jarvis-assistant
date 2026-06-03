@@ -105,5 +105,8 @@
     "wait-on": "^9.0.10",
     "wouter": "^3.3.5",
     "zod": "catalog:"
+  },
+  "dependencies": {
+    "vosk-browser": "^0.0.8"
   }
 }

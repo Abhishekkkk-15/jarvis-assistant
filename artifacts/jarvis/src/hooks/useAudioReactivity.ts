@@ -14,7 +14,14 @@ export const useAudioReactivity = (threshold = 30) => {
 
     const initAudio = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            sampleRate: 16000,
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+          } 
+        });
         if (!active) {
           stream.getTracks().forEach(t => t.stop());
           return;

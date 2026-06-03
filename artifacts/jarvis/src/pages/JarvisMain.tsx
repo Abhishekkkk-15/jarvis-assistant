@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSendChat, useGetSettings, getGetSettingsQueryKey, useGetStats, getGetStatsQueryKey, useGetCommandSuggestions, getGetCommandSuggestionsQueryKey } from '@workspace/api-client-react';
+import { useSendChat, useGetSettings, getGetSettingsQueryKey, useGetStats, getGetStatsQueryKey, useGetCommandSuggestions, getGetCommandSuggestionsQueryKey, useTranscribeAudio } from '@workspace/api-client-react';
 import { Mic, MicOff, Volume2, VolumeX, Send, Activity, Zap } from 'lucide-react';
 import { AudioVisualizer } from '../components/AudioVisualizer';
 import { useToast } from '@/hooks/use-toast';
@@ -22,9 +22,15 @@ export const JarvisMain: React.FC = () => {
   const sendChat = useSendChat();
   const { toast } = useToast();
 
-  const recognitionRef = useRef<any>(null);
+  const transcribeAudio = useTranscribeAudio();
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const synthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const silenceAudioContextRef = useRef<AudioContext | null>(null);
+  const silenceRafRef = useRef<number | null>(null);
 
   const [activeConversationId, setActiveConversationId] = useLocalStorage<number | null>('activeConversationId', null);
 
@@ -32,44 +38,14 @@ export const JarvisMain: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Clean up and reset ephemeral state on mount/unmount
   useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = true;
-
-      recognitionRef.current.onresult = (event: any) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
-          } else {
-            interimTranscript += event.results[i][0].transcript;
-          }
-        }
-        if (finalTranscript) {
-          setTranscript(finalTranscript);
-          handleSendMessage(finalTranscript);
-        } else {
-          setTranscript(interimTranscript);
-        }
-      };
-
-      recognitionRef.current.onerror = () => {
-        setIsListening(false);
-        stopAudioStream();
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-        stopAudioStream();
-      };
-    } else {
-      toast({ title: "Speech Recognition Unavailable", description: "Your browser doesn't support the Web Speech API.", variant: "destructive" });
-    }
-
+    // Clear leftover state from previous sessions
+    setLastReply('');
+    setToolsUsed([]);
+    setIsSpeaking(false);
+    setIsListening(false);
+    
     return () => {
       stopAudioStream();
       if (synthesisRef.current) window.speechSynthesis.cancel();
@@ -81,15 +57,117 @@ export const JarvisMain: React.FC = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setAudioStream(stream);
       setIsListening(true);
-      setTranscript('');
-      recognitionRef.current?.start();
+      setTranscript('Listening... (speak now)');
+      
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        setTranscript('Transcribing...');
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        
+        // Convert to base64
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = () => {
+          const base64data = (reader.result as string).split(',')[1];
+          if (!base64data) {
+             setTranscript('');
+             return;
+          }
+
+          transcribeAudio.mutate({
+            data: { audioBase64: base64data, mimeType: 'audio/webm' }
+          }, {
+            onSuccess: (res) => {
+              const text = res.text?.trim();
+              if (text) {
+                setTranscript(text);
+                handleSendMessage(text);
+              } else {
+                setTranscript('Could not hear anything clearly.');
+                setTimeout(() => setTranscript(''), 2000);
+              }
+            },
+            onError: (err) => {
+              console.error('Transcription error:', err);
+              setTranscript('');
+              toast({ title: "Transcription Failed", description: "Failed to process audio.", variant: "destructive" });
+            }
+          });
+        };
+      };
+
+      mediaRecorder.start();
+      
+      // Setup Voice Activity Detection (VAD) for hands-free auto-stop
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioContext();
+      silenceAudioContextRef.current = audioCtx;
+      
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      source.connect(analyser);
+      
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      let silenceStart = performance.now();
+      let hasSpoken = false;
+      
+      const checkSilence = () => {
+        if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return;
+        
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        const avg = sum / dataArray.length;
+        
+        if (avg > 15) { // Speech threshold
+          hasSpoken = true;
+          silenceStart = performance.now();
+        } else {
+          const now = performance.now();
+          if (hasSpoken && (now - silenceStart > 2000)) {
+            // 2 seconds of silence AFTER they spoke -> assume they finished their command
+            stopListening();
+            return;
+          } else if (!hasSpoken && (now - silenceStart > 7000)) {
+            // 7 seconds of complete silence after wake word -> cancel recording
+            stopListening();
+            return;
+          }
+        }
+        
+        silenceRafRef.current = requestAnimationFrame(checkSilence);
+      };
+      checkSilence();
+
     } catch {
-      toast({ title: "Microphone Error", description: "Could not access the microphone.", variant: "destructive" });
+      toast({ title: "Microphone Error", description: "Could not access the microphone. Check browser permissions.", variant: "destructive" });
     }
   };
 
   const stopListening = () => {
-    recognitionRef.current?.stop();
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    
+    if (silenceRafRef.current) {
+      cancelAnimationFrame(silenceRafRef.current);
+      silenceRafRef.current = null;
+    }
+    if (silenceAudioContextRef.current) {
+      silenceAudioContextRef.current.close().catch(() => {});
+      silenceAudioContextRef.current = null;
+    }
+    
     setIsListening(false);
     stopAudioStream();
   };
@@ -103,12 +181,12 @@ export const JarvisMain: React.FC = () => {
 
   useEffect(() => {
     if (isListening && !audioStream) {
-      // Triggered by Wake Word externally
+      // Triggered by Wake Word externally — needs full mic init
       startListening();
     } else if (!isListening && audioStream) {
       stopListening();
     }
-  }, [isListening, audioStream]);
+  }, [isListening]);
 
   const handleSendMessage = (text: string, imageBase64?: string) => {
     if (!text.trim()) return;
@@ -160,16 +238,37 @@ export const JarvisMain: React.FC = () => {
   const speak = (text: string) => {
     if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     setIsSpeaking(true);
+    
+    // Chrome Windows bug: onend fires when audio is sent to OS spooler, not when it finishes playing.
+    // We calculate a mathematically safe minimum duration (assuming ~180 WPM / 3 words per sec) + 1.5s buffer
+    const wordCount = text.split(/\s+/).length;
+    const estimatedDurationMs = (wordCount * 333) + 1500;
+    const startTime = performance.now();
+
     const utterance = new SpeechSynthesisUtterance(text);
     const voices = window.speechSynthesis.getVoices();
     const preferred = voices.find(v => v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Daniel'));
     if (preferred) utterance.voice = preferred;
     utterance.pitch = 1;
     utterance.rate = 1.05;
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      setToolsUsed([]);
+    
+    const finalizeSpeaking = () => {
+      if (synthesisRef.current === utterance) {
+        const elapsed = performance.now() - startTime;
+        const remainingDelay = Math.max(0, estimatedDurationMs - elapsed);
+        
+        setTimeout(() => {
+          if (synthesisRef.current === utterance) {
+            setIsSpeaking(false);
+            setToolsUsed([]);
+          }
+        }, remainingDelay);
+      }
     };
+
+    utterance.onend = finalizeSpeaking;
+    utterance.onerror = finalizeSpeaking;
+    
     synthesisRef.current = utterance;
     window.speechSynthesis.speak(utterance);
   };

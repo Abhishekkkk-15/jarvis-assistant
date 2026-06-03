@@ -79,7 +79,20 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   // Audio Reactivity
   const isDancingToMusic = useAudioReactivity(40);
 
+  const isHoveringRef = useRef(false);
+
   const CharacterComponent = charactersMap[charId] || charactersMap['jarvis-bot'];
+
+  // Sync mouse events for transparent window properly
+  useEffect(() => {
+    if (!isMinimized || !window.electronAPI) return;
+    
+    if (isDragging || showContextMenu || isHoveringRef.current) {
+      window.electronAPI.setIgnoreMouseEvents(false);
+    } else {
+      window.electronAPI.setIgnoreMouseEvents(true);
+    }
+  }, [isDragging, showContextMenu, isMinimized]);
 
   // Speech bubble
   useEffect(() => {
@@ -418,8 +431,16 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       onDoubleClick={() => {
         if (!showContextMenu && isMinimized) onOpen();
       }}
-      onMouseEnter={() => { if (isMinimized && window.electronAPI) window.electronAPI.setIgnoreMouseEvents(false); }}
-      onMouseLeave={() => { if (isMinimized && window.electronAPI) window.electronAPI.setIgnoreMouseEvents(true); }}
+      onMouseEnter={() => { 
+        isHoveringRef.current = true;
+        if (isMinimized && window.electronAPI) window.electronAPI.setIgnoreMouseEvents(false); 
+      }}
+      onMouseLeave={() => { 
+        isHoveringRef.current = false;
+        if (isMinimized && window.electronAPI && !isDragging && !showContextMenu) {
+          window.electronAPI.setIgnoreMouseEvents(true); 
+        }
+      }}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
