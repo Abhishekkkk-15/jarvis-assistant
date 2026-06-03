@@ -21,10 +21,7 @@ export const SettingsPage: React.FC = () => {
 
   const form = useForm({
     defaultValues: {
-      groqApiKey: '',
       nvidiaApiKey: '',
-      selectedProvider: 'groq',
-      selectedModel: 'llama-3.3-70b-versatile',
       wakeWord: 'jarvis',
       voiceEnabled: true,
 
@@ -34,10 +31,7 @@ export const SettingsPage: React.FC = () => {
   useEffect(() => {
     if (settings) {
       form.reset({
-        groqApiKey: '',
         nvidiaApiKey: '',
-        selectedProvider: settings.selectedProvider || 'groq',
-        selectedModel: settings.selectedModel || 'llama-3.3-70b-versatile',
         wakeWord: settings.wakeWord || 'jarvis',
         voiceEnabled: settings.voiceEnabled ?? true,
 
@@ -47,13 +41,12 @@ export const SettingsPage: React.FC = () => {
 
   const onSubmit = (values: any) => {
     const payload = { ...values };
-    if (!payload.groqApiKey) delete payload.groqApiKey;
     if (!payload.nvidiaApiKey) delete payload.nvidiaApiKey;
     updateSettings.mutate({ data: payload }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
         toast({ title: "Settings saved" });
-        form.reset({ ...values, groqApiKey: '', nvidiaApiKey: '' });
+        form.reset({ ...values, nvidiaApiKey: '' });
       },
       onError: () => {
         toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
@@ -83,25 +76,7 @@ export const SettingsPage: React.FC = () => {
             <h3 className={sectionHeadingClass}>
               <Key size={15} className="text-primary" /> API Keys
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <FormField
-                control={form.control}
-                name="groqApiKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Groq API Key</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder={settings?.groqApiKeySet ? "Already set — enter new key to update" : "Enter your Groq API key"}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription className="text-xs">Used for LLaMA 3 models</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="grid grid-cols-1 gap-5">
               <FormField
                 control={form.control}
                 name="nvidiaApiKey"
@@ -115,70 +90,7 @@ export const SettingsPage: React.FC = () => {
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription className="text-xs">Used for Nemotron models</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </section>
-
-          {/* Model */}
-          <section className={sectionClass}>
-            <h3 className={sectionHeadingClass}>
-              <Cpu size={15} className="text-primary" /> Model
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <FormField
-                control={form.control}
-                name="selectedProvider"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Provider</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a provider" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="groq">Groq</SelectItem>
-                        <SelectItem value="nvidia">NVIDIA</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="selectedModel"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Model</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a model" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {form.watch('selectedProvider') === 'groq' ? (
-                          <>
-                            <SelectItem value="llama-3.3-70b-versatile">LLaMA 3.3 70B (Recommended)</SelectItem>
-                            <SelectItem value="llama-3.1-8b-instant">LLaMA 3.1 8B</SelectItem>
-                            <SelectItem value="mixtral-8x7b-32768">Mixtral 8x7B</SelectItem>
-                          </>
-                        ) : (
-                          <>
-                            <SelectItem value="meta/llama-3.1-405b-instruct">LLaMA 3.1 405B</SelectItem>
-                            <SelectItem value="meta/llama-3.1-70b-instruct">LLaMA 3.1 70B</SelectItem>
-                            <SelectItem value="nvidia/nemotron-4-340b-instruct">Nemotron 4 340B</SelectItem>
-                            <SelectItem value="mistralai/mistral-large-2411">Mistral Large 2411</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <FormDescription className="text-xs">Used for LLaMA 3.1 & Nemotron models</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

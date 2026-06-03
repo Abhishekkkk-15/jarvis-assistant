@@ -4,7 +4,6 @@ import { eq, desc } from "drizzle-orm";
 import { SendChatBody } from "@workspace/api-zod";
 
 import { ChatOpenAI } from "@langchain/openai";
-import { ChatGroq } from "@langchain/groq";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
@@ -193,42 +192,29 @@ router.post("/chat", async (req, res) => {
 
     const hasImage = !!parsed.data.imageBase64;
 
-    // Use user-selected provider and model, but force Nvidia vision model if there's an image
-    let provider = hasImage ? "nvidia" : (parsed.data.provider || settings.selectedProvider || "groq");
-    let modelName = hasImage ? "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" : (parsed.data.model || settings.selectedModel || "llama-3.3-70b-versatile");
+    // Hardcode Nvidia and model selection
+    const provider = "nvidia";
+    const modelName = hasImage ? "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" : "mistralai/mistral-medium-3.5-128b";
 
-    const apiKey = provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
+    const apiKey = settings.nvidiaApiKey;
 
     if (!apiKey) {
       res.status(400).json({
-        error: `No API key configured for provider "${provider}". Please add your API key in Settings.`,
+        error: `No NVIDIA API key configured. Please add your API key in Settings.`,
       });
       return;
     }
 
-    const endpoint = provider === "nvidia"
-      ? "https://integrate.api.nvidia.com/v1"
-      : "https://api.groq.com/openai/v1";
-
+    const endpoint = "https://integrate.api.nvidia.com/v1";
 
     // Setup LangChain Model
-    let llm: any;
-    if (provider === "groq") {
-      llm = new ChatGroq({
-        model: modelName,
-        apiKey,
-        temperature: 0.7,
-        maxTokens: 1024,
-      });
-    } else {
-      llm = new ChatOpenAI({
-        modelName,
-        apiKey,
-        configuration: { baseURL: endpoint },
-        temperature: 0.7,
-        maxTokens: 1024,
-      });
-    }
+    const llm = new ChatOpenAI({
+      modelName,
+      apiKey,
+      configuration: { baseURL: endpoint },
+      temperature: 0.7,
+      maxTokens: 1024,
+    });
 
     const agent = createReactAgent({ llm, tools });
 
