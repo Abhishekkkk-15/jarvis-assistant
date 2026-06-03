@@ -276,26 +276,31 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       }
 
       // Wall collisions
+      let hitWall = false;
       if (currentX <= 0) {
         currentX = 0;
         velocity.current.x *= -bounce;
+        hitWall = true;
       } else if (currentX >= rightX) {
         currentX = rightX;
         velocity.current.x *= -bounce;
+        hitWall = true;
       }
 
       setPosX(currentX);
       setPosY(currentY);
 
-      // Visual squash on impact & emotions
+      // Angry if dropped or thrown very hard against floor or walls
+      if ((hitFloor && Math.abs(velocity.current.y) > 12) || (hitWall && Math.abs(velocity.current.x) > 12)) {
+        setAnimation('angry');
+        setTimeout(() => {
+          setAnimation((prev) => prev === 'angry' ? 'idle' : prev);
+        }, 3000); // clear anger after 3s
+      }
+
+      // Visual squash on impact
       if (hitFloor && Math.abs(velocity.current.y) > 3) {
         setSquash({ x: 1.2, y: 0.7 });
-        
-        // Angry if dropped very hard
-        if (Math.abs(velocity.current.y) > 15 || Math.abs(velocity.current.x) > 15) {
-          setAnimation('angry');
-        }
-        
         setTimeout(() => setSquash({ x: 1, y: 1 }), 150);
       } else if (!hitFloor && Math.abs(velocity.current.y) > 10) {
         // Stretch while falling fast
