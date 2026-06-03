@@ -30,6 +30,9 @@ export const CharactersPage: React.FC = () => {
     { id: 'space-bean', name: 'Space Bean', desc: 'Kinda sus cartoon' },
     { id: 'alien-dude', name: 'Alien Dude', desc: 'Out of this world funny alien' },
     { id: 'spider-man', name: 'Spider-Man', desc: 'Your friendly neighborhood web-slinger' },
+    { id: 'iron-hero', name: 'Iron Hero', desc: 'Armored flying genius' },
+    { id: 'electric-mouse', name: 'Electric Mouse', desc: 'Yellow shocking friend' },
+    { id: 'dark-knight', name: 'Dark Knight', desc: 'Brooding vigilante' },
   ];
 
   const animations: CharacterAnimation[] = ['idle', 'walk', 'run', 'wave', 'dance', 'sleep', 'excited', 'talk'];

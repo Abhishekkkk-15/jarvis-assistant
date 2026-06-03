@@ -192,11 +192,11 @@ router.post("/chat", async (req, res) => {
     }
 
     const hasImage = !!parsed.data.imageBase64;
-    
-    // Override model and provider based on user instruction
-    let provider = hasImage ? "nvidia" : "groq";
-    let modelName = hasImage ? "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" : "llama-3.3-70b-versatile";
-    
+
+    // Use user-selected provider and model, but force Nvidia vision model if there's an image
+    let provider = hasImage ? "nvidia" : (parsed.data.provider || settings.selectedProvider || "groq");
+    let modelName = hasImage ? "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" : (parsed.data.model || settings.selectedModel || "llama-3.3-70b-versatile");
+
     const apiKey = provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
 
     if (!apiKey) {
@@ -236,8 +236,8 @@ router.post("/chat", async (req, res) => {
 You are highly intelligent, polite, and efficient — much like Tony Stark's AI. 
 You can run shell commands, write files, open applications, and search the web.
 Always be concise unless detail is requested. When asked to perform OS actions, do so immediately using your tools.
-CRITICAL INSTRUCTION: You MUST use the native tool-calling feature to invoke tools. DO NOT output raw JSON blocks (e.g. {"function": "calculate"}).
-Once you have successfully called a tool (e.g. open_app) and received a success message, you MUST NOT call that tool again. Immediately generate a final conversational response to the user acknowledging the action is complete.`;
+CRITICAL INSTRUCTION 1: You MUST use the native tool-calling feature to invoke tools. DO NOT output raw JSON blocks.
+CRITICAL INSTRUCTION 2: The conversation history provided to you represents ALREADY COMPLETED turns. If the user asked you to open an app, search the web, or run a command in the past history, YOU HAVE ALREADY EXECUTED IT. Do NOT re-execute tools for past requests. ONLY use tools if the VERY LATEST user message at the bottom requires it!`;
 
     // Get or create conversation
     let conversationId = parsed.data.conversationId ?? null;
@@ -266,23 +266,31 @@ Once you have successfully called a tool (e.g. open_app) and received a success 
       .orderBy(desc(messagesTable.createdAt))
       .limit(20);
 
-    const historyMessages: any[] = history.reverse().map((m) => {
-      if (m.role === "assistant") return new AIMessage(m.content ?? "");
-      return new HumanMessage(m.content ?? "");
-    });
+    // Format history as a static transcript inside the system prompt
+    // This prevents the LLM from thinking it needs to execute tools for past messages
+    let transcript = "";
+    if (history.length > 0) {
+      transcript = "\n\n=== PAST CONVERSATION HISTORY ===\n(These actions are already completed. Do NOT execute any tools for these past requests.)\n";
+      history.reverse().forEach((m: any) => {
+        const role = m.role === "assistant" ? "JARVIS" : "User";
+        transcript += `${role}: ${m.content}\n`;
+      });
+      transcript += "=================================\n";
+    }
 
-    // Add system message and current user message
-    historyMessages.unshift(new SystemMessage(MASTER_PROMPT));
-    
+    const finalMessages: any[] = [
+      new SystemMessage(MASTER_PROMPT + transcript)
+    ];
+
     if (hasImage) {
-      historyMessages.push(new HumanMessage({
+      finalMessages.push(new HumanMessage({
         content: [
           { type: "text", text: parsed.data.message },
           { type: "image_url", image_url: { url: parsed.data.imageBase64! } }
         ]
       }));
     } else {
-      historyMessages.push(new HumanMessage(parsed.data.message));
+      finalMessages.push(new HumanMessage(parsed.data.message));
     }
 
     // Store user message
@@ -296,10 +304,10 @@ Once you have successfully called a tool (e.g. open_app) and received a success 
     let agentResponse = "";
     const toolsUsed: string[] = [];
     try {
-      const agentResult = await agent.invoke({ messages: historyMessages }, { recursionLimit: 5 });
+      const agentResult = await agent.invoke({ messages: finalMessages }, { recursionLimit: 5 });
       const lastMessage = agentResult.messages[agentResult.messages.length - 1];
       agentResponse = String(lastMessage.content);
-      
+
       // Extract tools used from proper tool_calls
       for (const msg of agentResult.messages) {
         if (msg._getType() === "ai" && (msg as AIMessage).tool_calls?.length) {
@@ -319,16 +327,16 @@ Once you have successfully called a tool (e.g. open_app) and received a success 
             const parsedJson = JSON.parse(jsonMatch[0]);
             let toolName = parsedJson.function || parsedJson.tool || parsedJson.name;
             let toolArgs = parsedJson.arguments || parsedJson;
-            
+
             // Handle { tool_calls: [...] } format
             if (!toolName && parsedJson.tool_calls && Array.isArray(parsedJson.tool_calls) && parsedJson.tool_calls.length > 0) {
               toolName = parsedJson.tool_calls[0].function?.name || parsedJson.tool_calls[0].name;
               toolArgs = parsedJson.tool_calls[0].function?.arguments || parsedJson.tool_calls[0].arguments;
               if (typeof toolArgs === 'string') {
-                try { toolArgs = JSON.parse(toolArgs); } catch (e) {}
+                try { toolArgs = JSON.parse(toolArgs); } catch (e) { }
               }
             }
-            
+
             if (toolName && typeof toolName === "string") {
               const tool = tools.find(t => t.name === toolName);
               if (tool) {
@@ -336,13 +344,13 @@ Once you have successfully called a tool (e.g. open_app) and received a success 
                 if (toolArgs.function) delete toolArgs.function;
                 if (toolArgs.tool) delete toolArgs.tool;
                 if (toolArgs.name) delete toolArgs.name;
-                
-                const result = await tool.invoke(toolArgs);
-                
+
+                const result = await (tool as any).invoke(toolArgs as any);
+
                 // Query LLM again with the tool result
-                historyMessages.push(new AIMessage(agentResponse));
-                historyMessages.push(new HumanMessage(`Tool ${toolName} returned:\n${result}\nNow provide the final conversational answer.`));
-                const finalResult = await llm.invoke(historyMessages);
+                finalMessages.push(new AIMessage(agentResponse));
+                finalMessages.push(new HumanMessage(`Tool ${toolName} returned:\n${result}\nNow provide the final conversational answer.`));
+                const finalResult = await llm.invoke(finalMessages);
                 agentResponse = String(finalResult.content);
               }
             }
@@ -356,39 +364,39 @@ Once you have successfully called a tool (e.g. open_app) and received a success 
       req.log.error({ err }, "Agentic loop failed, falling back to simple LLM call");
       try {
         let handledTool = false;
-        
+
         // Groq sometimes hallucinates `<function=...>` syntax which throws an error
-        const errString = typeof err?.error?.error?.failed_generation === "string" 
-          ? err.error.error.failed_generation 
+        const errString = typeof err?.error?.error?.failed_generation === "string"
+          ? err.error.error.failed_generation
           : JSON.stringify(err, Object.getOwnPropertyNames(err));
-          
+
         const functionMatch = errString.match(/<function=(\w+)\s+(.*?)\s*<\/function>/);
-        
+
         if (functionMatch) {
           const toolName = functionMatch[1];
           let toolArgsStr = functionMatch[2];
           if (toolArgsStr.includes('\\"')) {
             toolArgsStr = toolArgsStr.replace(/\\"/g, '"');
           }
-          
+
           let toolArgs = {};
-          try { toolArgs = JSON.parse(toolArgsStr); } catch(e) {}
-          
+          try { toolArgs = JSON.parse(toolArgsStr); } catch (e) { }
+
           const tool = tools.find(t => t.name === toolName);
           if (tool) {
             toolsUsed.push(toolName);
-            const result = await tool.invoke(toolArgs);
-            historyMessages.push(new AIMessage(`Used tool ${toolName} with args: ${JSON.stringify(toolArgs)}`));
-            historyMessages.push(new HumanMessage(`Tool ${toolName} returned:\n${result}\nNow provide the final conversational answer.`));
-            
-            const finalResult = await llm.invoke(historyMessages);
+            const result = await (tool as any).invoke(toolArgs as any);
+            finalMessages.push(new AIMessage(`Used tool ${toolName} with args: ${JSON.stringify(toolArgs)}`));
+            finalMessages.push(new HumanMessage(`Tool ${toolName} returned:\n${result}\nNow provide the final conversational answer.`));
+
+            const finalResult = await llm.invoke(finalMessages);
             agentResponse = String(finalResult.content);
             handledTool = true;
           }
         }
-        
+
         if (!handledTool) {
-          const fallbackResult = await llm.invoke(historyMessages);
+          const fallbackResult = await llm.invoke(finalMessages);
           agentResponse = String(fallbackResult.content);
         }
       } catch (fallbackErr) {

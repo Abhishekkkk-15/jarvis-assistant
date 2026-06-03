@@ -10,7 +10,7 @@ export const useWakeWord = () => {
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  
+
   const [jarvisIsListening, setJarvisIsListening] = useLocalStorage('jarvisIsListening', false);
   const [jarvisIsSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
   const { toast } = useToast();
@@ -19,7 +19,7 @@ export const useWakeWord = () => {
   const jarvisIsSpeakingRef = useRef(jarvisIsSpeaking);
   const toastRef = useRef(toast);
   const setJarvisIsListeningRef = useRef(setJarvisIsListening);
-  
+
   useEffect(() => {
     jarvisIsListeningRef.current = jarvisIsListening;
     jarvisIsSpeakingRef.current = jarvisIsSpeaking;
@@ -51,9 +51,9 @@ export const useWakeWord = () => {
             noiseSuppression: true,
           }
         }).catch(err => {
-            console.error("Wake word mic error:", err);
-            toast({ title: "Microphone Error", description: "Could not access microphone for wake word.", variant: "destructive" });
-            return null;
+          console.error("Wake word mic error:", err);
+          toast({ title: "Microphone Error", description: "Could not access microphone for wake word.", variant: "destructive" });
+          return null;
         });
         streamRef.current = stream;
 
@@ -107,7 +107,7 @@ export const useWakeWord = () => {
           chunkCount++;
           if (chunkCount === 5) console.log("[Vosk] ScriptProcessorNode is receiving data correctly!");
           if (!isActive || jarvisIsListeningRef.current || jarvisIsSpeakingRef.current) return;
-          
+
           try {
             const buffer = e.inputBuffer.getChannelData(0);
             if (recognizer.acceptWaveformFloat) {
@@ -124,28 +124,28 @@ export const useWakeWord = () => {
 
         const gainNode = audioContext.createGain();
         gainNode.gain.value = 0.001; // 0.1% volume to avoid Chrome suspension
-        
+
         source.connect(processor);
         processor.connect(gainNode);
         gainNode.connect(audioContext.destination);
-        
+
         if (audioContext.state === 'suspended') {
-            audioContext.resume().catch(console.error);
-            
-            // Autoplay policy fallback: resume on first user interaction
-            const resumeOnInteraction = () => {
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume().then(() => {
-                        console.log("AudioContext resumed by user interaction!");
-                    }).catch(console.error);
-                }
-                window.removeEventListener('click', resumeOnInteraction);
-                window.removeEventListener('keydown', resumeOnInteraction);
-            };
-            window.addEventListener('click', resumeOnInteraction);
-            window.addEventListener('keydown', resumeOnInteraction);
+          audioContext.resume().catch(console.error);
+
+          // Autoplay policy fallback: resume on first user interaction
+          const resumeOnInteraction = () => {
+            if (audioContext.state === 'suspended') {
+              audioContext.resume().then(() => {
+                console.log("AudioContext resumed by user interaction!");
+              }).catch(console.error);
+            }
+            window.removeEventListener('click', resumeOnInteraction);
+            window.removeEventListener('keydown', resumeOnInteraction);
+          };
+          window.addEventListener('click', resumeOnInteraction);
+          window.addEventListener('keydown', resumeOnInteraction);
         }
-        
+
         setIsListeningForWakeWord(true);
         console.log("Vosk offline wake word listener started. AudioContext state:", audioContext.state);
 
@@ -159,7 +159,7 @@ export const useWakeWord = () => {
     return () => {
       isActive = false;
       setIsListeningForWakeWord(false);
-      
+
       if (processorRef.current) {
         processorRef.current.disconnect();
         processorRef.current.onaudioprocess = null;
@@ -171,10 +171,10 @@ export const useWakeWord = () => {
         streamRef.current.getTracks().forEach(t => t.stop());
       }
       if (audioContextRef.current) {
-        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current.close().catch(() => { });
       }
       if (recognizerRef.current) {
-        try { recognizerRef.current.free(); } catch(e){}
+        try { recognizerRef.current.free(); } catch (e) { }
       }
     };
   }, []); // Run ONCE on mount

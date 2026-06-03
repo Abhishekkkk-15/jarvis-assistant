@@ -174,6 +174,7 @@ export const SettingsPage: React.FC = () => {
                             <SelectItem value="meta/llama-3.1-405b-instruct">LLaMA 3.1 405B</SelectItem>
                             <SelectItem value="meta/llama-3.1-70b-instruct">LLaMA 3.1 70B</SelectItem>
                             <SelectItem value="nvidia/nemotron-4-340b-instruct">Nemotron 4 340B</SelectItem>
+                            <SelectItem value="mistralai/mistral-large-2411">Mistral Large 2411</SelectItem>
                           </>
                         )}
                       </SelectContent>
