@@ -130,7 +130,14 @@ export const JarvisMain: React.FC = () => {
         if (data.toolsUsed && data.toolsUsed.length > 0) {
           setToolsUsed(data.toolsUsed);
         }
-        if (!muted && settings?.voiceEnabled !== false) speak(data.reply);
+        if (!muted && settings?.voiceEnabled !== false) {
+          speak(data.reply);
+        } else {
+          // If muted, clear accessories after 5 seconds so they don't stay forever
+          setTimeout(() => {
+            setToolsUsed([]);
+          }, 5000);
+        }
       },
       onError: () => {
         toast({ title: "Error", description: "Failed to reach the AI.", variant: "destructive" });
@@ -158,7 +165,10 @@ export const JarvisMain: React.FC = () => {
     if (preferred) utterance.voice = preferred;
     utterance.pitch = 1;
     utterance.rate = 1.05;
-    utterance.onend = () => setIsSpeaking(false);
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setToolsUsed([]);
+    };
     synthesisRef.current = utterance;
     window.speechSynthesis.speak(utterance);
   };

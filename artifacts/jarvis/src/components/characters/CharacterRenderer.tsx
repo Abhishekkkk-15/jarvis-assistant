@@ -452,6 +452,97 @@ export const AlienDude: React.FC<CharacterProps> = ({ animation = 'idle', size =
   );
 };
 
+export const SpiderMan: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+  const isSwinging = animation === 'walk' || animation === 'run';
+  const isCrouching = animation === 'idle' || animation === 'sad';
+  const isHanging = animation === 'sleep';
+
+  return (
+    <BaseCharacter size={size} flipped={flipped} animation={animation}>
+      <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
+        {isSwinging && (
+          // Web line shooting diagonally up
+          <line x1="50" y1="30" x2="80" y2="-20" stroke="#fff" strokeWidth="2" strokeDasharray="4,2" />
+        )}
+        {isHanging && (
+          // Web line straight up
+          <line x1="50" y1="80" x2="50" y2="-20" stroke="#fff" strokeWidth="2" />
+        )}
+
+        {/* Head */}
+        <g transform={isHanging ? "translate(0, 50) rotate(180, 50, 30)" : isCrouching ? "translate(0, 20)" : isSwinging ? "translate(-10, -10) rotate(-15, 50, 30)" : ""}>
+          <circle cx="50" cy="30" r="14" fill="#e74c3c" />
+          {/* Eyes */}
+          <path d="M 40 25 Q 48 20 48 32 Q 42 32 40 25" fill="#fff" stroke="#000" strokeWidth="1" />
+          <path d="M 60 25 Q 52 20 52 32 Q 58 32 60 25" fill="#fff" stroke="#000" strokeWidth="1" />
+          
+          {/* Web pattern on head */}
+          <path d="M 50 16 L 50 44 M 36 30 L 64 30 M 40 20 L 60 40 M 40 40 L 60 20" stroke="#c0392b" strokeWidth="0.5" />
+        </g>
+
+        {/* Body */}
+        <g transform={isHanging ? "translate(0, 50) rotate(180, 50, 60)" : isCrouching ? "translate(0, 20)" : isSwinging ? "translate(-5, -5) rotate(-15, 50, 60)" : ""}>
+          <path d="M 40 40 Q 50 45 60 40 L 55 70 Q 50 75 45 70 Z" fill="#2980b9" />
+          <path d="M 42 40 Q 50 45 58 40 L 53 60 L 47 60 Z" fill="#e74c3c" />
+          {/* Spider Emblem */}
+          <circle cx="50" cy="50" r="2" fill="#000" />
+          <path d="M 50 50 L 47 47 M 50 50 L 53 47 M 50 50 L 47 53 M 50 50 L 53 53" stroke="#000" strokeWidth="1" />
+        </g>
+
+        {/* Limbs */}
+        <g transform={isHanging ? "translate(0, 50) rotate(180, 50, 50)" : isCrouching ? "translate(0, 20)" : isSwinging ? "translate(-5, -5) rotate(-15, 50, 50)" : ""}>
+          {isSwinging ? (
+            <>
+              {/* Swinging Right Arm (holding web) */}
+              <path d="M 58 45 L 75 35 L 70 20" fill="none" stroke="#e74c3c" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Swinging Left Arm */}
+              <path d="M 42 45 L 25 55 L 20 40" fill="none" stroke="#e74c3c" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Swinging Legs */}
+              <path d="M 45 68 L 30 75 L 20 85" fill="none" stroke="#2980b9" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M 55 68 L 70 80 L 80 75" fill="none" stroke="#2980b9" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Boots */}
+              <circle cx="20" cy="85" r="4" fill="#e74c3c" />
+              <circle cx="80" cy="75" r="4" fill="#e74c3c" />
+            </>
+          ) : isCrouching ? (
+            <>
+              {/* Crouched Arms */}
+              <path d="M 42 45 L 35 60 L 45 80" fill="none" stroke="#e74c3c" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M 58 45 L 65 60 L 55 80" fill="none" stroke="#e74c3c" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Crouched Legs */}
+              <path d="M 45 68 L 30 65 L 35 80" fill="none" stroke="#2980b9" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M 55 68 L 70 65 L 65 80" fill="none" stroke="#2980b9" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Boots */}
+              <circle cx="35" cy="80" r="4" fill="#e74c3c" />
+              <circle cx="65" cy="80" r="4" fill="#e74c3c" />
+            </>
+          ) : isHanging ? (
+            <>
+              {/* Hanging Arms */}
+              <path d="M 42 45 L 35 30 L 40 20" fill="none" stroke="#e74c3c" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M 58 45 L 65 30 L 60 20" fill="none" stroke="#e74c3c" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Hanging Legs */}
+              <path d="M 45 68 L 45 80 L 50 85" fill="none" stroke="#2980b9" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M 55 68 L 55 80 L 50 85" fill="none" stroke="#2980b9" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Boots */}
+              <circle cx="50" cy="85" r="4" fill="#e74c3c" />
+            </>
+          ) : (
+            <>
+              {/* Standing Arms */}
+              <g className="limb-l"><rect x="35" y="45" width="6" height="25" rx="3" fill="#e74c3c" /></g>
+              <g className={animation === 'wave' ? 'arm-wave' : 'limb-r'}><rect x="59" y="45" width="6" height="25" rx="3" fill="#e74c3c" /></g>
+              {/* Standing Legs */}
+              <g className="limb-l"><rect x="40" y="65" width="8" height="25" rx="4" fill="#2980b9" /><rect x="40" y="80" width="8" height="10" rx="2" fill="#e74c3c" /></g>
+              <g className="limb-r"><rect x="52" y="65" width="8" height="25" rx="4" fill="#2980b9" /><rect x="52" y="80" width="8" height="10" rx="2" fill="#e74c3c" /></g>
+            </>
+          )}
+        </g>
+      </svg>
+    </BaseCharacter>
+  );
+};
+
 export const charactersMap: Record<string, React.FC<CharacterProps>> = {
   'jarvis-bot': JarvisBot,
   'pixel-fox': PixelFox,
@@ -463,6 +554,7 @@ export const charactersMap: Record<string, React.FC<CharacterProps>> = {
   'minion-bob': MinionBob,
   'space-bean': SpaceBean,
   'alien-dude': AlienDude,
+  'spider-man': SpiderMan,
 };
 
 export const CustomCharacterRenderer: React.FC<CharacterProps & { character: CustomCharacter }> = ({ 

@@ -29,6 +29,7 @@ export const CharactersPage: React.FC = () => {
     { id: 'minion-bob', name: 'Minion Blob', desc: 'Yellow and silly cartoon' },
     { id: 'space-bean', name: 'Space Bean', desc: 'Kinda sus cartoon' },
     { id: 'alien-dude', name: 'Alien Dude', desc: 'Out of this world funny alien' },
+    { id: 'spider-man', name: 'Spider-Man', desc: 'Your friendly neighborhood web-slinger' },
   ];
 
   const animations: CharacterAnimation[] = ['idle', 'walk', 'run', 'wave', 'dance', 'sleep', 'excited', 'talk'];
