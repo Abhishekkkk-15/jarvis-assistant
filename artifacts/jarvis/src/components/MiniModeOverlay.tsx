@@ -7,17 +7,11 @@ import { Maximize2 } from 'lucide-react';
 import { useAudioReactivity } from '@/hooks/useAudioReactivity';
 
 interface MiniModeOverlayProps {
-  isListening: boolean;
-  isSpeaking: boolean;
-  lastReply: string;
   isMinimized: boolean;
   onOpen: () => void;
 }
 
 export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
-  isListening,
-  isSpeaking,
-  lastReply,
   isMinimized,
   onOpen,
 }) => {
@@ -25,6 +19,11 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [charId] = useLocalStorage('selectedCharacterId', 'jarvis-bot');
   const [posX, setPosX] = useLocalStorage('characterPositionX', window.innerWidth - 150);
   const [posY, setPosY] = useLocalStorage('characterPositionY', window.innerHeight - 150);
+
+  // JARVIS global state
+  const [isListening] = useLocalStorage('jarvisIsListening', false);
+  const [isSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
+  const [lastReply] = useLocalStorage('jarvisLastReply', '');
 
   const [animation, setAnimation] = useState<CharacterAnimation>('idle');
   const [flipped, setFlipped] = useState(false);

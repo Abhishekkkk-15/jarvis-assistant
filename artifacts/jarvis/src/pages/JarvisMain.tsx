@@ -6,8 +6,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
 export const JarvisMain: React.FC = () => {
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isListening, setIsListening] = useLocalStorage('jarvisIsListening', false);
+  const [isSpeaking, setIsSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
+  const [, setLastReply] = useLocalStorage('jarvisLastReply', '');
   const [transcript, setTranscript] = useState('');
   const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
@@ -99,6 +100,15 @@ export const JarvisMain: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (isListening && !audioStream) {
+      // Triggered by Wake Word externally
+      startListening();
+    } else if (!isListening && audioStream) {
+      stopListening();
+    }
+  }, [isListening, audioStream]);
+
   const handleSendMessage = (text: string) => {
     if (!text.trim()) return;
     setMessages(prev => [...prev, { role: 'user', content: text }]);
@@ -108,6 +118,7 @@ export const JarvisMain: React.FC = () => {
       onSuccess: (data) => {
         if (data.conversationId) setActiveConversationId(data.conversationId);
         setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+        setLastReply(data.reply);
         if (!muted && settings?.voiceEnabled !== false) speak(data.reply);
       },
       onError: () => {

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { MiniModeOverlay } from './MiniModeOverlay';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useWakeWord } from '@/hooks/useWakeWord';
 
 interface LayoutProps {
   children: ReactNode;
@@ -13,6 +14,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [location, setLocation] = useLocation();
   const [miniModeEnabled] = useLocalStorage('miniModeEnabled', true);
   const [minimized, setMinimized] = useLocalStorage('appMinimized', false);
+  
+  // Initialize background wake word listener
+  useWakeWord();
 
   const handleRestore = () => {
     setMinimized(false);
@@ -60,9 +64,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Character overlay — always rendered when mini mode is on OR when minimized */}
       {(miniModeEnabled || minimized) && (
         <MiniModeOverlay
-          isListening={false}
-          isSpeaking={false}
-          lastReply=""
           isMinimized={minimized}
           onOpen={handleRestore}
         />

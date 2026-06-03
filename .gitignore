@@ -12,7 +12,8 @@ out-tsc
 .turbo
 # dependencies
 node_modules
-
+.env
+.env.*
 # IDEs and editors
 /.idea
 .project
@@ -45,7 +46,7 @@ Thumbs.db
 
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
-.env
+
 # Replit
 .cache/
 .local/
