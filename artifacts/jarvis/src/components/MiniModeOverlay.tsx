@@ -5,27 +5,55 @@ import { charactersMap, CharacterAnimation, CustomCharacter, CustomCharacterRend
 import { useLocation } from 'wouter';
 import { Maximize2 } from 'lucide-react';
 import { useAudioReactivity } from '@/hooks/useAudioReactivity';
+import ReactMarkdown from 'react-markdown';
 
 const TypewriterBubble: React.FC<{ text: string }> = ({ text }) => {
   const [displayedText, setDisplayedText] = useState('');
+  const [isDone, setIsDone] = useState(false);
 
   useEffect(() => {
     setDisplayedText('');
+    setIsDone(false);
     let i = 0;
     const interval = setInterval(() => {
-      setDisplayedText(text.substring(0, i + 1));
       i++;
-      if (i >= text.length) clearInterval(interval);
-    }, 30); // typing speed
+      setDisplayedText(text.substring(0, i));
+      if (i >= text.length) {
+        clearInterval(interval);
+        setIsDone(true);
+      }
+    }, 18); // typing speed
 
     return () => clearInterval(interval);
   }, [text]);
 
   return (
-    <div className="absolute bottom-[130px] left-1/2 -translate-x-1/2 bg-white text-slate-800 px-4 py-2.5 rounded-2xl border border-slate-200 shadow-lg text-sm max-w-[280px] min-w-[60px] whitespace-pre-wrap break-words z-10 transition-all duration-300 origin-bottom">
-      {displayedText}
-      <span className="animate-pulse ml-0.5">|</span>
-      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-solid border-t-white border-t-8 border-x-transparent border-x-8 border-b-0" />
+    <div
+      className="absolute bottom-[138px] left-1/2 -translate-x-1/2 z-10"
+      style={{ width: 'clamp(200px, 320px, 90vw)' }}
+    >
+      <div className="relative bg-white/95 backdrop-blur-md text-slate-800 px-4 py-3 rounded-2xl rounded-bl-sm border border-slate-200/80 shadow-[0_8px_32px_rgba(0,0,0,0.12)] text-sm leading-relaxed max-h-[280px] overflow-y-auto break-words transition-all duration-300">
+        <ReactMarkdown
+          components={{
+            p: ({ node, ...props }) => <p className="mb-1.5 last:mb-0" {...props} />,
+            ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-1.5 space-y-0.5" {...props} />,
+            ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-1.5 space-y-0.5" {...props} />,
+            li: ({ node, ...props }) => <li className="text-sm" {...props} />,
+            strong: ({ node, ...props }) => <strong className="font-semibold text-slate-900" {...props} />,
+            em: ({ node, ...props }) => <em className="italic text-slate-600" {...props} />,
+            code: ({ node, ...props }) => <code className="bg-slate-100 px-1 py-0.5 rounded text-xs font-mono" {...props} />,
+            h1: ({ node, ...props }) => <h1 className="text-base font-bold mb-1" {...props} />,
+            h2: ({ node, ...props }) => <h2 className="text-sm font-bold mb-1" {...props} />,
+            h3: ({ node, ...props }) => <h3 className="text-sm font-semibold mb-1" {...props} />,
+            hr: () => <hr className="border-slate-200 my-1.5" />,
+          }}
+        >
+          {displayedText}
+        </ReactMarkdown>
+        {!isDone && <span className="inline-block animate-pulse text-primary ml-0.5">▍</span>}
+      </div>
+      {/* Tail pointing down to character */}
+      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-solid border-t-white/95 border-t-8 border-x-transparent border-x-8 border-b-0 drop-shadow-sm" />
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { useLocalStorage } from './use-local-storage';
 import { useToast } from './use-toast';
 import { createModel } from 'vosk-browser';
 
-export const useWakeWord = () => {
+export const useWakeWord = (wakeWord: string = 'jarvis') => {
   const [isListeningForWakeWord, setIsListeningForWakeWord] = useState(false);
   const recognizerRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -14,6 +14,13 @@ export const useWakeWord = () => {
   const [jarvisIsListening, setJarvisIsListening] = useLocalStorage('jarvisIsListening', false);
   const [jarvisIsSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
   const { toast } = useToast();
+
+  const wakeWordRef = useRef<string>(wakeWord);
+
+  // Keep wake word ref in sync whenever the prop changes
+  useEffect(() => {
+    wakeWordRef.current = wakeWord.toLowerCase().trim();
+  }, [wakeWord]);
 
   const jarvisIsListeningRef = useRef(jarvisIsListening);
   const jarvisIsSpeakingRef = useRef(jarvisIsSpeaking);
@@ -76,8 +83,16 @@ export const useWakeWord = () => {
         const checkWakeWord = (text: string) => {
           if (!text || jarvisIsListeningRef.current || jarvisIsSpeakingRef.current) return;
           const transcript = text.toLowerCase();
-          if (transcript.includes("hey jarvis") || transcript.includes("hi jarvis") || transcript.includes("okay jarvis")) {
-            console.log("Wake word detected via Vosk:", transcript);
+          const word = wakeWordRef.current;
+          // Match the configured wake word with common prefixes
+          if (
+            transcript.includes(word) ||
+            transcript.includes(`hey ${word}`) ||
+            transcript.includes(`hi ${word}`) ||
+            transcript.includes(`okay ${word}`) ||
+            transcript.includes(`ok ${word}`)
+          ) {
+            console.log("Wake word detected via Vosk:", transcript, "| Word:", word);
             setJarvisIsListeningRef.current(true);
             toastRef.current({
               title: "JARVIS is listening",

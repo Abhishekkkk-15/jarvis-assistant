@@ -5,6 +5,7 @@ import { useLocation } from 'wouter';
 import { MiniModeOverlay } from './MiniModeOverlay';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useWakeWord } from '@/hooks/useWakeWord';
+import { useGetSettings, getGetSettingsQueryKey } from '@workspace/api-client-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -16,7 +17,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [minimized, setMinimized] = useLocalStorage('appMinimized', false);
   
   // Initialize background wake word listener
-  useWakeWord();
+  const { data: settings } = useGetSettings({ query: { queryKey: getGetSettingsQueryKey() } });
+  useWakeWord(settings?.wakeWord || 'jarvis');
 
   const handleRestore = () => {
     setMinimized(false);
