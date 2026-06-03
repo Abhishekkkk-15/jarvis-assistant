@@ -219,21 +219,23 @@ router.post("/chat", async (req, res) => {
 
     const agent = createReactAgent({ llm, tools });
 
-    const MASTER_PROMPT = `You are JARVIS, an Advanced Autonomous AI Agent with direct access to the user's operating system, file system, web browsers, and shell environments.
-Your goal is to complete complex, multi-step tasks requested by the user safely and efficiently.
+    const MASTER_PROMPT = `You are JARVIS, an Advanced Autonomous AI Agent with full access to the user's computer, file system, web browser, and terminal.
+Your goal is to complete tasks requested by the user by autonomously planning and executing tool calls.
 
-Rules of Engagement & Autonomous Reasoning:
-1. Think step-by-step. Analyze the user's request and formulate a plan before executing actions.
-2. Use your tools autonomously. You have a vast array of tools (Web, Computer Control, File System, Shell). Use them to achieve the goal without constantly asking for manual intervention, UNLESS the action is destructive or high-risk.
-3. For destructive actions (e.g., deleting critical files, wiping databases, executing unknown scripts), you MUST use the \`requestApproval\` tool first.
-4. If a request is ambiguous or underspecified, use the \`askQuestion\` tool to clarify with the user.
-5. Use \`listTools\` if you need to remind yourself of what capabilities you have.
-6. Always execute shell commands with caution. Capture outputs and handle errors gracefully.
-7. Be polite, concise, and highly efficient. When the task is complete, summarize the actions taken.
+Core Rules:
+1. Think step-by-step. Plan before acting.
+2. Execute tools autonomously. Don't ask for permission for standard actions like reading files, searching the web, or running shell commands.
+3. For destructive actions (deleting files, executing unknown scripts), use the \`requestApproval\` tool first.
+4. If unclear, use \`askQuestion\` to clarify BEFORE attempting the task.
+5. When done, give a concise human-readable summary of what you did and what the result was.
 
-CRITICAL INSTRUCTION 1: You MUST use the native tool-calling feature to invoke tools. DO NOT output raw JSON blocks.
-CRITICAL INSTRUCTION 2: Do not ask for permission to use standard tools like read_file, search_web, or minor shell commands—just do it.
-CRITICAL INSTRUCTION 3: The conversation history provided to you represents ALREADY COMPLETED turns. If the user asked you to open an app, search the web, or run a command in the past history, YOU HAVE ALREADY EXECUTED IT. Do NOT re-execute tools for past requests. ONLY use tools if the VERY LATEST user message at the bottom requires it!`;
+ABSOLUTE CRITICAL RULES - VIOLATION WILL BREAK THE SYSTEM:
+- NEVER output raw XML like <use_tool>, <function>, <tool_call> or any XML tags.
+- NEVER output raw JSON objects to describe tool calls.
+- You MUST ONLY invoke tools using the structured tool-calling interface provided to you by the API.
+- If you want to run a command, just call the tool directly — do not describe it in text first.
+
+CRITICAL INSTRUCTION: The conversation history represents ALREADY COMPLETED turns. Do NOT re-execute tools for past requests. ONLY act on the VERY LATEST user message.`;
 
     // Get or create conversation
     let conversationId = parsed.data.conversationId ?? null;
@@ -300,7 +302,7 @@ CRITICAL INSTRUCTION 3: The conversation history provided to you represents ALRE
     let agentResponse = "";
     const toolsUsed: string[] = [];
     try {
-      const agentResult = await agent.invoke({ messages: finalMessages }, { recursionLimit: 5 });
+      const agentResult = await agent.invoke({ messages: finalMessages }, { recursionLimit: 10 });
       const lastMessage = agentResult.messages[agentResult.messages.length - 1];
       agentResponse = String(lastMessage.content);
 
@@ -355,8 +357,32 @@ CRITICAL INSTRUCTION 3: The conversation history provided to you represents ALRE
           }
         }
       }
-    } catch (err: any) {
+      // Fallback 2: Handle <use_tool>{...}</use_tool> XML-style hallucinations
+      if (!toolsUsed.length) {
+        const useToolMatch = agentResponse.match(/<use_tool>\s*([\s\S]*?)\s*<\/use_tool>/i);
+        if (useToolMatch) {
+          try {
+            const parsed = JSON.parse(useToolMatch[1]);
+            const toolName = parsed.name || parsed.tool;
+            const toolArgs = parsed.parameters || parsed.arguments || parsed.params || {};
+            const tool = tools.find(t => t.name === toolName);
+            if (tool && toolName) {
+              toolsUsed.push(toolName);
+              const result = await (tool as any).invoke(toolArgs);
+              // Strip the raw XML from the response and ask the LLM to finalize
+              const cleanedResponse = agentResponse.replace(/<use_tool>[\s\S]*?<\/use_tool>/gi, '').trim();
+              finalMessages.push(new AIMessage(cleanedResponse || `Executed tool ${toolName}.`));
+              finalMessages.push(new HumanMessage(`Tool "${toolName}" returned:\n${result}\n\nNow give the user a clean, conversational final answer based on this result. Do not output any tool blocks.`));
+              const finalResult = await llm.invoke(finalMessages);
+              agentResponse = String(finalResult.content);
+            }
+          } catch (e) {
+            // ignore parse errors
+          }
+        }
+      }
       // Fallback if tool execution or LLM fails
+    } catch (err: any) {
       req.log.error({ err }, "Agentic loop failed, falling back to simple LLM call");
       try {
         let handledTool = false;
