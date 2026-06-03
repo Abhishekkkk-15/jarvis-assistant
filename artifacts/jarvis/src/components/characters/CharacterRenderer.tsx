@@ -693,21 +693,37 @@ export const SpiderMan: React.FC<CharacterProps> = ({ animation = 'idle', size =
 };
 
 export const IronHero: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+  const isFlying = animation === 'walk' || animation === 'run';
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
-      <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
-        {/* Body */}
-        <rect x="30" y="45" width="40" height="35" rx="5" fill="#c0392b" />
-        {/* Arc Reactor */}
-        <circle cx="50" cy="55" r="8" fill="#fff" stroke="#3498db" strokeWidth="2" className={animation === 'excited' ? 'animate-pulse' : ''} />
-        <circle cx="50" cy="55" r="4" fill="#3498db" className={animation === 'excited' ? 'animate-pulse' : ''} />
-        {/* Limbs */}
-        <g className="limb-l"><rect x="20" y="45" width="10" height="25" rx="5" fill="#c0392b" /></g>
-        <g className={animation === 'wave' ? 'arm-wave' : 'limb-r'}><rect x="70" y="45" width="10" height="25" rx="5" fill="#c0392b" /></g>
-        <g className="limb-l"><rect x="35" y="80" width="10" height="20" rx="5" fill="#c0392b" /></g>
-        <g className="limb-r"><rect x="55" y="80" width="10" height="20" rx="5" fill="#c0392b" /></g>
-        {/* Head */}
-        <rect x="35" y="15" width="30" height="30" rx="5" fill="#c0392b" />
+      <svg width="100%" height="100%" viewBox="0 0 100 100" className={isFlying ? "arm-wave overflow-visible" : "body overflow-visible"}>
+        <g transform={isFlying ? "translate(0, -10)" : ""}>
+          {/* Body */}
+          <rect x="30" y="45" width="40" height="35" rx="5" fill="#c0392b" />
+          {/* Arc Reactor */}
+          <circle cx="50" cy="55" r="8" fill="#fff" stroke="#3498db" strokeWidth="2" className={animation === 'excited' ? 'animate-pulse' : ''} />
+          <circle cx="50" cy="55" r="4" fill="#3498db" className={animation === 'excited' ? 'animate-pulse' : ''} />
+          {/* Limbs */}
+          <g className={isFlying ? "" : "limb-l"}>
+            <rect x="20" y="45" width="10" height="25" rx="5" fill="#c0392b" />
+            {isFlying && <path d="M 22 70 Q 25 90 28 70 Z" fill="#3498db" className="animate-pulse" opacity="0.8" />}
+          </g>
+          <g className={animation === 'wave' ? 'arm-wave' : isFlying ? "" : "limb-r"}>
+            <rect x="70" y="45" width="10" height="25" rx="5" fill="#c0392b" />
+            {isFlying && animation !== 'wave' && <path d="M 72 70 Q 75 90 78 70 Z" fill="#3498db" className="animate-pulse" opacity="0.8" />}
+          </g>
+          <g className={isFlying ? "" : "limb-l"}>
+            <rect x="35" y="80" width="10" height="20" rx="5" fill="#c0392b" />
+            {isFlying && <path d="M 37 100 Q 40 125 43 100 Z" fill="#e74c3c" className="animate-pulse" />}
+            {isFlying && <path d="M 38 100 Q 40 115 42 100 Z" fill="#f1c40f" className="animate-pulse" />}
+          </g>
+          <g className={isFlying ? "" : "limb-r"}>
+            <rect x="55" y="80" width="10" height="20" rx="5" fill="#c0392b" />
+            {isFlying && <path d="M 57 100 Q 60 125 63 100 Z" fill="#e74c3c" className="animate-pulse" />}
+            {isFlying && <path d="M 58 100 Q 60 115 62 100 Z" fill="#f1c40f" className="animate-pulse" />}
+          </g>
+          {/* Head */}
+          <rect x="35" y="15" width="30" height="30" rx="5" fill="#c0392b" />
         <polygon points="38,20 62,20 58,40 42,40" fill="#f1c40f" />
         {/* Eyes */}
         {(animation === 'happy' || animation === 'excited') ? (
@@ -737,15 +753,26 @@ export const IronHero: React.FC<CharacterProps> = ({ animation = 'idle', size = 
             )}
           </g>
         )}
+        </g>
       </svg>
     </BaseCharacter>
   );
 };
 
 export const ElectricMouse: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+  const isElectric = animation === 'excited' || animation === 'angry' || animation === 'run';
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
+        {/* Electric Sparks */}
+        {isElectric && (
+          <g className="animate-pulse" stroke="#0ff" strokeWidth="2" fill="none">
+            <path d="M 10 30 L 5 40 L 15 45 L 5 55" />
+            <path d="M 90 30 L 95 40 L 85 45 L 95 55" />
+            <path d="M 20 10 L 30 5 L 25 15" />
+            <path d="M 80 10 L 70 5 L 75 15" />
+          </g>
+        )}
         {/* Tail */}
         <path d="M 25 75 L 15 65 L 20 55 L 10 45 L 20 35 L 30 50 Z" fill="#f1c40f" stroke="#000" strokeWidth="1" className="limb-l" />
         {/* Body */}
