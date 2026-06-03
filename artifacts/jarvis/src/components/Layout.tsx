@@ -19,6 +19,22 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     setLocation('/');
   };
 
+  React.useEffect(() => {
+    if (window.electronAPI) {
+      if (minimized) {
+        window.electronAPI.setFullscreen(true);
+        window.electronAPI.setIgnoreMouseEvents(true);
+        document.body.style.backgroundColor = 'transparent';
+        document.documentElement.style.backgroundColor = 'transparent';
+      } else {
+        window.electronAPI.setFullscreen(false);
+        window.electronAPI.setIgnoreMouseEvents(false);
+        document.body.style.backgroundColor = '';
+        document.documentElement.style.backgroundColor = '';
+      }
+    }
+  }, [minimized]);
+
   return (
     <>
       {/* Main app — hidden when minimized */}

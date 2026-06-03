@@ -149,6 +149,8 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       }}
       onMouseDown={handleMouseDown}
       onContextMenu={handleContextMenu}
+      onMouseEnter={() => { if (isMinimized && window.electronAPI) window.electronAPI.setIgnoreMouseEvents(false); }}
+      onMouseLeave={() => { if (isMinimized && window.electronAPI) window.electronAPI.setIgnoreMouseEvents(true); }}
       onClick={() => {
         if (!hasDragged.current && !showContextMenu) onOpen();
       }}

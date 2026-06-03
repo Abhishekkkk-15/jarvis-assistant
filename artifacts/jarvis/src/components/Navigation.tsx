@@ -25,7 +25,7 @@ export const Navigation: React.FC<NavigationProps> = ({ onMinimize }) => {
   return (
     <nav className="w-16 md:w-56 border-r border-border bg-slate-50 flex flex-col h-full shrink-0">
       {/* Logo */}
-      <div className="p-4 md:p-5 flex items-center gap-3 border-b border-border">
+      <div className="p-4 md:p-5 flex items-center gap-3 border-b border-border select-none" style={{ WebkitAppRegion: 'drag' } as any}>
         <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
           <div className="w-3 h-3 rounded-full bg-white" />
         </div>

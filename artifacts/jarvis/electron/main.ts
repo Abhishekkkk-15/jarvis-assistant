@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -16,7 +16,10 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: 'JARVIS',
-    backgroundColor: '#ffffff',
+    transparent: true,
+    frame: false,
+    hasShadow: false,
+    backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -25,6 +28,8 @@ function createWindow() {
     },
     show: false,
   });
+
+  mainWindow.removeMenu();
 
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show();
@@ -60,4 +65,21 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
+});
+
+ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+  if (ignore) {
+    win.setIgnoreMouseEvents(true, { forward: true });
+  } else {
+    win.setIgnoreMouseEvents(false);
+  }
+});
+
+ipcMain.on('set-fullscreen', (event, isFullscreen) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+  win.setFullScreen(isFullscreen);
+  win.setAlwaysOnTop(isFullscreen, 'pop-up-menu');
 });

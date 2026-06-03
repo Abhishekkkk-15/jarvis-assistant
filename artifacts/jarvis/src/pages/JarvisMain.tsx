@@ -133,7 +133,7 @@ export const JarvisMain: React.FC = () => {
   return (
     <div className="h-full flex flex-col p-5 md:p-8 max-w-6xl mx-auto w-full overflow-y-auto pb-6">
       {/* Header */}
-      <header className="flex justify-between items-center mb-6 shrink-0">
+      <header className="flex justify-between items-center mb-6 shrink-0 select-none" style={{ WebkitAppRegion: 'drag' } as any}>
         <div>
           <h2 className="text-xl font-semibold text-foreground">Assistant</h2>
           <p className="text-sm text-muted-foreground">{settings?.selectedModel || 'No model selected'}</p>
@@ -142,6 +142,7 @@ export const JarvisMain: React.FC = () => {
           onClick={() => setMuted(!muted)}
           className={`p-2 rounded-lg border transition-colors ${muted ? 'border-destructive/40 text-destructive bg-destructive/5' : 'border-border text-muted-foreground hover:text-foreground hover:bg-slate-100'}`}
           data-testid="button-mute"
+          style={{ WebkitAppRegion: 'no-drag' } as any}
         >
           {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
         </button>
