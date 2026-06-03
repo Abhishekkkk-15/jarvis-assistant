@@ -480,7 +480,9 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
       {showContextMenu && (
         <div
-          className="absolute top-full left-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-[60] overflow-hidden"
+          className={`absolute left-0 w-48 bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-[60] overflow-hidden ${
+            posY > window.innerHeight - 200 ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}
           onMouseLeave={() => setShowContextMenu(false)}
         >
           {isMinimized && (

@@ -158,16 +158,11 @@ router.post("/chat", async (req, res) => {
       return;
     }
 
-    const provider = parsed.data.provider ?? settings.selectedProvider;
-    let modelName = parsed.data.model ?? settings.selectedModel;
     const hasImage = !!parsed.data.imageBase64;
     
-    // Override model for vision capabilities if needed
-    if (provider === "groq" && hasImage) {
-      modelName = "llama-3.2-90b-vision-preview";
-    } else if (provider === "groq" && (modelName === "llama3-70b-8192" || modelName === "llama3-8b-8192")) {
-      modelName = "llama-3.3-70b-versatile";
-    }
+    // Override model and provider based on user instruction
+    let provider = hasImage ? "nvidia" : "groq";
+    let modelName = hasImage ? "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" : "llama-3.3-70b-versatile";
     
     const apiKey = provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
 

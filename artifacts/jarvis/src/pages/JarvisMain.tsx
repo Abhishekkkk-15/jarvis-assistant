@@ -141,6 +141,7 @@ export const JarvisMain: React.FC = () => {
       },
       onError: () => {
         toast({ title: "Error", description: "Failed to reach the AI.", variant: "destructive" });
+        setLastReply("Oops! Failed to connect to the brain.");
       }
     });
   };
