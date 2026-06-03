@@ -4,6 +4,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import { charactersMap, CharacterAnimation } from './characters/CharacterRenderer';
 import { useLocation } from 'wouter';
 import { Maximize2 } from 'lucide-react';
+import { useAudioReactivity } from '@/hooks/useAudioReactivity';
 
 interface MiniModeOverlayProps {
   isListening: boolean;
@@ -31,9 +32,25 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [replyBubble, setReplyBubble] = useState('');
   const [showRestoreHint, setShowRestoreHint] = useState(false);
+  
   const dragRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number } | null>(null);
   const hasDragged = useRef(false);
   const [, setLocation] = useLocation();
+
+  // Smart movement states
+  const [isTrackingCursor, setIsTrackingCursor] = useState(false);
+  const [movementStyle, setMovementStyle] = useState<'float' | 'dash' | 'jump'>('float');
+  const cursorRef = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+
+  // Physics states
+  const [isPhysicsActive, setIsPhysicsActive] = useState(false);
+  const [squash, setSquash] = useState({ x: 1, y: 1 });
+  const velocity = useRef({ x: 0, y: 0 });
+  const lastMousePos = useRef({ x: 0, y: 0, time: 0 });
+  const physicsRaf = useRef<number | null>(null);
+
+  // Audio Reactivity
+  const isDancingToMusic = useAudioReactivity(40);
 
   const CharacterComponent = charactersMap[charId] || charactersMap['jarvis-bot'];
 
@@ -61,45 +78,90 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   useEffect(() => {
     if (isListening) setAnimation('excited');
     else if (isSpeaking) setAnimation('talk');
-    else setAnimation('idle');
-  }, [isListening, isSpeaking]);
+    else if (isDancingToMusic && !isDragging && !isPhysicsActive) setAnimation('dance');
+    else if (!isDragging && !isPhysicsActive) setAnimation('idle');
+  }, [isListening, isSpeaking, isDancingToMusic, isDragging, isPhysicsActive]);
+
+  // Cursor tracking listener
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      cursorRef.current = { x: e.clientX, y: e.clientY };
+      if (isTrackingCursor && !isDragging && !isPhysicsActive && !isDancingToMusic) {
+        setFlipped(e.clientX < posX);
+      }
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [isTrackingCursor, isDragging, isPhysicsActive, isDancingToMusic, posX]);
+
+  // Randomize tracking state
+  useEffect(() => {
+    if (isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic) return;
+    const trackingTimer = setInterval(() => {
+      const startTracking = Math.random() > 0.7;
+      setIsTrackingCursor(startTracking);
+      if (startTracking) {
+        setFlipped(cursorRef.current.x < posX);
+        setTimeout(() => setIsTrackingCursor(false), 3000 + Math.random() * 4000);
+      }
+    }, 10000);
+    return () => clearInterval(trackingTimer);
+  }, [isDragging, isListening, isSpeaking, isPhysicsActive, isDancingToMusic, posX]);
 
   // Autonomous movement
   useEffect(() => {
-    if (isDragging || isListening || isSpeaking) return;
+    if (isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic) return;
 
     const idleTimer = setTimeout(() => {
-      if (animation === 'idle') setAnimation('sleep');
-    }, 30000);
+      if (animation === 'idle' && !isTrackingCursor) setAnimation('sleep');
+    }, 20000);
 
     const moveTimer = setInterval(() => {
+      if (isTrackingCursor) return; 
+
       const maxX = window.innerWidth - 120;
       const maxY = window.innerHeight - 120;
       const newX = Math.max(0, Math.min(Math.random() * maxX, maxX));
-      const newY = Math.max(0, Math.min(Math.random() * maxY, maxY));
+      
+      // If we have gravity, we want it to roam mostly along the bottom floor
+      const isFloorRoaming = Math.random() > 0.3;
+      const newY = isFloorRoaming ? maxY : Math.max(0, Math.min(Math.random() * maxY, maxY));
+      
+      const styles: ('float' | 'dash' | 'jump')[] = ['float', 'float', 'dash', 'jump'];
+      const nextStyle = styles[Math.floor(Math.random() * styles.length)];
+      setMovementStyle(nextStyle);
+      
       setFlipped(newX < posX);
-      setAnimation('walk');
+      setAnimation(nextStyle === 'dash' ? 'run' : 'walk');
+      
       setPosX(newX);
       setPosY(newY);
-      setTimeout(() => setAnimation('idle'), 2000);
-    }, 8000 + Math.random() * 7000);
+      
+      const duration = nextStyle === 'dash' ? 800 : (nextStyle === 'jump' ? 1200 : 2000);
+      setTimeout(() => setAnimation('idle'), duration);
+    }, 6000 + Math.random() * 6000);
 
     return () => {
       clearTimeout(idleTimer);
       clearInterval(moveTimer);
     };
-  }, [isDragging, isListening, isSpeaking, posX, setPosX, setPosY, animation]);
+  }, [isDragging, isListening, isSpeaking, isTrackingCursor, isPhysicsActive, isDancingToMusic, posX, setPosX, setPosY, animation]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
+    if (physicsRaf.current) cancelAnimationFrame(physicsRaf.current);
     hasDragged.current = false;
     setIsDragging(true);
+    setIsPhysicsActive(false);
+    setSquash({ x: 1, y: 1 });
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
       initialX: posX,
       initialY: posY,
     };
+    lastMousePos.current = { x: e.clientX, y: e.clientY, time: performance.now() };
+    velocity.current = { x: 0, y: 0 };
   };
 
   useEffect(() => {
@@ -108,16 +170,36 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       const dx = e.clientX - dragRef.current.startX;
       const dy = e.clientY - dragRef.current.startY;
       if (Math.abs(dx) > 4 || Math.abs(dy) > 4) hasDragged.current = true;
+      
+      const now = performance.now();
+      const dt = now - lastMousePos.current.time;
+      if (dt > 0) {
+        // Calculate velocity (pixels per ms)
+        velocity.current = {
+          x: (e.clientX - lastMousePos.current.x) / dt * 16, // scale to ~60fps frame delta
+          y: (e.clientY - lastMousePos.current.y) / dt * 16
+        };
+      }
+      lastMousePos.current = { x: e.clientX, y: e.clientY, time: now };
+      
       setPosX(dragRef.current.initialX + dx);
       setPosY(dragRef.current.initialY + dy);
       setAnimation('wave');
     };
+    
     const handleMouseUp = () => {
       if (isDragging) {
         setIsDragging(false);
         setAnimation('idle');
+        
+        // Start physics loop if dragged
+        if (hasDragged.current) {
+          setIsPhysicsActive(true);
+          startPhysicsLoop(posX, posY);
+        }
       }
     };
+    
     if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
@@ -126,15 +208,89 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, setPosX, setPosY]);
+  }, [isDragging, posX, posY]);
+
+  const startPhysicsLoop = (startX: number, startY: number) => {
+    let currentX = startX;
+    let currentY = startY;
+    const gravity = 1.2; // heavy gravity
+    const bounce = 0.2; // sandbag bounce
+    const friction = 0.98; // air resistance
+    const floorY = window.innerHeight - 120;
+    const rightX = window.innerWidth - 120;
+
+    const loop = () => {
+      velocity.current.y += gravity;
+      velocity.current.x *= friction;
+      velocity.current.y *= friction;
+
+      currentX += velocity.current.x;
+      currentY += velocity.current.y;
+
+      let hitFloor = false;
+
+      // Floor collision
+      if (currentY >= floorY) {
+        currentY = floorY;
+        if (Math.abs(velocity.current.y) > 2) {
+          velocity.current.y *= -bounce;
+          hitFloor = true;
+        } else {
+          velocity.current.y = 0;
+        }
+        velocity.current.x *= 0.8; // ground friction
+      }
+
+      // Wall collisions
+      if (currentX <= 0) {
+        currentX = 0;
+        velocity.current.x *= -bounce;
+      } else if (currentX >= rightX) {
+        currentX = rightX;
+        velocity.current.x *= -bounce;
+      }
+
+      setPosX(currentX);
+      setPosY(currentY);
+
+      // Visual squash on impact
+      if (hitFloor && Math.abs(velocity.current.y) > 3) {
+        setSquash({ x: 1.2, y: 0.7 });
+        setTimeout(() => setSquash({ x: 1, y: 1 }), 150);
+      } else if (!hitFloor && Math.abs(velocity.current.y) > 10) {
+        // Stretch while falling fast
+        setSquash({ x: 0.9, y: 1.1 });
+      } else if (!hitFloor) {
+        setSquash({ x: 1, y: 1 });
+      }
+
+      // Stop condition
+      if (currentY >= floorY && Math.abs(velocity.current.y) < 1 && Math.abs(velocity.current.x) < 1) {
+        setIsPhysicsActive(false);
+        setSquash({ x: 1, y: 1 });
+        return;
+      }
+
+      physicsRaf.current = requestAnimationFrame(loop);
+    };
+
+    physicsRaf.current = requestAnimationFrame(loop);
+  };
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     setShowContextMenu(true);
   };
 
-  // Don't render if not enabled and not minimized
   if (!enabled && !isMinimized) return null;
+
+  const transitionStyle = isDragging || isPhysicsActive
+    ? 'none' 
+    : movementStyle === 'dash' 
+      ? 'left 0.8s cubic-bezier(0.1, 0.9, 0.2, 1), top 0.8s cubic-bezier(0.1, 0.9, 0.2, 1)'
+      : movementStyle === 'jump'
+        ? 'left 1.2s linear, top 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
+        : 'left 2s ease-in-out, top 2s ease-in-out';
 
   const content = (
     <div
@@ -144,7 +300,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         top: posY,
         width: 120,
         height: 120,
-        transition: isDragging ? 'none' : 'left 2s ease-in-out, top 2s ease-in-out',
+        transition: transitionStyle,
         cursor: isDragging ? 'grabbing' : 'grab',
       }}
       onMouseDown={handleMouseDown}
@@ -155,14 +311,12 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         if (!hasDragged.current && !showContextMenu) onOpen();
       }}
     >
-      {/* Restore hint when minimized */}
       {isMinimized && showRestoreHint && (
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap flex items-center gap-1.5 shadow-lg pointer-events-none">
           <Maximize2 size={11} /> Click to restore
         </div>
       )}
 
-      {/* Speech bubble */}
       {replyBubble && (
         <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-white text-slate-800 px-3 py-2 rounded-xl border border-slate-200 shadow-md text-xs max-w-[200px] truncate whitespace-nowrap z-10">
           {replyBubble}
@@ -170,9 +324,10 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         </div>
       )}
 
-      <CharacterComponent animation={animation} size={120} flipped={flipped} />
+      <div style={{ transform: `scale(${squash.x}, ${squash.y})`, transition: 'transform 0.15s ease-out', width: '100%', height: '100%' }}>
+        <CharacterComponent animation={animation} size={120} flipped={flipped} />
+      </div>
 
-      {/* Restore button overlay when minimized */}
       {isMinimized && !showContextMenu && (
         <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-sm pointer-events-none">
           <Maximize2 size={11} className="text-white" />

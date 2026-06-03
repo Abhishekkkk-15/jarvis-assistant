@@ -187,9 +187,197 @@ export const FireDrake: React.FC<CharacterProps> = ({ animation = 'idle', size =
   );
 };
 
+export const Ninja: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+  return (
+    <BaseCharacter size={size} flipped={flipped} animation={animation}>
+      <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
+        {/* Body */}
+        <rect x="30" y="45" width="40" height="35" rx="5" fill="#2c3e50" />
+        <rect x="40" y="45" width="20" height="35" fill="#34495e" /> {/* tunic detail */}
+        <rect x="30" y="60" width="40" height="5" fill="#c0392b" /> {/* belt */}
+        {/* Limbs */}
+        <g className="limb-l"><rect x="20" y="45" width="10" height="25" rx="5" fill="#2c3e50" /></g>
+        <g className={animation === 'wave' ? 'arm-wave' : 'limb-r'}><rect x="70" y="45" width="10" height="25" rx="5" fill="#2c3e50" /></g>
+        <g className="limb-l"><rect x="35" y="80" width="10" height="20" rx="5" fill="#2c3e50" /></g>
+        <g className="limb-r"><rect x="55" y="80" width="10" height="20" rx="5" fill="#2c3e50" /></g>
+        {/* Head */}
+        <circle cx="50" cy="30" r="18" fill="#f1c40f" /> {/* skin */}
+        <path d="M 32 30 A 18 18 0 0 1 68 30 Z" fill="#2c3e50" /> {/* mask top */}
+        <path d="M 32 30 A 18 18 0 0 0 68 30 Z" fill="#2c3e50" transform="translate(0, 10)" /> {/* mask bottom */}
+        {/* Headband */}
+        <rect x="31" y="18" width="38" height="6" fill="#c0392b" />
+        <path d="M 69 21 L 80 15 L 75 25 Z" fill="#c0392b" className="limb-r" />
+        {/* Eyes */}
+        <circle cx="43" cy="34" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+        <circle cx="57" cy="34" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+        {animation === 'sleep' && (
+          <g><line x1="41" y1="35" x2="45" y2="35" stroke="#000" strokeWidth="2" /><line x1="55" y1="35" x2="59" y2="35" stroke="#000" strokeWidth="2" /></g>
+        )}
+      </svg>
+    </BaseCharacter>
+  );
+};
+
+export const Wizard: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+  return (
+    <BaseCharacter size={size} flipped={flipped} animation={animation}>
+      <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
+        {/* Robe/Body */}
+        <path d="M 35 40 L 20 95 L 80 95 L 65 40 Z" fill="#8e44ad" />
+        <path d="M 45 40 L 40 95 L 60 95 L 55 40 Z" fill="#9b59b6" /> {/* robe trim */}
+        {/* Limbs (Arms) */}
+        <g className="limb-l"><path d="M 35 45 L 15 70 L 25 75 L 40 50 Z" fill="#8e44ad" /></g>
+        <g className={animation === 'wave' ? 'arm-wave' : 'limb-r'}><path d="M 65 45 L 85 70 L 75 75 L 60 50 Z" fill="#8e44ad" /></g>
+        {/* Staff */}
+        <g className={animation === 'wave' ? 'arm-wave' : 'limb-r'}>
+          <rect x="80" y="20" width="4" height="60" fill="#8b4513" />
+          <circle cx="82" cy="20" r="6" fill="#f1c40f" className={animation === 'excited' ? 'animate-pulse' : ''} />
+        </g>
+        {/* Head */}
+        <circle cx="50" cy="35" r="15" fill="#f5b041" />
+        {/* Beard */}
+        <path d="M 35 35 Q 50 70 65 35 Q 50 50 35 35 Z" fill="#ecf0f1" />
+        {/* Hat */}
+        <path d="M 20 30 L 80 30 L 50 0 Z" fill="#2c3e50" />
+        <ellipse cx="50" cy="30" rx="35" ry="5" fill="#34495e" />
+        {/* Eyes */}
+        <circle cx="44" cy="32" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+        <circle cx="56" cy="32" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+        {animation === 'sleep' && (
+          <g><line x1="42" y1="33" x2="46" y2="33" stroke="#000" strokeWidth="2" /><line x1="54" y1="33" x2="58" y2="33" stroke="#000" strokeWidth="2" /></g>
+        )}
+      </svg>
+    </BaseCharacter>
+  );
+};
+
+export const CyberPunk: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+  return (
+    <BaseCharacter size={size} flipped={flipped} animation={animation}>
+      <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
+        {/* Legs */}
+        <g className="limb-l"><rect x="35" y="80" width="10" height="20" rx="2" fill="#34495e" /></g>
+        <g className="limb-r"><rect x="55" y="80" width="10" height="20" rx="2" fill="#34495e" /></g>
+        {/* Body (Jacket) */}
+        <rect x="30" y="40" width="40" height="40" rx="5" fill="#1abc9c" />
+        <rect x="45" y="40" width="10" height="40" fill="#16a085" />
+        {/* Limbs (Arms) */}
+        <g className="limb-l"><rect x="20" y="40" width="10" height="30" rx="5" fill="#1abc9c" /></g>
+        <g className={animation === 'wave' ? 'arm-wave' : 'limb-r'}><rect x="70" y="40" width="10" height="30" rx="5" fill="#1abc9c" /></g>
+        {/* Head */}
+        <rect x="35" y="15" width="30" height="25" rx="8" fill="#f39c12" />
+        {/* Hair */}
+        <path d="M 30 20 Q 50 0 70 20 L 70 15 Q 50 -5 30 15 Z" fill="#9b59b6" />
+        <path d="M 35 15 L 45 5 L 55 15 Z" fill="#9b59b6" />
+        {/* Cyber Glasses */}
+        <rect x="32" y="22" width="36" height="8" rx="2" fill="#000" />
+        <rect x="34" y="24" width="32" height="4" fill="#0ff" className={animation === 'excited' ? 'animate-pulse' : ''} />
+        {/* Mouth */}
+        <path d="M 45 35 Q 50 38 55 35" fill="none" stroke="#000" strokeWidth="2" />
+        {animation === 'sleep' && (
+          <rect x="34" y="24" width="32" height="4" fill="#333" /> // dim glasses
+        )}
+      </svg>
+    </BaseCharacter>
+  );
+};
+
+export const MinionBob: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+  return (
+    <BaseCharacter size={size} flipped={flipped} animation={animation}>
+      <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
+        {/* Legs */}
+        <g className="limb-l"><rect x="35" y="85" width="8" height="15" rx="3" fill="#34495e" /></g>
+        <g className="limb-r"><rect x="57" y="85" width="8" height="15" rx="3" fill="#34495e" /></g>
+        {/* Body (Pill) */}
+        <rect x="30" y="20" width="40" height="65" rx="20" fill="#f1c40f" />
+        {/* Overalls */}
+        <path d="M 30 60 L 70 60 L 70 70 A 20 20 0 0 1 30 70 Z" fill="#2980b9" />
+        <rect x="35" y="50" width="30" height="15" fill="#2980b9" />
+        {/* Straps */}
+        <path d="M 25 45 L 35 50" stroke="#2980b9" strokeWidth="4" className="limb-l" />
+        <path d="M 75 45 L 65 50" stroke="#2980b9" strokeWidth="4" className="limb-r" />
+        {/* Arms */}
+        <g className="limb-l"><rect x="20" y="45" width="8" height="25" rx="4" fill="#f1c40f" /></g>
+        <g className={animation === 'wave' ? 'arm-wave' : 'limb-r'}><rect x="72" y="45" width="8" height="25" rx="4" fill="#f1c40f" /></g>
+        {/* Goggles & Strap */}
+        <rect x="28" y="32" width="44" height="6" fill="#333" />
+        <circle cx="50" cy="35" r="12" fill="#bdc3c7" />
+        <circle cx="50" cy="35" r="9" fill="#fff" />
+        {/* Eye */}
+        <circle cx="50" cy="35" r="3" fill="#8e44ad" className={animation === 'sleep' ? 'opacity-0' : ''} />
+        {animation === 'sleep' && (
+          <line x1="45" y1="35" x2="55" y2="35" stroke="#000" strokeWidth="2" />
+        )}
+        {/* Mouth */}
+        <path d="M 45 45 Q 50 50 55 45" fill="none" stroke="#000" strokeWidth="2" />
+      </svg>
+    </BaseCharacter>
+  );
+};
+
+export const SpaceBean: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+  return (
+    <BaseCharacter size={size} flipped={flipped} animation={animation}>
+      <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
+        {/* Backpack */}
+        <rect x="15" y="35" width="15" height="35" rx="5" fill="#c0392b" />
+        {/* Body */}
+        <rect x="30" y="20" width="45" height="65" rx="22" fill="#e74c3c" />
+        {/* Legs */}
+        <g className="limb-l"><rect x="30" y="70" width="16" height="30" rx="8" fill="#e74c3c" /></g>
+        <g className="limb-r"><rect x="59" y="70" width="16" height="30" rx="8" fill="#e74c3c" /></g>
+        {/* Visor */}
+        <ellipse cx="60" cy="40" rx="15" ry="10" fill="#3498db" />
+        <ellipse cx="65" cy="37" rx="5" ry="3" fill="#fff" opacity="0.6" />
+        {animation === 'sleep' && (
+          <line x1="50" y1="40" x2="70" y2="40" stroke="#2c3e50" strokeWidth="3" />
+        )}
+      </svg>
+    </BaseCharacter>
+  );
+};
+
+export const AlienDude: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+  return (
+    <BaseCharacter size={size} flipped={flipped} animation={animation}>
+      <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
+        {/* Legs */}
+        <g className="limb-l"><rect x="38" y="75" width="6" height="25" rx="3" fill="#2ecc71" /></g>
+        <g className="limb-r"><rect x="56" y="75" width="6" height="25" rx="3" fill="#2ecc71" /></g>
+        {/* Body */}
+        <rect x="35" y="45" width="30" height="35" rx="10" fill="#2ecc71" />
+        <rect x="40" y="50" width="20" height="25" fill="#27ae60" /> {/* belly */}
+        {/* Arms */}
+        <g className="limb-l"><rect x="25" y="45" width="6" height="30" rx="3" fill="#2ecc71" /></g>
+        <g className={animation === 'wave' ? 'arm-wave' : 'limb-r'}><rect x="69" y="45" width="6" height="30" rx="3" fill="#2ecc71" /></g>
+        {/* Head */}
+        <ellipse cx="50" cy="30" rx="25" ry="20" fill="#2ecc71" />
+        {/* Eyes (Huge) */}
+        <ellipse cx="38" cy="28" rx="8" ry="12" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+        <ellipse cx="62" cy="28" rx="8" ry="12" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+        {animation === 'sleep' && (
+          <g>
+            <line x1="30" y1="28" x2="46" y2="28" stroke="#000" strokeWidth="3" />
+            <line x1="54" y1="28" x2="70" y2="28" stroke="#000" strokeWidth="3" />
+          </g>
+        )}
+        {/* Small mouth */}
+        <path d="M 48 42 Q 50 45 52 42" fill="none" stroke="#000" strokeWidth="2" />
+      </svg>
+    </BaseCharacter>
+  );
+};
+
 export const charactersMap: Record<string, React.FC<CharacterProps>> = {
   'jarvis-bot': JarvisBot,
   'pixel-fox': PixelFox,
   'space-cat': SpaceCat,
   'fire-drake': FireDrake,
+  'ninja': Ninja,
+  'wizard': Wizard,
+  'cyber-punk': CyberPunk,
+  'minion-bob': MinionBob,
+  'space-bean': SpaceBean,
+  'alien-dude': AlienDude,
 };

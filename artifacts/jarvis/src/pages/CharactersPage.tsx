@@ -20,6 +20,12 @@ export const CharactersPage: React.FC = () => {
     { id: 'pixel-fox', name: 'Pixel Fox', desc: 'Quick and curious' },
     { id: 'space-cat', name: 'Astro Feline', desc: 'Zero-gravity explorer' },
     { id: 'fire-drake', name: 'Ignis Drake', desc: 'Fiery and spirited' },
+    { id: 'ninja', name: 'Shinobi', desc: 'Swift and silent human' },
+    { id: 'wizard', name: 'Archmage', desc: 'Magical human companion' },
+    { id: 'cyber-punk', name: 'Cyber Dweller', desc: 'Neon future human' },
+    { id: 'minion-bob', name: 'Minion Blob', desc: 'Yellow and silly cartoon' },
+    { id: 'space-bean', name: 'Space Bean', desc: 'Kinda sus cartoon' },
+    { id: 'alien-dude', name: 'Alien Dude', desc: 'Out of this world funny alien' },
   ];
 
   const animations: CharacterAnimation[] = ['idle', 'walk', 'run', 'wave', 'dance', 'sleep', 'excited', 'talk'];
