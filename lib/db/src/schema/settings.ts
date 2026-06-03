@@ -12,7 +12,6 @@ export const settingsTable = pgTable("settings", {
   voiceEnabled: boolean("voice_enabled").notNull().default(true),
   selectedCharacterId: text("selected_character_id").notNull().default("jarvis-bot"),
   miniModeEnabled: boolean("mini_mode_enabled").notNull().default(false),
-  systemPrompt: text("system_prompt").default("You are JARVIS, an advanced AI assistant. You are helpful, precise, and slightly formal — like Tony Stark's AI. Keep responses concise unless detail is requested."),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

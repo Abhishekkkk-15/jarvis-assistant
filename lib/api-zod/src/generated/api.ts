@@ -62,7 +62,7 @@ export const GetSettingsResponse = zod.object({
   "voiceEnabled": zod.boolean(),
   "selectedCharacterId": zod.string(),
   "miniModeEnabled": zod.boolean(),
-  "systemPrompt": zod.string().nullish()
+
 })
 
 
@@ -78,7 +78,7 @@ export const UpdateSettingsBody = zod.object({
   "voiceEnabled": zod.boolean().nullish(),
   "selectedCharacterId": zod.string().nullish(),
   "miniModeEnabled": zod.boolean().nullish(),
-  "systemPrompt": zod.string().nullish()
+
 })
 
 export const UpdateSettingsResponse = zod.object({
@@ -91,7 +91,7 @@ export const UpdateSettingsResponse = zod.object({
   "voiceEnabled": zod.boolean(),
   "selectedCharacterId": zod.string(),
   "miniModeEnabled": zod.boolean(),
-  "systemPrompt": zod.string().nullish()
+
 })
 
 

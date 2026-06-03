@@ -1,0 +1,106 @@
+@keyframes char-idle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes char-walk-body {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-2px) rotate(2deg); }
+  75% { transform: translateY(-2px) rotate(-2deg); }
+}
+
+@keyframes char-walk-limb-l {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(15deg); }
+  75% { transform: rotate(-15deg); }
+}
+
+@keyframes char-walk-limb-r {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-15deg); }
+  75% { transform: rotate(15deg); }
+}
+
+@keyframes char-run-body {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-5px) rotate(5deg); }
+  75% { transform: translateY(-5px) rotate(-5deg); }
+}
+
+@keyframes char-run-limb-l {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(35deg); }
+  75% { transform: rotate(-35deg); }
+}
+
+@keyframes char-run-limb-r {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-35deg); }
+  75% { transform: rotate(35deg); }
+}
+
+@keyframes char-wave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(45deg); }
+  50% { transform: rotate(15deg); }
+  75% { transform: rotate(45deg); }
+}
+
+@keyframes char-dance {
+  0%, 100% { transform: scale(1) translateY(0) rotate(0deg); }
+  20% { transform: scale(1.1, 0.9) translateY(2px) rotate(-10deg); }
+  40% { transform: scale(0.9, 1.1) translateY(-4px) rotate(10deg); }
+  60% { transform: scale(1.1, 0.9) translateY(2px) rotate(-10deg); }
+  80% { transform: scale(0.9, 1.1) translateY(-4px) rotate(10deg); }
+}
+
+@keyframes char-sleep {
+  0%, 100% { transform: scale(1, 1) translateY(0); }
+  50% { transform: scale(1.05, 0.95) translateY(2px); }
+}
+
+@keyframes char-sleep-zzz {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  50% { opacity: 1; transform: translateY(-10px) scale(1); }
+  100% { opacity: 0; transform: translateY(-20px) scale(1.2); }
+}
+
+@keyframes char-excited {
+  0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 2px rgba(0, 255, 255, 0.5)); }
+  50% { transform: translateY(-8px) scale(1.05); filter: drop-shadow(0 0 10px rgba(0, 255, 255, 1)); }
+}
+
+@keyframes char-talk {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.02, 0.98); }
+  50% { transform: scale(0.98, 1.02); }
+  75% { transform: scale(1.02, 0.98); }
+}
+
+/* Base class assignments */
+.anim-idle { animation: char-idle 2s ease-in-out infinite; }
+.anim-walk .body { animation: char-walk-body 0.8s linear infinite; }
+.anim-walk .limb-l { animation: char-walk-limb-l 0.8s linear infinite; transform-origin: top center; }
+.anim-walk .limb-r { animation: char-walk-limb-r 0.8s linear infinite; transform-origin: top center; }
+.anim-run .body { animation: char-run-body 0.4s linear infinite; }
+.anim-run .limb-l { animation: char-run-limb-l 0.4s linear infinite; transform-origin: top center; }
+.anim-run .limb-r { animation: char-run-limb-r 0.4s linear infinite; transform-origin: top center; }
+.anim-wave .arm-wave { animation: char-wave 1s ease-in-out infinite; transform-origin: bottom center; }
+.anim-dance { animation: char-dance 1.2s ease-in-out infinite; }
+.anim-sleep .body { animation: char-sleep 3s ease-in-out infinite; }
+.anim-excited { animation: char-excited 0.6s ease-in-out infinite; }
+.anim-talk { animation: char-talk 0.3s ease-in-out infinite; }
+
+.zzz-particles {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  color: #fff;
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 14px;
+  pointer-events: none;
+}
+.zzz-1 { animation: char-sleep-zzz 2s infinite linear; animation-delay: 0s; }
+.zzz-2 { animation: char-sleep-zzz 2s infinite linear; animation-delay: 0.6s; right: -20px; top: -15px; }
+.zzz-3 { animation: char-sleep-zzz 2s infinite linear; animation-delay: 1.2s; right: -5px; top: -20px; }

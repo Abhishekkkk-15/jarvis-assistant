@@ -17,5 +17,5 @@ export interface Settings {
   selectedCharacterId: string;
   miniModeEnabled: boolean;
   /** @nullable */
-  systemPrompt?: string | null;
+
 }

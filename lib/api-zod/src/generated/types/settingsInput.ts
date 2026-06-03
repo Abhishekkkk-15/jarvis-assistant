@@ -24,5 +24,5 @@ export interface SettingsInput {
   /** @nullable */
   miniModeEnabled?: boolean | null;
   /** @nullable */
-  systemPrompt?: string | null;
+
 }
