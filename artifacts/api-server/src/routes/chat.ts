@@ -82,13 +82,29 @@ const tools = [
   }),
   new DynamicStructuredTool({
     name: "open_app",
-    description: "Opens an application or file on the Windows operating system.",
+    description: "Opens an application on Windows. IMPORTANT: You must use the executable name for common apps. For example, for VS Code use 'code', for Chrome use 'chrome', for Edge use 'msedge', for Word use 'winword', for Excel use 'excel'.",
     schema: z.object({ app_name: z.string() }),
     func: async ({ app_name }: { app_name: string }) => {
+      const aliasMap: Record<string, string> = {
+        "vscode": "code",
+        "vs code": "code",
+        "visual studio code": "code",
+        "google chrome": "chrome",
+        "edge": "msedge",
+        "microsoft edge": "msedge",
+        "word": "winword",
+        "microsoft word": "winword",
+        "excel": "excel",
+        "microsoft excel": "excel",
+        "powerpoint": "powerpnt"
+      };
+      const normalized = app_name.toLowerCase().trim();
+      const target = aliasMap[normalized] || app_name;
+
       return new Promise((resolve) => {
-        child_process.exec(`start "" "${app_name}"`, (err) => {
+        child_process.exec(`start "" "${target}"`, (err) => {
           if (err) resolve(`Failed to open app: ${err.message}`);
-          else resolve(`App ${app_name} opened successfully.`);
+          else resolve(`App ${target} opened successfully.`);
         });
       });
     },
@@ -322,8 +338,42 @@ Once you have successfully called a tool (e.g. open_app) and received a success 
       // Fallback if tool execution or LLM fails
       req.log.error({ err }, "Agentic loop failed, falling back to simple LLM call");
       try {
-        const fallbackResult = await llm.invoke(historyMessages);
-        agentResponse = String(fallbackResult.content);
+        let handledTool = false;
+        
+        // Groq sometimes hallucinates `<function=...>` syntax which throws an error
+        const errString = typeof err?.error?.error?.failed_generation === "string" 
+          ? err.error.error.failed_generation 
+          : JSON.stringify(err, Object.getOwnPropertyNames(err));
+          
+        const functionMatch = errString.match(/<function=(\w+)\s+(.*?)\s*<\/function>/);
+        
+        if (functionMatch) {
+          const toolName = functionMatch[1];
+          let toolArgsStr = functionMatch[2];
+          if (toolArgsStr.includes('\\"')) {
+            toolArgsStr = toolArgsStr.replace(/\\"/g, '"');
+          }
+          
+          let toolArgs = {};
+          try { toolArgs = JSON.parse(toolArgsStr); } catch(e) {}
+          
+          const tool = tools.find(t => t.name === toolName);
+          if (tool) {
+            toolsUsed.push(toolName);
+            const result = await tool.invoke(toolArgs);
+            historyMessages.push(new AIMessage(`Used tool ${toolName} with args: ${JSON.stringify(toolArgs)}`));
+            historyMessages.push(new HumanMessage(`Tool ${toolName} returned:\n${result}\nNow provide the final conversational answer.`));
+            
+            const finalResult = await llm.invoke(historyMessages);
+            agentResponse = String(finalResult.content);
+            handledTool = true;
+          }
+        }
+        
+        if (!handledTool) {
+          const fallbackResult = await llm.invoke(historyMessages);
+          agentResponse = String(fallbackResult.content);
+        }
       } catch (fallbackErr) {
         agentResponse = "I'm sorry, I encountered a service error while processing your request.";
       }
