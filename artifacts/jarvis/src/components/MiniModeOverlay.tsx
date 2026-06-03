@@ -56,6 +56,8 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [replyBubble, setReplyBubble] = useState('');
   const [showRestoreHint, setShowRestoreHint] = useState(false);
   
+  const [isDragHovering, setIsDragHovering] = useState(false);
+  
   const dragRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number } | null>(null);
   const hasDragged = useRef(false);
   const [, setLocation] = useLocation();
@@ -327,6 +329,66 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     setShowContextMenu(true);
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragHovering) setIsDragHovering(true);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragHovering(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragHovering(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragHovering(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    // Check if it's likely a text/code file
+    // Some files have empty type but are text (e.g. .md, .ts)
+    // We'll just try to read it as text. If it fails or is massive, we can handle it.
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      setAnimation('confused');
+      setReplyBubble("Whoa, that file is too big for me to eat right now!");
+      const timer = setTimeout(() => setReplyBubble(''), 4000);
+      return;
+    }
+
+    if (file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/')) {
+      setAnimation('confused');
+      setReplyBubble("I can't read media files yet! Try dropping a text or code file on me.");
+      const timer = setTimeout(() => setReplyBubble(''), 4000);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        setAnimation('happy');
+        const message = `I just dropped a file named \`${file.name}\`. Here are the contents:\n\n\`\`\`\n${content}\n\`\`\``;
+        window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message } }));
+      } else {
+        setAnimation('confused');
+      }
+    };
+    reader.onerror = () => {
+      setAnimation('confused');
+    };
+    reader.readAsText(file);
+  };
+
   if (!enabled && !isMinimized) return null;
 
   const transitionStyle = isDragging || isPhysicsActive
@@ -347,6 +409,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         height: 120,
         transition: transitionStyle,
         cursor: isDragging ? 'grabbing' : 'grab',
+        filter: isDragHovering ? 'brightness(1.2) drop-shadow(0 0 15px rgba(255,255,255,0.8))' : 'none',
       }}
       onMouseDown={handleMouseDown}
       onContextMenu={handleContextMenu}
@@ -355,6 +418,10 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       }}
       onMouseEnter={() => { if (isMinimized && window.electronAPI) window.electronAPI.setIgnoreMouseEvents(false); }}
       onMouseLeave={() => { if (isMinimized && window.electronAPI) window.electronAPI.setIgnoreMouseEvents(true); }}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       onClick={() => {
         if (!hasDragged.current && !showContextMenu) {
           // Pet the character

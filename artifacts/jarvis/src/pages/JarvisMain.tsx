@@ -127,6 +127,17 @@ export const JarvisMain: React.FC = () => {
     });
   };
 
+  useEffect(() => {
+    const handleGlobalMessage = (e: any) => {
+      const { message } = e.detail;
+      if (message) {
+        handleSendMessage(message);
+      }
+    };
+    window.addEventListener('jarvis-send-message', handleGlobalMessage);
+    return () => window.removeEventListener('jarvis-send-message', handleGlobalMessage);
+  }, [activeConversationId, settings]);
+
   const speak = (text: string) => {
     if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
     setIsSpeaking(true);
