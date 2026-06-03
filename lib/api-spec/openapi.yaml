@@ -1,0 +1,468 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: JARVIS AI Assistant API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: chat
+    description: AI chat completions
+  - name: transcribe
+    description: Speech-to-text transcription
+  - name: settings
+    description: User settings and API key management
+  - name: conversations
+    description: Conversation history management
+  - name: commands
+    description: System command execution
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /chat:
+    post:
+      operationId: sendChat
+      tags: [chat]
+      summary: Send a message to the AI assistant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatInput"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: AI service error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /transcribe:
+    post:
+      operationId: transcribeAudio
+      tags: [transcribe]
+      summary: Transcribe audio to text via Groq Whisper (base64 encoded)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AudioInput"
+      responses:
+        "200":
+          description: Transcription result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscribeResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get current user settings (API keys masked)
+      responses:
+        "200":
+          description: Current settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    put:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update user settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsInput"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [conversations]
+      summary: List all conversations
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+    post:
+      operationId: createConversation
+      tags: [conversations]
+      summary: Create a new conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversationInput"
+      responses:
+        "201":
+          description: Created conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{id}:
+    get:
+      operationId: getConversation
+      tags: [conversations]
+      summary: Get a conversation with its messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+    delete:
+      operationId: deleteConversation
+      tags: [conversations]
+      summary: Delete a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /commands/execute:
+    post:
+      operationId: executeCommand
+      tags: [commands]
+      summary: Execute a parsed voice command on the system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommandInput"
+      responses:
+        "200":
+          description: Command execution result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommandResult"
+
+  /commands/suggestions:
+    get:
+      operationId: getCommandSuggestions
+      tags: [commands]
+      summary: Get available command categories and examples
+      responses:
+        "200":
+          description: Command suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CommandCategory"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [chat]
+      summary: Get usage statistics for the dashboard
+      responses:
+        "200":
+          description: Usage stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    AudioInput:
+      type: object
+      required: [audioBase64, mimeType]
+      properties:
+        audioBase64:
+          type: string
+          description: Base64-encoded audio data
+        mimeType:
+          type: string
+          description: "audio/webm, audio/wav, audio/mp4, etc."
+
+    ChatInput:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        conversationId:
+          type: ["integer", "null"]
+        model:
+          type: ["string", "null"]
+        provider:
+          type: ["string", "null"]
+          description: "groq | nvidia"
+
+    ChatResponse:
+      type: object
+      required: [reply, conversationId, messageId]
+      properties:
+        reply:
+          type: string
+        conversationId:
+          type: integer
+        messageId:
+          type: integer
+        model:
+          type: ["string", "null"]
+        tokensUsed:
+          type: ["integer", "null"]
+
+    TranscribeResponse:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+        confidence:
+          type: ["number", "null"]
+
+    Settings:
+      type: object
+      required: [id, selectedModel, selectedProvider, wakeWord, voiceEnabled, selectedCharacterId, miniModeEnabled]
+      properties:
+        id:
+          type: integer
+        groqApiKeySet:
+          type: boolean
+        nvidiaApiKeySet:
+          type: boolean
+        selectedModel:
+          type: string
+        selectedProvider:
+          type: string
+        wakeWord:
+          type: string
+        voiceEnabled:
+          type: boolean
+        selectedCharacterId:
+          type: string
+        miniModeEnabled:
+          type: boolean
+        systemPrompt:
+          type: ["string", "null"]
+
+    SettingsInput:
+      type: object
+      properties:
+        groqApiKey:
+          type: ["string", "null"]
+        nvidiaApiKey:
+          type: ["string", "null"]
+        selectedModel:
+          type: ["string", "null"]
+        selectedProvider:
+          type: ["string", "null"]
+        wakeWord:
+          type: ["string", "null"]
+        voiceEnabled:
+          type: ["boolean", "null"]
+        selectedCharacterId:
+          type: ["string", "null"]
+        miniModeEnabled:
+          type: ["boolean", "null"]
+        systemPrompt:
+          type: ["string", "null"]
+
+    Message:
+      type: object
+      required: [id, role, content, createdAt, conversationId]
+      properties:
+        id:
+          type: integer
+        role:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        conversationId:
+          type: integer
+        model:
+          type: ["string", "null"]
+
+    Conversation:
+      type: object
+      required: [id, title, createdAt, updatedAt, messageCount]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        messageCount:
+          type: integer
+
+    ConversationInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+
+    ConversationDetail:
+      type: object
+      required: [id, title, createdAt, updatedAt, messages]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+
+    CommandInput:
+      type: object
+      required: [type, payload]
+      properties:
+        type:
+          type: string
+          description: "open_app | search_web | set_reminder | get_time | get_weather | clipboard | screenshot | custom"
+        payload:
+          type: object
+          additionalProperties: true
+
+    CommandResult:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: ["object", "null"]
+          additionalProperties: true
+
+    CommandCategory:
+      type: object
+      required: [name, description, examples]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        examples:
+          type: array
+          items:
+            type: string
+
+    Stats:
+      type: object
+      required: [totalConversations, totalMessages, todayMessages, topCommands]
+      properties:
+        totalConversations:
+          type: integer
+        totalMessages:
+          type: integer
+        todayMessages:
+          type: integer
+        topCommands:
+          type: array
+          items:
+            type: object
+            required: [command, count]
+            properties:
+              command:
+                type: string
+              count:
+                type: integer
