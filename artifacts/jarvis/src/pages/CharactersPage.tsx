@@ -33,6 +33,14 @@ export const CharactersPage: React.FC = () => {
     { id: 'iron-hero', name: 'Iron Hero', desc: 'Armored flying genius' },
     { id: 'electric-mouse', name: 'Electric Mouse', desc: 'Yellow shocking friend' },
     { id: 'dark-knight', name: 'Dark Knight', desc: 'Brooding vigilante' },
+    { id: 'ninja-turtle', name: 'Ninja Turtle', desc: 'Hero in a half-shell' },
+    { id: 'pirate-captain', name: 'Pirate Captain', desc: 'Swashbuckling sailor' },
+    { id: 'zombie-guy', name: 'Zombie Guy', desc: 'Brain-eating friend' },
+    { id: 'cyber-bot', name: 'Cyber Bot', desc: 'Rolling futuristic robot' },
+    { id: 'vampire-lord', name: 'Vampire Lord', desc: 'Creature of the night' },
+    { id: 'ghost-boo', name: 'Ghost Boo', desc: 'Spooky floating specter' },
+    { id: 'samurai-warrior', name: 'Samurai', desc: 'Honorable warrior' },
+    { id: 'astronaut', name: 'Astronaut', desc: 'Zero-G space explorer' },
   ];
 
   const animations: CharacterAnimation[] = ['idle', 'walk', 'run', 'wave', 'dance', 'sleep', 'excited', 'talk'];
