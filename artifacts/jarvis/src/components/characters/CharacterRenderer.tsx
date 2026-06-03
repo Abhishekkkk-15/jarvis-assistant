@@ -1,7 +1,7 @@
 import React from 'react';
 import './animations.css';
 
-export type CharacterAnimation = 'idle' | 'walk' | 'run' | 'wave' | 'dance' | 'sleep' | 'excited' | 'talk';
+export type CharacterAnimation = 'idle' | 'walk' | 'run' | 'wave' | 'dance' | 'sleep' | 'excited' | 'talk' | 'happy' | 'sad' | 'angry' | 'confused';
 
 export interface CharacterProps {
   animation: CharacterAnimation;
@@ -31,6 +31,9 @@ const BaseCharacter: React.FC<{
           <div className="absolute zzz-3">Z</div>
         </div>
       )}
+      {animation === 'confused' && (
+        <div className="q-mark">?</div>
+      )}
       {children}
     </div>
   );
@@ -46,8 +49,27 @@ export const JarvisBot: React.FC<CharacterProps> = ({ animation = 'idle', size =
         {/* Head */}
         <rect x="35" y="20" width="30" height="25" rx="5" fill="#1a1a2e" stroke="#0ff" strokeWidth="2" />
         {/* Eyes */}
-        <rect x="40" y="28" width="8" height="4" fill="#0ff" className={animation === 'sleep' ? 'opacity-20' : ''} />
-        <rect x="52" y="28" width="8" height="4" fill="#0ff" className={animation === 'sleep' ? 'opacity-20' : ''} />
+        {(animation === 'happy' || animation === 'excited') ? (
+          <g>
+            <path d="M 38 30 Q 42 26 46 30" fill="none" stroke="#0ff" strokeWidth="3" strokeLinecap="round" />
+            <path d="M 50 30 Q 54 26 58 30" fill="none" stroke="#0ff" strokeWidth="3" strokeLinecap="round" />
+          </g>
+        ) : animation === 'sad' ? (
+          <g>
+            <path d="M 38 28 Q 42 26 46 30" fill="none" stroke="#0ff" strokeWidth="3" strokeLinecap="round" />
+            <path d="M 50 30 Q 54 26 58 28" fill="none" stroke="#0ff" strokeWidth="3" strokeLinecap="round" />
+          </g>
+        ) : animation === 'angry' ? (
+          <g>
+            <path d="M 38 28 L 46 32" stroke="#f00" strokeWidth="3" strokeLinecap="round" />
+            <path d="M 50 32 L 58 28" stroke="#f00" strokeWidth="3" strokeLinecap="round" />
+          </g>
+        ) : (
+          <g>
+            <rect x="40" y="28" width="8" height="4" fill="#0ff" className={animation === 'sleep' ? 'opacity-20' : ''} />
+            <rect x="52" y="28" width="8" height="4" fill="#0ff" className={animation === 'sleep' ? 'opacity-20' : ''} />
+          </g>
+        )}
         {/* Body */}
         <rect x="30" y="45" width="40" height="35" rx="5" fill="#1a1a2e" stroke="#0ff" strokeWidth="2" />
         {/* Chest Core */}
@@ -208,10 +230,31 @@ export const Ninja: React.FC<CharacterProps> = ({ animation = 'idle', size = 80,
         <rect x="31" y="18" width="38" height="6" fill="#c0392b" />
         <path d="M 69 21 L 80 15 L 75 25 Z" fill="#c0392b" className="limb-r" />
         {/* Eyes */}
-        <circle cx="43" cy="34" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-        <circle cx="57" cy="34" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-        {animation === 'sleep' && (
-          <g><line x1="41" y1="35" x2="45" y2="35" stroke="#000" strokeWidth="2" /><line x1="55" y1="35" x2="59" y2="35" stroke="#000" strokeWidth="2" /></g>
+        {(animation === 'happy' || animation === 'excited') ? (
+          <g>
+            <path d="M 40 34 Q 43 31 46 34" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            <path d="M 54 34 Q 57 31 60 34" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+          </g>
+        ) : animation === 'sad' ? (
+          <g>
+            <path d="M 41 33 Q 43 31 45 35" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            <path d="M 55 35 Q 57 31 59 33" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+          </g>
+        ) : animation === 'angry' ? (
+          <g>
+            <path d="M 41 33 L 45 35" stroke="#f00" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="43" cy="34" r="2" fill="#f00" />
+            <path d="M 55 35 L 59 33" stroke="#f00" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="57" cy="34" r="2" fill="#f00" />
+          </g>
+        ) : (
+          <g>
+            <circle cx="43" cy="34" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+            <circle cx="57" cy="34" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+            {animation === 'sleep' && (
+              <g><line x1="41" y1="35" x2="45" y2="35" stroke="#000" strokeWidth="2" /><line x1="55" y1="35" x2="59" y2="35" stroke="#000" strokeWidth="2" /></g>
+            )}
+          </g>
         )}
       </svg>
     </BaseCharacter>
@@ -241,10 +284,31 @@ export const Wizard: React.FC<CharacterProps> = ({ animation = 'idle', size = 80
         <path d="M 20 30 L 80 30 L 50 0 Z" fill="#2c3e50" />
         <ellipse cx="50" cy="30" rx="35" ry="5" fill="#34495e" />
         {/* Eyes */}
-        <circle cx="44" cy="32" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-        <circle cx="56" cy="32" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-        {animation === 'sleep' && (
-          <g><line x1="42" y1="33" x2="46" y2="33" stroke="#000" strokeWidth="2" /><line x1="54" y1="33" x2="58" y2="33" stroke="#000" strokeWidth="2" /></g>
+        {(animation === 'happy' || animation === 'excited') ? (
+          <g>
+            <path d="M 41 32 Q 44 29 47 32" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            <path d="M 53 32 Q 56 29 59 32" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+          </g>
+        ) : animation === 'sad' ? (
+          <g>
+            <path d="M 42 31 Q 44 29 46 33" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            <path d="M 54 33 Q 56 29 58 31" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+          </g>
+        ) : animation === 'angry' ? (
+          <g>
+            <path d="M 42 31 L 46 33" stroke="#f00" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="44" cy="32" r="2" fill="#f00" />
+            <path d="M 54 33 L 58 31" stroke="#f00" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="56" cy="32" r="2" fill="#f00" />
+          </g>
+        ) : (
+          <g>
+            <circle cx="44" cy="32" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+            <circle cx="56" cy="32" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+            {animation === 'sleep' && (
+              <g><line x1="42" y1="33" x2="46" y2="33" stroke="#000" strokeWidth="2" /><line x1="54" y1="33" x2="58" y2="33" stroke="#000" strokeWidth="2" /></g>
+            )}
+          </g>
         )}
       </svg>
     </BaseCharacter>
@@ -271,9 +335,22 @@ export const CyberPunk: React.FC<CharacterProps> = ({ animation = 'idle', size =
         <path d="M 35 15 L 45 5 L 55 15 Z" fill="#9b59b6" />
         {/* Cyber Glasses */}
         <rect x="32" y="22" width="36" height="8" rx="2" fill="#000" />
-        <rect x="34" y="24" width="32" height="4" fill="#0ff" className={animation === 'excited' ? 'animate-pulse' : ''} />
+        <rect x="34" y="24" width="32" height="4" fill={
+          animation === 'angry' ? '#f00' :
+          animation === 'sad' ? '#3498db' :
+          animation === 'happy' ? '#f1c40f' :
+          '#0ff'
+        } className={(animation === 'excited' || animation === 'happy') ? 'animate-pulse' : ''} />
         {/* Mouth */}
-        <path d="M 45 35 Q 50 38 55 35" fill="none" stroke="#000" strokeWidth="2" />
+        {animation === 'happy' || animation === 'excited' ? (
+          <path d="M 45 35 Q 50 40 55 35" fill="none" stroke="#000" strokeWidth="2" />
+        ) : animation === 'sad' ? (
+          <path d="M 45 38 Q 50 33 55 38" fill="none" stroke="#000" strokeWidth="2" />
+        ) : animation === 'angry' ? (
+          <path d="M 45 37 L 55 37" stroke="#000" strokeWidth="2" />
+        ) : (
+          <path d="M 45 35 Q 50 38 55 35" fill="none" stroke="#000" strokeWidth="2" />
+        )}
         {animation === 'sleep' && (
           <rect x="34" y="24" width="32" height="4" fill="#333" /> // dim glasses
         )}

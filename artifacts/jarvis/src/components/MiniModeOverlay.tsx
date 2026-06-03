@@ -6,6 +6,30 @@ import { useLocation } from 'wouter';
 import { Maximize2 } from 'lucide-react';
 import { useAudioReactivity } from '@/hooks/useAudioReactivity';
 
+const TypewriterBubble: React.FC<{ text: string }> = ({ text }) => {
+  const [displayedText, setDisplayedText] = useState('');
+
+  useEffect(() => {
+    setDisplayedText('');
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayedText(text.substring(0, i + 1));
+      i++;
+      if (i >= text.length) clearInterval(interval);
+    }, 30); // typing speed
+
+    return () => clearInterval(interval);
+  }, [text]);
+
+  return (
+    <div className="absolute bottom-[130px] left-1/2 -translate-x-1/2 bg-white text-slate-800 px-4 py-2.5 rounded-2xl border border-slate-200 shadow-lg text-sm max-w-[280px] min-w-[60px] whitespace-pre-wrap break-words z-10 transition-all duration-300 origin-bottom">
+      {displayedText}
+      <span className="animate-pulse ml-0.5">|</span>
+      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-solid border-t-white border-t-8 border-x-transparent border-x-8 border-b-0" />
+    </div>
+  );
+};
+
 interface MiniModeOverlayProps {
   isMinimized: boolean;
   onOpen: () => void;
@@ -53,6 +77,18 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
   const CharacterComponent = charactersMap[charId] || charactersMap['jarvis-bot'];
 
+  // Speech bubble
+  useEffect(() => {
+    if (lastReply) {
+      setReplyBubble(lastReply);
+      // Stay visible longer for long messages, min 4s, max 10s
+      const readTime = Math.min(10000, Math.max(4000, lastReply.length * 60));
+      const timer = setTimeout(() => setReplyBubble(''), readTime);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [lastReply]);
+
   // Show restore hint briefly when minimized
   useEffect(() => {
     if (isMinimized) {
@@ -63,14 +99,13 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     return undefined;
   }, [isMinimized]);
 
-  // Speech bubble
+  // Handle Confused state from JARVIS replies
   useEffect(() => {
-    if (lastReply) {
-      setReplyBubble(lastReply);
-      const timer = setTimeout(() => setReplyBubble(''), 4000);
+    if (lastReply && lastReply.includes('?')) {
+      setAnimation('confused');
+      const timer = setTimeout(() => setAnimation('idle'), 3000);
       return () => clearTimeout(timer);
     }
-    return undefined;
   }, [lastReply]);
 
   // State animations
@@ -78,7 +113,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     if (isListening) setAnimation('excited');
     else if (isSpeaking) setAnimation('talk');
     else if (isDancingToMusic && !isDragging && !isPhysicsActive) setAnimation('dance');
-    else if (!isDragging && !isPhysicsActive) setAnimation('idle');
+    else if (!isDragging && !isPhysicsActive && animation !== 'happy' && animation !== 'angry' && animation !== 'confused') setAnimation('idle');
   }, [isListening, isSpeaking, isDancingToMusic, isDragging, isPhysicsActive]);
 
   // Cursor tracking listener
@@ -252,9 +287,15 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       setPosX(currentX);
       setPosY(currentY);
 
-      // Visual squash on impact
+      // Visual squash on impact & emotions
       if (hitFloor && Math.abs(velocity.current.y) > 3) {
         setSquash({ x: 1.2, y: 0.7 });
+        
+        // Angry if dropped very hard
+        if (Math.abs(velocity.current.y) > 15 || Math.abs(velocity.current.x) > 15) {
+          setAnimation('angry');
+        }
+        
         setTimeout(() => setSquash({ x: 1, y: 1 }), 150);
       } else if (!hitFloor && Math.abs(velocity.current.y) > 10) {
         // Stretch while falling fast
@@ -304,10 +345,17 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       }}
       onMouseDown={handleMouseDown}
       onContextMenu={handleContextMenu}
+      onDoubleClick={() => {
+        if (!showContextMenu && isMinimized) onOpen();
+      }}
       onMouseEnter={() => { if (isMinimized && window.electronAPI) window.electronAPI.setIgnoreMouseEvents(false); }}
       onMouseLeave={() => { if (isMinimized && window.electronAPI) window.electronAPI.setIgnoreMouseEvents(true); }}
       onClick={() => {
-        if (!hasDragged.current && !showContextMenu) onOpen();
+        if (!hasDragged.current && !showContextMenu) {
+          // Pet the character
+          setAnimation('happy');
+          setTimeout(() => setAnimation('idle'), 2000);
+        }
       }}
     >
       {isMinimized && showRestoreHint && (
@@ -317,10 +365,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       )}
 
       {replyBubble && (
-        <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-white text-slate-800 px-3 py-2 rounded-xl border border-slate-200 shadow-md text-xs max-w-[200px] truncate whitespace-nowrap z-10">
-          {replyBubble}
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-solid border-t-white border-t-8 border-x-transparent border-x-8 border-b-0" />
-        </div>
+        <TypewriterBubble text={replyBubble} />
       )}
 
       <div style={{ transform: `scale(${squash.x}, ${squash.y})`, transition: 'transform 0.15s ease-out', width: '100%', height: '100%' }}>
@@ -328,9 +373,16 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       </div>
 
       {isMinimized && !showContextMenu && (
-        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-sm pointer-events-none">
-          <Maximize2 size={11} className="text-white" />
-        </div>
+        <button 
+          className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary hover:bg-primary/90 transition-colors rounded-full flex items-center justify-center shadow-md cursor-pointer z-50"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen();
+          }}
+          title="Restore Application"
+        >
+          <Maximize2 size={12} className="text-white" />
+        </button>
       )}
 
       {showContextMenu && (

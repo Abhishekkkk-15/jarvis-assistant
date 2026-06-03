@@ -104,3 +104,51 @@
 .zzz-1 { animation: char-sleep-zzz 2s infinite linear; animation-delay: 0s; }
 .zzz-2 { animation: char-sleep-zzz 2s infinite linear; animation-delay: 0.6s; right: -20px; top: -15px; }
 .zzz-3 { animation: char-sleep-zzz 2s infinite linear; animation-delay: 1.2s; right: -5px; top: -20px; }
+
+/* Emotional states */
+@keyframes char-happy {
+  0%, 100% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-10px) scale(1.05, 0.95); }
+  50% { transform: translateY(0) scale(0.95, 1.05); }
+  75% { transform: translateY(-5px) scale(1.02, 0.98); }
+}
+
+@keyframes char-sad {
+  0%, 100% { transform: scale(1, 1) translateY(0); }
+  50% { transform: scale(1.05, 0.9) translateY(4px); }
+}
+
+@keyframes char-angry {
+  0%, 100% { transform: translateX(0); filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.5)); }
+  25% { transform: translateX(-3px); filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.8)); }
+  75% { transform: translateX(3px); filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.8)); }
+}
+
+@keyframes char-confused {
+  0%, 100% { transform: rotate(0deg) translateX(0); }
+  25% { transform: rotate(10deg) translateX(2px); }
+  75% { transform: rotate(-10deg) translateX(-2px); }
+}
+
+@keyframes char-confused-q {
+  0%, 100% { opacity: 0; transform: translateY(0) scale(0.5); }
+  20%, 80% { opacity: 1; transform: translateY(-15px) scale(1); }
+}
+
+.anim-happy { animation: char-happy 1s ease-in-out infinite; }
+.anim-sad { animation: char-sad 3s ease-in-out infinite; opacity: 0.8; }
+.anim-angry { animation: char-angry 0.2s linear infinite; }
+.anim-confused { animation: char-confused 2s ease-in-out infinite; }
+
+.q-mark {
+  position: absolute;
+  top: -20px;
+  right: -5px;
+  color: #f1c40f;
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 20px;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+  animation: char-confused-q 2s infinite;
+}
