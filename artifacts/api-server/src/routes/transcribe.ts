@@ -15,6 +15,7 @@ router.post("/transcribe", async (req, res) => {
     // Get Groq API key from settings
     const rows = await db.select().from(settingsTable).limit(1);
     const settings = rows[0];
+    console.log("settings : ", settings);
     if (!settings?.groqApiKey) {
       res.status(400).json({
         error: "Groq API key not configured. Please add it in Settings.",

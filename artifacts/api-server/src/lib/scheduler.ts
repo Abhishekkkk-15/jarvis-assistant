@@ -11,7 +11,11 @@ import WebSocket from "ws";
 // In-memory task registry
 const activeTasks = new Map<number, cron.ScheduledTask>();
 
-export function scheduleTaskInMemory(id: number, cronExpression: string, taskDescription: string) {
+export function scheduleTaskInMemory(
+  id: number,
+  cronExpression: string,
+  taskDescription: string,
+) {
   if (activeTasks.has(id)) {
     activeTasks.get(id)?.stop();
   }
@@ -35,31 +39,42 @@ export function scheduleTaskInMemory(id: number, cronExpression: string, taskDes
     if (provider === "groq" && !settings.groqApiKey && settings.nvidiaApiKey) {
       provider = "nvidia";
       isFallback = true;
-    } else if (provider === "nvidia" && !settings.nvidiaApiKey && settings.groqApiKey) {
+    } else if (
+      provider === "nvidia" &&
+      !settings.nvidiaApiKey &&
+      settings.groqApiKey
+    ) {
       provider = "groq";
       isFallback = true;
     }
 
-    const apiKey = provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
-
+    const apiKey =
+      provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
     if (!apiKey) {
-      console.error(`[Cron] Task ${id} failed: Missing API key for provider ${provider}`);
+      console.error(
+        `[Cron] Task ${id} failed: Missing API key for provider ${provider}`,
+      );
       return;
     }
 
-    const baseURL = provider === "nvidia"
-      ? "https://integrate.api.nvidia.com/v1"
-      : "https://api.groq.com/openai/v1";
+    const baseURL =
+      provider === "nvidia"
+        ? "https://integrate.api.nvidia.com/v1"
+        : "https://api.groq.com/openai/v1";
 
-    const modelName = (isFallback || !settings.selectedModel)
-      ? (provider === "nvidia" ? "meta/llama-3.3-70b-instruct" : "llama-3.3-70b-versatile")
-      : settings.selectedModel;
+    const modelName =
+      isFallback || !settings.selectedModel
+        ? provider === "nvidia"
+          ? "z-ai/glm-5.1"
+          : "llama-3.3-70b-versatile"
+        : settings.selectedModel;
 
+    console.log("apiKey : ", apiKey, " ", provider, "model : ", modelName);
     const llm = new ChatOpenAI({
       modelName: modelName,
       temperature: 0,
       apiKey: apiKey,
-      configuration: { baseURL: "https://integrate.api.nvidia.com/v1" },
+      configuration: { baseURL },
       maxTokens: 1024,
     });
 
@@ -69,27 +84,32 @@ export function scheduleTaskInMemory(id: number, cronExpression: string, taskDes
     const messages = [
       new HumanMessage({
         content: `[Scheduled Background Task Triggered]: ${taskDescription}`,
-        name: "System"
-      })
+        name: "System",
+      }),
     ];
 
     try {
-      const agentResult = await agent.invoke({ messages, next: "Orchestrator" }, { recursionLimit: 25 });
+      const agentResult = await agent.invoke(
+        { messages, next: "Orchestrator" },
+        { recursionLimit: 25 },
+      );
       const lastMessage = agentResult.messages[agentResult.messages.length - 1];
       let agentResponse = String(lastMessage.content);
 
-      agentResponse = agentResponse.replace(/\[Orchestrator\]:/g, '').trim();
+      agentResponse = agentResponse.replace(/\[Orchestrator\]:/g, "").trim();
 
       // Send the response to the frontend via WebSocket
       const wss = getWss();
       if (wss) {
         wss.clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: "system_notification",
-              title: "Background Task",
-              message: agentResponse,
-            }));
+            client.send(
+              JSON.stringify({
+                type: "system_notification",
+                title: "Background Task",
+                message: agentResponse,
+              }),
+            );
           }
         });
       }

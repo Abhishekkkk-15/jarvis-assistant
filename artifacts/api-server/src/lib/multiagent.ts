@@ -1,23 +1,77 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { DynamicStructuredTool } from "@langchain/core/tools";
-import { StateGraph, START, END, MessagesAnnotation, Annotation, messagesStateReducer } from "@langchain/langgraph";
+import {
+  StateGraph,
+  START,
+  END,
+  MessagesAnnotation,
+  Annotation,
+  messagesStateReducer,
+} from "@langchain/langgraph";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
-import { SystemMessage, HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
+import {
+  SystemMessage,
+  HumanMessage,
+  AIMessage,
+  BaseMessage,
+} from "@langchain/core/messages";
 import { z } from "zod";
 
-export function createJarvisGraph(llm: ChatOpenAI, allTools: DynamicStructuredTool[]) {
+export function createJarvisGraph(
+  llm: ChatOpenAI,
+  allTools: DynamicStructuredTool[],
+) {
   // Partition tools by domain
-  const osTools = ["run_command", "read_file", "write_file", "list_dir", "create_directory", "delete_file", "delete_directory"];
-  const computerTools = ["get_screen_size", "get_cursor_position", "mouse_control", "keyboard_control", "screen_capture", "window_management", "clipboard", "open_app", "open_website", "find_and_click_text"];
-  const browserToolsList = ["browser_navigate", "browser_click", "browser_type", "browser_extract", "browser_close"];
+  const osTools = [
+    "run_command",
+    "read_file",
+    "write_file",
+    "list_dir",
+    "create_directory",
+    "delete_file",
+    "delete_directory",
+  ];
+  const computerTools = [
+    "get_screen_size",
+    "get_cursor_position",
+    "mouse_control",
+    "keyboard_control",
+    "screen_capture",
+    "window_management",
+    "clipboard",
+    "open_app",
+    "open_website",
+    "find_and_click_text",
+  ];
+  const browserToolsList = [
+    "browser_navigate",
+    "browser_click",
+    "browser_type",
+    "browser_extract",
+    "browser_close",
+  ];
 
-  const terminalToolsList = allTools.filter(t => osTools.includes(t.name));
-  const computerToolsList = allTools.filter(t => computerTools.includes(t.name));
-  const webAgentToolsList = allTools.filter(t => browserToolsList.includes(t.name));
+  const terminalToolsList = allTools.filter((t) => osTools.includes(t.name));
+  const computerToolsList = allTools.filter((t) =>
+    computerTools.includes(t.name),
+  );
+  const webAgentToolsList = allTools.filter((t) =>
+    browserToolsList.includes(t.name),
+  );
   // Orchestrator keeps the rest (memory, search, weather, etc.)
-  const orchestratorToolsList = allTools.filter(t => !osTools.includes(t.name) && !computerTools.includes(t.name) && !browserToolsList.includes(t.name));
+  const orchestratorToolsList = allTools.filter(
+    (t) =>
+      !osTools.includes(t.name) &&
+      !computerTools.includes(t.name) &&
+      !browserToolsList.includes(t.name),
+  );
 
-  const members = ["Planner", "TerminalAgent", "ComputerAgent", "WebAgent"] as const;
+  const members = [
+    "Planner",
+    "TerminalAgent",
+    "ComputerAgent",
+    "WebAgent",
+  ] as const;
 
   // --- Graph State ---
   const GraphState = Annotation.Root({
@@ -25,10 +79,13 @@ export function createJarvisGraph(llm: ChatOpenAI, allTools: DynamicStructuredTo
       reducer: messagesStateReducer,
       default: () => [],
     }),
-    next: Annotation<string>({
-      reducer: (x, y) => y ?? x,
-      default: () => "FINISH",
-    }),
+
+    objective: Annotation<string>(),
+    plan: Annotation<string[]>(),
+    currentStep: Annotation<number>(),
+    lastResult: Annotation<any>(),
+    verified: Annotation<boolean>(),
+    next: Annotation<string>(),
   });
 
   // --- Supervisor (Orchestrator) ---
@@ -52,7 +109,7 @@ INSTRUCTIONS:
 6. If you can handle it directly (e.g. conversational, memory retrieval, simple questions), do so.
 7. When the sub-agents finish, review their work. If the user's task is fully complete, output FINISH to end the loop and give your final answer.
 8. You control your physical avatar via animation tags: [anim: <animation>] (e.g. [anim: excited] Hello!).
-9. DRAWING: If the user asks you to "draw" something on their screen, output a standard SVG path string inside a draw tag: [draw: <svg_path>]. 
+9. DRAWING: If the user asks you to "draw" something on their screen, output a standard SVG path string inside a draw tag: [draw: <svg_path>].
    Example: [draw: M 100 100 L 200 200 C 250 150 300 200 200 300 Z]
    Keep the paths within a reasonable coordinate space (e.g. 0 to 500). The avatar will physically move along this path and draw it!
 `;
@@ -61,10 +118,21 @@ INSTRUCTIONS:
   // We don't want it to run indefinitely, so we constrain it to just outputting the next agent or FINISH.
   const routeTool = new DynamicStructuredTool({
     name: "route_action",
-    description: "Decide whether to delegate to a sub-agent or FINISH if the user's request is completely fulfilled.",
+    description:
+      "Decide whether to delegate to a sub-agent or FINISH if the user's request is completely fulfilled.",
     schema: z.object({
-      next: z.enum(["FINISH", "Planner", "TerminalAgent", "ComputerAgent", "WebAgent"]),
-      instructions: z.string().describe("Clear instructions or summary for the next agent or the final answer if FINISH."),
+      next: z.enum([
+        "FINISH",
+        "Planner",
+        "TerminalAgent",
+        "ComputerAgent",
+        "WebAgent",
+      ]),
+      instructions: z
+        .string()
+        .describe(
+          "Clear instructions or summary for the next agent or the final answer if FINISH.",
+        ),
     }),
     func: async () => "routed", // We will extract the args instead of executing
   });
@@ -72,43 +140,44 @@ INSTRUCTIONS:
   const orchestratorAgent = createReactAgent({
     llm,
     tools: [...orchestratorToolsList, routeTool],
-    messageModifier: supervisorPrompt
+    messageModifier: supervisorPrompt,
   });
 
   const supervisorNode = async (state: typeof GraphState.State) => {
-    const messages = state.messages;
-
-    const result = await orchestratorAgent.invoke({ messages });
-    const lastMessage = result.messages[result.messages.length - 1] as AIMessage;
-
-    // Check if it used the route_action tool
-    if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
-      const routeCall = lastMessage.tool_calls.find(tc => tc.name === "route_action");
-      if (routeCall) {
-        const nextTarget = routeCall.args.next;
-        const instructions = routeCall.args.instructions;
-
-        // We strip the tool call and replace it with a clean message so the sub-agent sees instructions
-        return {
-          messages: [new AIMessage({ content: `[Orchestrator]: ${instructions}`, name: "Orchestrator" })],
-          next: nextTarget,
-        };
-      }
+    if (state.plan.length == 0) {
+      return {
+        next: "Planner",
+      };
     }
-
-    // If it didn't explicitly route, assume it finished and spoke to the user directly
+    if (state.currentStep >= state.plan.length) {
+      return {
+        next: "FINISH",
+      };
+    }
+    if (state.lastResult && !state.verified) {
+      return {
+        next: "Verifier",
+      };
+    }
+    if (state.verified) {
+      return {
+        currentStep: state.currentStep + 1,
+        verified: false,
+        lastResult: null,
+        next: "Executor",
+      };
+    }
     return {
-      messages: [new AIMessage({ content: String(lastMessage.content), name: "Orchestrator" })],
-      next: "FINISH",
+      next: "Executor",
     };
   };
 
   // --- Sub-Agents ---
-  const plannerPrompt = `You are the JARVIS Planner Agent. 
+  const plannerPrompt = `You are the JARVIS Planner Agent.
 Break down the complex request into a clear, step-by-step markdown plan for the other agents.
 Output the plan clearly and concisely, then stop.`;
 
-  const terminalPrompt = `You are the JARVIS Terminal Agent. 
+  const terminalPrompt = `You are the JARVIS Terminal Agent.
 You are an expert at CLI commands and file system management.
 Use your provided tools to execute the requested actions.
 When finished, summarize what you executed and the results.`;
@@ -129,10 +198,26 @@ You have tools to control a visible Puppeteer Chromium browser.
 - \`browser_click\` and \`browser_type\` to interact with forms.
 Execute your browsing actions autonomously and summarize your results.`;
 
-  const plannerAgent = createReactAgent({ llm, tools: [], messageModifier: plannerPrompt });
-  const terminalAgent = createReactAgent({ llm, tools: terminalToolsList, messageModifier: terminalPrompt });
-  const computerAgent = createReactAgent({ llm, tools: computerToolsList, messageModifier: computerPrompt });
-  const webAgent = createReactAgent({ llm, tools: webAgentToolsList, messageModifier: webPrompt });
+  const plannerAgent = createReactAgent({
+    llm,
+    tools: [],
+    messageModifier: plannerPrompt,
+  });
+  const terminalAgent = createReactAgent({
+    llm,
+    tools: terminalToolsList,
+    messageModifier: terminalPrompt,
+  });
+  const computerAgent = createReactAgent({
+    llm,
+    tools: computerToolsList,
+    messageModifier: computerPrompt,
+  });
+  const webAgent = createReactAgent({
+    llm,
+    tools: webAgentToolsList,
+    messageModifier: webPrompt,
+  });
 
   const createNode = (agentObj: any, name: string, prompt: string) => {
     return async (state: typeof GraphState.State) => {
@@ -141,24 +226,29 @@ Execute your browsing actions autonomously and summarize your results.`;
       const lastMessage = result.messages[result.messages.length - 1];
 
       return {
-        messages: [new AIMessage({ content: `[${name}]: ${lastMessage.content}`, name })],
+        messages: [
+          new AIMessage({ content: `[${name}]: ${lastMessage.content}`, name }),
+        ],
         next: "Orchestrator",
       };
     };
   };
 
   const plannerNode = createNode(plannerAgent, "Planner", plannerPrompt);
-  const terminalNode = createNode(terminalAgent, "TerminalAgent", terminalPrompt);
-  const computerNode = createNode(computerAgent, "ComputerAgent", computerPrompt);
+  const terminalNode = createNode(
+    terminalAgent,
+    "TerminalAgent",
+    terminalPrompt,
+  );
+  const computerNode = createNode(
+    computerAgent,
+    "ComputerAgent",
+    computerPrompt,
+  );
   const webNode = createNode(webAgent, "WebAgent", webPrompt);
 
   // --- Edge Router ---
-  const router = (state: typeof GraphState.State) => {
-    if (state.next === "FINISH") {
-      return END;
-    }
-    return state.next as any;
-  };
+  const router = (state: typeof GraphState.State) => state.next;
 
   // --- Build Graph ---
   const workflow = new StateGraph(GraphState)

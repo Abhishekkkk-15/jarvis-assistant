@@ -24,6 +24,7 @@ export const SettingsPage: React.FC = () => {
   const form = useForm({
     defaultValues: {
       nvidiaApiKey: '',
+      groqApiKey: '',
       wakeWord: 'jarvis',
       voiceEnabled: true,
 
@@ -34,6 +35,7 @@ export const SettingsPage: React.FC = () => {
     if (settings) {
       form.reset({
         nvidiaApiKey: '',
+        groqApiKey: '',
         wakeWord: settings.wakeWord || 'jarvis',
         voiceEnabled: settings.voiceEnabled ?? true,
 
@@ -44,11 +46,12 @@ export const SettingsPage: React.FC = () => {
   const onSubmit = (values: any) => {
     const payload = { ...values };
     if (!payload.nvidiaApiKey) delete payload.nvidiaApiKey;
+    if (!payload.groqApiKey) delete payload.groqApiKey;
     updateSettings.mutate({ data: payload }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
         toast({ title: "Settings saved" });
-        form.reset({ ...values, nvidiaApiKey: '' });
+        form.reset({ ...values, nvidiaApiKey: '', groqApiKey: '' });
       },
       onError: () => {
         toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
@@ -93,6 +96,25 @@ export const SettingsPage: React.FC = () => {
                       />
                     </FormControl>
                     <FormDescription className="text-xs">Used for LLaMA 3.1 & Nemotron models</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="groqApiKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Groq API Key</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder={settings?.groqApiKeySet ? "Already set — enter new key to update" : "Enter your Groq API key"}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">Used for ultra-fast inference (LPU)</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

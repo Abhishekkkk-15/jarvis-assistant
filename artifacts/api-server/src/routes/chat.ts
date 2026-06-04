@@ -247,19 +247,14 @@ router.post("/chat", async (req, res) => {
       isFallback = true;
     }
 
-    // const modelName = parsed.data.model || (!isFallback && settings.selectedModel) || (provider === "nvidia" ? "qwen/qwen3.5-122b-a10b" : "qwen/qwen3.5-122b-a10b");
-    // const modelName =
-    //   parsed.data.model ||
-    //   (!isFallback && settings.selectedModel) ||
-    //   (provider === "nvidia"
-    //     ? "meta/llama-3.3-70b-instruct"
-    //     : "llama-3.3-70b-versatile");
+    const modelName =
+      parsed.data.model ||
+      (!isFallback && settings.selectedModel) ||
+      (provider === "nvidia" ? "z-ai/glm-5.1" : "llama-3.3-70b-versatile");
 
-    const modelName = "mistralai/mistral-medium-3.5-128b";
-    console.log("modle name : ", modelName, " ", provider);
     const apiKey =
       provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
-
+    console.log("apiKey : ", apiKey, " ", provider, "model : ", modelName);
     if (!apiKey) {
       res.status(400).json({
         error: `No ${provider.toUpperCase()} API key configured. Please add your API key in Settings.`,
@@ -267,11 +262,10 @@ router.post("/chat", async (req, res) => {
       return;
     }
 
-    // const endpoint = provider === "nvidia"
-    //   ? "https://integrate.api.nvidia.com/v1"
-    //   : "https://api.groq.com/openai/v1";
-
-    const endpoint = "https://integrate.api.nvidia.com/v1";
+    const endpoint =
+      provider === "nvidia"
+        ? "https://integrate.api.nvidia.com/v1"
+        : "https://api.groq.com/openai/v1";
 
     // Setup LangChain Model
     const llm = new ChatOpenAI({
