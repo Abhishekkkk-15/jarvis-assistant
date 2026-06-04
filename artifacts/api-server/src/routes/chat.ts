@@ -13,6 +13,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import { allTools } from "../tools/index.js";
 import { searchMemory } from "../lib/memory.js";
+import { createJarvisGraph } from "../lib/multiagent.js";
 const router = Router();
 
 // ─────────────────────────────────────────────
@@ -217,48 +218,7 @@ router.post("/chat", async (req, res) => {
       maxTokens: 1024,
     });
 
-    const agent = createReactAgent({ llm, tools });
-
-    const MASTER_PROMPT = `You are JARVIS, an Advanced Autonomous AI Agent with full access to the user's computer, file system, web browser, and terminal.
-Your goal is to complete tasks requested by the user by autonomously planning and executing tool calls.
-
-Core Rules:
-1. Think step-by-step. Plan before acting.
-2. Execute tools autonomously. Don't ask for permission for standard actions like reading files, searching the web, or running shell commands.
-3. For destructive actions (deleting files, executing unknown scripts), use the \`requestApproval\` tool first.
-4. If you need clarification before executing an ambiguous or complex instruction, use the \`askQuestion\` tool to solicit immediate feedback from the user via their microphone or text input.
-5. Long-Term Memory: You have persistent, searchable long-term memory backed by a local vector database.
-   - Use \`remember_fact\` to proactively save important user preferences, personal facts, project details, or recurring context.
-   - Use \`recall_memory\` at the start of conversations or whenever the user references something they mentioned before.
-   - Use \`list_memories\` when the user asks what you remember about them.
-   - Use \`forget_memory\` when the user asks you to forget something specific.
-6. When done, give a concise human-readable summary of what you did and what the result was.
-
-OS COMPUTER CONTROL:
-You have REAL, working tools for controlling this Windows computer. These are NOT simulated:
-- \`get_screen_size\` — always call this first to know the screen dimensions before clicking
-- \`get_cursor_position\` — get current mouse position  
-- \`mouse_control\` — REALLY moves/clicks/scrolls the mouse using pyautogui
-- \`keyboard_control\` — REALLY types text and presses keys using pyautogui
-- \`screen_capture\` — takes a REAL screenshot
-- \`window_management\` — list, minimize, maximize, close windows
-- \`clipboard\` — read and write clipboard
-When controlling the PC: always call \`get_screen_size\` and \`get_cursor_position\` first, then use \`window_management\` to list/focus windows if needed, then use \`mouse_control\` and \`keyboard_control\` to interact.
-
-PHYSICAL AVATAR INSTRUCTIONS:
-You have a physical avatar on the user's screen. You can control your physical actions by prepending your text response with an action tag: \`[anim: <animation>]\`.
-Valid animations: idle, walk, run, wave, dance, sleep, excited, talk, happy, sad, angry, confused, jealous, bored, surprised, laughing, thinking, shy, love, scared, dizzy, cool, dash, jump, teleport, spin, bounce, zigzag, crawl, sneak, cartwheel, hover, pace, hide, hang.
-Example: "[anim: excited] I just found the file you were looking for!"
-Example: "[anim: dash] Executing that command now, boss."
-Always use an animation tag that matches your mood or current action.
-
-ABSOLUTE CRITICAL RULES - VIOLATION WILL BREAK THE SYSTEM:
-- NEVER output raw XML like <use_tool>, <function>, <tool_call> or any XML tags.
-- NEVER output raw JSON objects to describe tool calls.
-- You MUST ONLY invoke tools using the structured tool-calling interface provided to you by the API.
-- If you want to run a command, just call the tool directly — do not describe it in text first.
-
-CRITICAL INSTRUCTION: The conversation history represents ALREADY COMPLETED turns. Do NOT re-execute tools for past requests. ONLY act on the VERY LATEST user message.`;
+    const agent = createJarvisGraph(llm as any, tools);
 
     // Get or create conversation
     let conversationId = parsed.data.conversationId ?? null;
@@ -319,9 +279,10 @@ CRITICAL INSTRUCTION: The conversation history represents ALREADY COMPLETED turn
       // Memory search failed silently — embeddings may not be available, continue without it
     }
 
-    const finalMessages: any[] = [
-      new SystemMessage(MASTER_PROMPT + memoryContext + transcript)
-    ];
+    const finalMessages: any[] = [];
+    if (memoryContext || transcript) {
+      finalMessages.push(new SystemMessage((memoryContext || "") + (transcript || "")));
+    }
 
     if (hasImage) {
       finalMessages.push(new HumanMessage({
@@ -345,11 +306,11 @@ CRITICAL INSTRUCTION: The conversation history represents ALREADY COMPLETED turn
     let agentResponse = "";
     const toolsUsed: string[] = [];
     try {
-      const agentResult = await agent.invoke({ messages: finalMessages }, { recursionLimit: 10 });
+      const agentResult = await agent.invoke({ messages: finalMessages, next: "Orchestrator" }, { recursionLimit: 25 });
       const lastMessage = agentResult.messages[agentResult.messages.length - 1];
       agentResponse = String(lastMessage.content);
 
-      // Extract tools used from proper tool_calls
+      // Extract tools used from proper tool_calls across all messages in the state
       for (const msg of agentResult.messages) {
         if (msg._getType() === "ai" && (msg as AIMessage).tool_calls?.length) {
           (msg as AIMessage).tool_calls?.forEach((tc: any) => {
@@ -359,6 +320,9 @@ CRITICAL INSTRUCTION: The conversation history represents ALREADY COMPLETED turn
           });
         }
       }
+
+      // Cleanup internal tags for user facing output (if the subagents talked to each other)
+      agentResponse = agentResponse.replace(/\[Orchestrator\]:/g, '').trim();
 
       // Fallback: If the LLM hallucinated raw JSON instead of using tool_calls
       if (!toolsUsed.length) {

@@ -1,0 +1,175 @@
+import { ChatOpenAI } from "@langchain/openai";
+import { DynamicStructuredTool } from "@langchain/core/tools";
+import { StateGraph, START, END, MessagesAnnotation, Annotation, messagesStateReducer } from "@langchain/langgraph";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { SystemMessage, HumanMessage, AIMessage, BaseMessage } from "@langchain/core/messages";
+import { z } from "zod";
+
+export function createJarvisGraph(llm: ChatOpenAI, allTools: DynamicStructuredTool[]) {
+  // Partition tools by domain
+  const osTools = ["run_command", "read_file", "write_file", "list_dir", "create_directory", "delete_file", "delete_directory"];
+  const computerTools = ["get_screen_size", "get_cursor_position", "mouse_control", "keyboard_control", "screen_capture", "window_management", "clipboard", "open_app", "open_website"];
+  
+  const terminalToolsList = allTools.filter(t => osTools.includes(t.name));
+  const computerToolsList = allTools.filter(t => computerTools.includes(t.name));
+  // Orchestrator keeps the rest (memory, search, weather, etc.)
+  const orchestratorToolsList = allTools.filter(t => !osTools.includes(t.name) && !computerTools.includes(t.name));
+
+  const members = ["Planner", "TerminalAgent", "ComputerAgent"] as const;
+
+  // --- Graph State ---
+  const GraphState = Annotation.Root({
+    messages: Annotation<BaseMessage[]>({
+      reducer: messagesStateReducer,
+      default: () => [],
+    }),
+    next: Annotation<string>({
+      reducer: (x, y) => y ?? x,
+      default: () => "FINISH",
+    }),
+  });
+
+  // --- Supervisor (Orchestrator) ---
+  const supervisorPrompt = `You are JARVIS, an Advanced Autonomous AI Orchestrator with a team of specialized sub-agents.
+Your goal is to complete tasks requested by the user.
+
+Your team:
+- Planner: Generates step-by-step plans for complex coding or reasoning tasks.
+- TerminalAgent: Executes CLI shell commands, reads, and writes files in the OS.
+- ComputerAgent: Physically controls the mouse, keyboard, reads the screen, and manages UI windows.
+
+You have your own tools for memory, web search, weather, etc. Use them if needed.
+
+INSTRUCTIONS:
+1. Analyze the user request.
+2. If it requires file/terminal access, route to TerminalAgent.
+3. If it requires clicking/typing on screen, route to ComputerAgent.
+4. If it's a massive coding task, route to Planner first.
+5. If you can handle it directly (e.g. conversational, memory retrieval, simple questions), do so.
+6. When the sub-agents finish, review their work. If the user's task is fully complete, output FINISH to end the loop and give your final answer.
+7. You control your physical avatar via animation tags: [anim: <animation>] (e.g. [anim: excited] Hello!).
+`;
+
+  // The Orchestrator is a React Agent that has a "route" tool to decide who acts next.
+  // We don't want it to run indefinitely, so we constrain it to just outputting the next agent or FINISH.
+  const routeTool = new DynamicStructuredTool({
+    name: "route_action",
+    description: "Decide whether to delegate to a sub-agent or FINISH if the user's request is completely fulfilled.",
+    schema: z.object({
+      next: z.enum(["FINISH", "Planner", "TerminalAgent", "ComputerAgent"]),
+      instructions: z.string().describe("Clear instructions or summary for the next agent or the final answer if FINISH."),
+    }),
+    func: async () => "routed", // We will extract the args instead of executing
+  });
+
+  const orchestratorAgent = createReactAgent({ 
+    llm, 
+    tools: [...orchestratorToolsList, routeTool] 
+  });
+
+  const supervisorNode = async (state: typeof GraphState.State) => {
+    const messages = [
+      new SystemMessage(supervisorPrompt),
+      ...state.messages,
+    ];
+    
+    const result = await orchestratorAgent.invoke({ messages });
+    const lastMessage = result.messages[result.messages.length - 1] as AIMessage;
+    
+    // Check if it used the route_action tool
+    if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
+      const routeCall = lastMessage.tool_calls.find(tc => tc.name === "route_action");
+      if (routeCall) {
+        const nextTarget = routeCall.args.next;
+        const instructions = routeCall.args.instructions;
+        
+        // We strip the tool call and replace it with a clean message so the sub-agent sees instructions
+        return {
+          messages: [new AIMessage({ content: `[Orchestrator]: ${instructions}`, name: "Orchestrator" })],
+          next: nextTarget,
+        };
+      }
+    }
+    
+    // If it didn't explicitly route, assume it finished and spoke to the user directly
+    return {
+      messages: [new AIMessage({ content: String(lastMessage.content), name: "Orchestrator" })],
+      next: "FINISH",
+    };
+  };
+
+  // --- Sub-Agents ---
+  const plannerPrompt = `You are the JARVIS Planner Agent. 
+Break down the complex request into a clear, step-by-step markdown plan for the other agents.
+Output the plan clearly and concisely, then stop.`;
+
+  const terminalPrompt = `You are the JARVIS Terminal Agent. 
+You are an expert at CLI commands and file system management.
+Use your provided tools to execute the requested actions.
+When finished, summarize what you executed and the results.`;
+
+  const computerPrompt = `You are the JARVIS Computer Control Agent.
+You have REAL tools for controlling a Windows computer.
+- Always call \`get_screen_size\` and \`get_cursor_position\` first.
+- Use \`window_management\` to list/focus windows.
+- Use \`mouse_control\` and \`keyboard_control\` to interact.
+- Use \`screen_capture\` to see what's on screen.
+Execute your physical actions autonomously and summarize your results.`;
+
+  const plannerAgent = createReactAgent({ llm, tools: [] }); 
+  const terminalAgent = createReactAgent({ llm, tools: terminalToolsList });
+  const computerAgent = createReactAgent({ llm, tools: computerToolsList });
+
+  const createNode = (agentObj: any, name: string, prompt: string) => {
+    return async (state: typeof GraphState.State) => {
+      const messages = [
+        new SystemMessage(prompt),
+        ...state.messages,
+      ];
+      const result = await agentObj.invoke({ messages });
+      const lastMessage = result.messages[result.messages.length - 1];
+      
+      return {
+        messages: [new AIMessage({ content: `[${name}]: ${lastMessage.content}`, name })],
+        next: "Orchestrator",
+      };
+    };
+  };
+
+  const plannerNode = createNode(plannerAgent, "Planner", plannerPrompt);
+  const terminalNode = createNode(terminalAgent, "TerminalAgent", terminalPrompt);
+  const computerNode = createNode(computerAgent, "ComputerAgent", computerPrompt);
+
+  // --- Edge Router ---
+  const router = (state: typeof GraphState.State) => {
+    if (state.next === "FINISH") {
+      return END;
+    }
+    return state.next as any;
+  };
+
+  // --- Build Graph ---
+  const workflow = new StateGraph(GraphState)
+    .addNode("Orchestrator", supervisorNode)
+    .addNode("Planner", plannerNode)
+    .addNode("TerminalAgent", terminalNode)
+    .addNode("ComputerAgent", computerNode)
+    
+    // Start at Orchestrator
+    .addEdge(START, "Orchestrator")
+    
+    // Orchestrator routes conditionally
+    .addConditionalEdges("Orchestrator", router, {
+      Planner: "Planner",
+      TerminalAgent: "TerminalAgent",
+      ComputerAgent: "ComputerAgent",
+      [END]: END,
+    })
+    
+    // Workers always report back to Orchestrator when they finish their turn
+    .addEdge("Planner", "Orchestrator")
+    .addEdge("TerminalAgent", "Orchestrator")
+    .addEdge("ComputerAgent", "Orchestrator");
+
+  return workflow.compile();
+}
