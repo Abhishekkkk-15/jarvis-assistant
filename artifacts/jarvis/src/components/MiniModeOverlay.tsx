@@ -7,6 +7,7 @@ import { Maximize2 } from 'lucide-react';
 import { useAudioReactivity } from '@/hooks/useAudioReactivity';
 import ReactMarkdown from 'react-markdown';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useCharacterPersonality } from '@/hooks/useCharacterPersonality';
 
 const TypewriterBubble: React.FC<{ text: string }> = ({ text }) => {
   const [displayedText, setDisplayedText] = useState('');
@@ -114,6 +115,9 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
   // Attention Seeker Tracker
   const lastInteractionTime = useRef(Date.now());
+  
+  // Personality Hook (Blinking, microexpressions, sentiment emotion)
+  const personality = useCharacterPersonality();
 
   // Physics states
   const [isPhysicsActive, setIsPhysicsActive] = useState(false);
@@ -148,6 +152,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   useEffect(() => {
     if (lastReply) {
       setReplyBubble(lastReply);
+      personality.triggerEmotion(lastReply);
       // Stay visible longer for long messages, min 4s, max 10s
       const readTime = Math.min(10000, Math.max(4000, lastReply.length * 60));
       const timer = setTimeout(() => setReplyBubble(''), readTime);
@@ -171,17 +176,16 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     const handleJarvisAction = (e: any) => {
       const { action } = e.detail;
       if (action) {
-        // We know action is one of CharacterAnimation because we instructed the LLM
-        setAnimation(action as CharacterAnimation);
+        // Direct override of emotion
+        personality.triggerDirectEmotion(action as CharacterAnimation, 4000);
         
         // Also map some tags to movement styles if applicable
         if (['dash', 'jump', 'teleport', 'spin', 'bounce', 'zigzag', 'crawl', 'sneak', 'cartwheel', 'hover'].includes(action)) {
           setMovementStyle(action as any);
         }
         
-        // Reset back to idle/float after 4 seconds
+        // Reset movement back to float after 4 seconds
         setTimeout(() => {
-          setAnimation('idle');
           setMovementStyle('float');
         }, 4000);
       }
@@ -193,9 +197,10 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   // State animations
   useEffect(() => {
     if (isListening) setAnimation('excited');
-    else if (isSpeaking && animation === 'idle') setAnimation('talk');
+    else if (personality.emotionAnimation) setAnimation(personality.emotionAnimation);
     else if (isDancingToMusic && !isDragging && !isPhysicsActive && animation === 'idle') setAnimation('dance');
-  }, [isListening, isSpeaking, isDancingToMusic, isDragging, isPhysicsActive, animation]);
+    else setAnimation('idle');
+  }, [isListening, isSpeaking, isDancingToMusic, isDragging, isPhysicsActive, personality.emotionAnimation]);
 
   // Cursor tracking listener
   useEffect(() => {
@@ -683,9 +688,9 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
           if (customChar) {
             return <CustomCharacterRenderer character={customChar} animation={animation} size={120} flipped={flipped} />;
           }
-          return <CharacterComponent animation={animation} size={120} flipped={flipped} />;
+          return <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} />;
         })() : (
-          <CharacterComponent animation={animation} size={120} flipped={flipped} />
+          <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} />
         )}
       </div>
 

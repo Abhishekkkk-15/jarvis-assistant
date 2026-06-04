@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './animations.css';
 
 export type CharacterAnimation = 'idle' | 'walk' | 'run' | 'wave' | 'dance' | 'sleep' | 'excited' | 'talk' | 'happy' | 'sad' | 'angry' | 'confused' | 'jealous' | 'bored' | 'surprised' | 'laughing' | 'thinking' | 'shy' | 'love' | 'scared' | 'dizzy' | 'cool' | 'dash' | 'jump' | 'teleport' | 'spin' | 'bounce' | 'zigzag' | 'crawl' | 'sneak' | 'cartwheel' | 'hover' | 'pace' | 'hide' | 'hang';
@@ -7,6 +7,11 @@ export interface CharacterProps {
   animation: CharacterAnimation;
   size?: number;
   flipped?: boolean;
+  isBlinking?: boolean;
+  isSpeaking?: boolean;
+  moodLabel?: string;
+  showEmotionBubble?: string | null;
+  showParticleBurst?: boolean;
 }
 
 export interface CustomCharacter {
@@ -15,21 +20,98 @@ export interface CustomCharacter {
   sprites: Partial<Record<CharacterAnimation, string>>;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Emotion Speech Bubble
+// ─────────────────────────────────────────────────────────────────────────────
+const EMOTION_BUBBLE_TEXT: Partial<Record<CharacterAnimation, string>> = {
+  thinking: '🤔 Hmm...',
+  confused: '❓ Huh?',
+  happy: '😊 Yay!',
+  excited: '⚡ Let\'s go!',
+  sad: '😔 Oh no...',
+  angry: '😤 Hmph!',
+  bored: '😑 Sigh...',
+  surprised: '😲 Whoa!',
+  laughing: '😄 Haha!',
+  love: '❤️ Aww~',
+  scared: '😰 Eek!',
+  cool: '😎 Smooth.',
+  wave: '👋 Hey!',
+  dance: '🎵 ~♪~',
+  sleep: '💤 Zzz...',
+  shy: '🌸 Blush...',
+};
+
+const EmotionBubble: React.FC<{ animation: CharacterAnimation }> = ({ animation }) => {
+  const text = EMOTION_BUBBLE_TEXT[animation];
+  if (!text) return null;
+  return <div className="emotion-bubble">{text}</div>;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Particle Burst (celebration on task complete)
+// ─────────────────────────────────────────────────────────────────────────────
+const BURST_COLORS = ['#FF6B6B', '#FFD93D', '#6BCB77', '#4ECDC4', '#A855F7', '#F97316', '#EC4899'];
+
+const ParticleBurst: React.FC = () => {
+  const angles = Array.from({ length: 12 }, (_, i) => (i * 360) / 12);
+  return (
+    <div className="particle-burst-container">
+      {angles.map((angle, i) => {
+        const rad = (angle * Math.PI) / 180;
+        const dist = 40 + Math.random() * 30;
+        const tx = Math.cos(rad) * dist;
+        const ty = Math.sin(rad) * dist;
+        const color = BURST_COLORS[i % BURST_COLORS.length];
+        const delay = Math.random() * 0.2;
+        return (
+          <div
+            key={i}
+            className="particle"
+            style={{
+              '--burst-to': `translate(${tx}px, ${ty}px)`,
+              backgroundColor: color,
+              top: '50%',
+              left: '50%',
+              marginTop: '-4px',
+              marginLeft: '-4px',
+              animationDelay: `${delay}s`,
+            } as React.CSSProperties}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
+
 const BaseCharacter: React.FC<{
   size: number;
   flipped: boolean;
   animation: CharacterAnimation;
+  isBlinking?: boolean;
+  isSpeaking?: boolean;
+  moodLabel?: string;
+  showParticleBurst?: boolean;
   children: React.ReactNode;
-}> = ({ size, flipped, animation, children }) => {
+}> = ({ size, flipped, animation, isBlinking, isSpeaking, moodLabel, showParticleBurst, children }) => {
+  const moodClass = moodLabel && ['happy','sad','angry','excited','love','cool','thinking','scared'].includes(moodLabel)
+    ? `mood-${moodLabel}` : '';
   return (
     <div
-      className={`relative inline-block anim-${animation}`}
+      className={`relative inline-block character-wrapper anim-${animation} ${moodClass}`}
       style={{
         width: size,
         height: size,
         transform: flipped ? 'scaleX(-1)' : 'scaleX(1)',
       }}
     >
+      {/* Emotion speech bubble above character */}
+      {animation !== 'idle' && animation !== 'talk' && animation !== 'walk' && animation !== 'run' && (
+        <EmotionBubble animation={animation} />
+      )}
+      {/* Particle celebration burst */}
+      {showParticleBurst && <ParticleBurst />}
       {animation === 'sleep' && (
         <div className="zzz-particles">
           <div className="absolute zzz-1">Z</div>
@@ -82,42 +164,48 @@ const BaseCharacter: React.FC<{
   );
 };
 
-export const JarvisBot: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const JarvisBot: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, isSpeaking = false, moodLabel, showParticleBurst }) => {
   return (
-    <BaseCharacter size={size} flipped={flipped} animation={animation}>
+    <BaseCharacter size={size} flipped={flipped} animation={animation} isBlinking={isBlinking} isSpeaking={isSpeaking} moodLabel={moodLabel} showParticleBurst={showParticleBurst}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
         {/* Antenna */}
         <line x1="50" y1="20" x2="50" y2="5" stroke="#0ff" strokeWidth="2" />
         <circle cx="50" cy="5" r="3" fill="#0ff" className={animation === 'excited' || animation === 'talk' ? 'animate-pulse' : ''} />
         {/* Head */}
         <rect x="35" y="20" width="30" height="25" rx="5" fill="#1a1a2e" stroke="#0ff" strokeWidth="2" />
-        {/* Eyes */}
+        {/* Eyes — support blink by collapsing scaleY */}
         {(animation === 'happy' || animation === 'excited') ? (
-          <g>
+          <g className={isBlinking ? 'eye-blink' : ''}>
             <path d="M 38 30 Q 42 26 46 30" fill="none" stroke="#0ff" strokeWidth="3" strokeLinecap="round" />
             <path d="M 50 30 Q 54 26 58 30" fill="none" stroke="#0ff" strokeWidth="3" strokeLinecap="round" />
           </g>
         ) : animation === 'sad' ? (
-          <g>
+          <g className={isBlinking ? 'eye-blink' : ''}>
             <path d="M 38 28 Q 42 26 46 30" fill="none" stroke="#0ff" strokeWidth="3" strokeLinecap="round" />
             <path d="M 50 30 Q 54 26 58 28" fill="none" stroke="#0ff" strokeWidth="3" strokeLinecap="round" />
           </g>
         ) : animation === 'angry' ? (
-          <g>
+          <g className={isBlinking ? 'eye-blink' : ''}>
             <path d="M 38 28 L 46 32" stroke="#f00" strokeWidth="3" strokeLinecap="round" />
             <path d="M 50 32 L 58 28" stroke="#f00" strokeWidth="3" strokeLinecap="round" />
           </g>
         ) : (
-          <g>
-            <rect x="40" y="28" width="8" height="4" fill="#0ff" className={animation === 'sleep' ? 'opacity-20' : ''} />
-            <rect x="52" y="28" width="8" height="4" fill="#0ff" className={animation === 'sleep' ? 'opacity-20' : ''} />
+          <g className={isBlinking ? 'eye-blink' : ''}>
+            <rect x="40" y="28" width="8" height={isBlinking ? 0.5 : 4} fill="#0ff" className={animation === 'sleep' ? 'opacity-20' : ''} />
+            <rect x="52" y="28" width="8" height={isBlinking ? 0.5 : 4} fill="#0ff" className={animation === 'sleep' ? 'opacity-20' : ''} />
           </g>
         )}
+        {/* Mouth — lip-sync when speaking */}
+        <rect
+          x="43" y="38" width="14" height={isSpeaking ? 4 : 2}
+          rx="1" fill="#0ff" opacity="0.7"
+          className={isSpeaking ? 'lip-syncing' : ''}
+        />
         {/* Body */}
         <rect x="30" y="45" width="40" height="35" rx="5" fill="#1a1a2e" stroke="#0ff" strokeWidth="2" />
         {/* Chest Core */}
         <circle cx="50" cy="62" r="8" fill="none" stroke="#0ff" strokeWidth="2" />
-        <circle cx="50" cy="62" r="4" fill="#0ff" className={animation === 'talk' || animation === 'excited' ? 'animate-pulse' : ''} />
+        <circle cx="50" cy="62" r="4" fill="#0ff" className={animation === 'talk' || animation === 'excited' || isSpeaking ? 'animate-pulse' : ''} />
         {/* Limbs */}
         <g className="limb-l">
           <rect x="20" y="45" width="8" height="25" rx="4" fill="#1a1a2e" stroke="#0ff" strokeWidth="2" />
@@ -136,9 +224,9 @@ export const JarvisBot: React.FC<CharacterProps> = ({ animation = 'idle', size =
   );
 };
 
-export const PixelFox: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const PixelFox: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, isSpeaking = false, moodLabel, showParticleBurst }) => {
   return (
-    <BaseCharacter size={size} flipped={flipped} animation={animation}>
+    <BaseCharacter size={size} flipped={flipped} animation={animation} isBlinking={isBlinking} isSpeaking={isSpeaking} moodLabel={moodLabel} showParticleBurst={showParticleBurst}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible" shapeRendering="crispEdges">
         {/* Tail */}
         <path d="M 20 60 L 10 50 L 10 70 L 25 80 Z" fill="#ff7e00" className="limb-l" />
