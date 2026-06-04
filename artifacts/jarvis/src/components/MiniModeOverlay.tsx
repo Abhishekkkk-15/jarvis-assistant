@@ -292,7 +292,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   useEffect(() => {
     if (isDragging || isListening || isSpeaking || !isMinimized) return;
     const attentionTimer = setInterval(async () => {
-      if (Date.now() - lastInteractionTime.current > 1 * 60 * 1000) {
+      if (Date.now() - lastInteractionTime.current > 15 * 60 * 1000) {
         // Trigger attention seeker!
         setBaseAnimation('jealous');
         lastInteractionTime.current = Date.now(); // reset timer so it doesn't spam

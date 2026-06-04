@@ -3,7 +3,7 @@ import { WebSocketServer } from "ws";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { setupWsManager } from "./lib/wsManager";
-
+import { initializeScheduler } from "./lib/scheduler.js";
 let rawPort = process.env["PORT"];
 
 if (!rawPort) {
@@ -20,6 +20,9 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: "/ws" });
 setupWsManager(wss);
 
+export const getWss = () => wss;
+
 server.listen(port, () => {
   logger.info({ port }, "Server listening (HTTP + WebSocket)");
+  initializeScheduler();
 });

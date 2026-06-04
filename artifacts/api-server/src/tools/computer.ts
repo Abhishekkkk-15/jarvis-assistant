@@ -118,6 +118,60 @@ export const computerTools = [
   }),
 
   // ──────────────────────────────────────────────────────────────
+  // FIND AND CLICK TEXT (OCR / Semantic UI Vision)
+  // ──────────────────────────────────────────────────────────────
+  new DynamicStructuredTool({
+    name: "find_and_click_text",
+    description: "Captures the screen, uses OCR to find the specified text, and clicks it. Use this when you don't know the exact X/Y coordinates of a UI button but you know its text.",
+    schema: z.object({
+      text: z.string().describe("The exact text to find and click on the screen (case-insensitive substring)"),
+      action: z.enum(["click", "double_click", "right_click"]).default("click"),
+    }),
+    func: async ({ text, action }) => {
+      try {
+        const tmpPath = path.join(os.tmpdir(), `ocr_${Date.now()}.png`);
+        const captureResult = await runPython(`import pyautogui; pyautogui.screenshot('${tmpPath.replace(/\\/g, '\\\\')}')`);
+        if (captureResult.startsWith("Error")) return captureResult;
+
+        const { createWorker } = await import("tesseract.js");
+        const worker = await createWorker('eng');
+        const { data } = await worker.recognize(tmpPath);
+        await worker.terminate();
+
+        const target = text.toLowerCase();
+        let foundWord = null;
+
+        for (const word of data.words) {
+          if (word.text.toLowerCase().includes(target)) {
+            foundWord = word;
+            break;
+          }
+        }
+
+        if (!foundWord) {
+          return `Could not find text "${text}" on the screen.`;
+        }
+
+        const bbox = foundWord.bbox;
+        const centerX = Math.floor((bbox.x0 + bbox.x1) / 2);
+        const centerY = Math.floor((bbox.y0 + bbox.y1) / 2);
+
+        let code = "import pyautogui; pyautogui.FAILSAFE = False; ";
+        if (action === "click") code += `pyautogui.click(${centerX}, ${centerY})`;
+        else if (action === "double_click") code += `pyautogui.doubleClick(${centerX}, ${centerY})`;
+        else if (action === "right_click") code += `pyautogui.rightClick(${centerX}, ${centerY})`;
+
+        const clickResult = await runPython(code);
+        if (clickResult.startsWith("Error")) return clickResult;
+
+        return `Successfully found "${text}" and executed ${action} at (${centerX}, ${centerY}).`;
+      } catch (err: any) {
+        return `Error during OCR processing: ${err.message}`;
+      }
+    },
+  }),
+
+  // ──────────────────────────────────────────────────────────────
   // GET SCREEN SIZE
   // ──────────────────────────────────────────────────────────────
   new DynamicStructuredTool({
