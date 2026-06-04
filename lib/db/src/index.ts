@@ -17,6 +17,9 @@ export const db = drizzle(sqlite, { schema });
 
 export function setupDb() {
   sqlite.exec(`
+    DROP TABLE IF EXISTS vec_embeddings;
+    DROP TABLE IF EXISTS document_chunks;
+
     CREATE VIRTUAL TABLE IF NOT EXISTS vec_embeddings USING vec0(
       embedding float[1024]
     );
