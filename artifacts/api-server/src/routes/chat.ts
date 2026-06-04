@@ -1,12 +1,21 @@
 import { Router } from "express";
-import { db, settingsTable, conversationsTable, messagesTable } from "@workspace/db";
+import {
+  db,
+  settingsTable,
+  conversationsTable,
+  messagesTable,
+} from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { SendChatBody } from "@workspace/api-zod";
 
 import { ChatOpenAI } from "@langchain/openai";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { DynamicStructuredTool } from "@langchain/core/tools";
-import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
+import {
+  HumanMessage,
+  AIMessage,
+  SystemMessage,
+} from "@langchain/core/messages";
 import { z } from "zod";
 import * as child_process from "child_process";
 import * as fs from "fs/promises";
@@ -38,12 +47,19 @@ const tools = [
   }),
   new DynamicStructuredTool({
     name: "calculate",
-    description: "Evaluate a mathematical expression and return the numeric result.",
+    description:
+      "Evaluate a mathematical expression and return the numeric result.",
     schema: z.object({ expression: z.string() }),
     func: async ({ expression }: { expression: string }) => {
       try {
-        const sanitized = expression.replace(/[^0-9+\-*/().\s%^a-zA-Z_.,]/g, "");
-        const result = new Function("Math", `"use strict"; return (${sanitized})`)(Math);
+        const sanitized = expression.replace(
+          /[^0-9+\-*/().\s%^a-zA-Z_.,]/g,
+          "",
+        );
+        const result = new Function(
+          "Math",
+          `"use strict"; return (${sanitized})`,
+        )(Math);
         return String(result);
       } catch (err) {
         return `Error: ${err}`;
@@ -76,7 +92,9 @@ const tools = [
         const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
         const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
         const data = (await resp.json()) as any;
-        return data.AbstractText || `No abstract found for ${query}. Try Wikipedia.`;
+        return (
+          data.AbstractText || `No abstract found for ${query}. Try Wikipedia.`
+        );
       } catch (err) {
         return `Web search failed: ${err}`;
       }
@@ -84,21 +102,22 @@ const tools = [
   }),
   new DynamicStructuredTool({
     name: "open_app",
-    description: "Opens an application on Windows. IMPORTANT: You must use the executable name for common apps. For example, for VS Code use 'code', for Chrome use 'chrome', for Edge use 'msedge', for Word use 'winword', for Excel use 'excel'.",
+    description:
+      "Opens an application on Windows. IMPORTANT: You must use the executable name for common apps. For example, for VS Code use 'code', for Chrome use 'chrome', for Edge use 'msedge', for Word use 'winword', for Excel use 'excel'.",
     schema: z.object({ app_name: z.string() }),
     func: async ({ app_name }: { app_name: string }) => {
       const aliasMap: Record<string, string> = {
-        "vscode": "code",
+        vscode: "code",
         "vs code": "code",
         "visual studio code": "code",
         "google chrome": "chrome",
-        "edge": "msedge",
+        edge: "msedge",
         "microsoft edge": "msedge",
-        "word": "winword",
+        word: "winword",
         "microsoft word": "winword",
-        "excel": "excel",
+        excel: "excel",
         "microsoft excel": "excel",
-        "powerpoint": "powerpnt"
+        powerpoint: "powerpnt",
       };
       const normalized = app_name.toLowerCase().trim();
       const target = aliasMap[normalized] || app_name;
@@ -133,21 +152,31 @@ const tools = [
     description: "Reads the content of a local file.",
     schema: z.object({ file_path: z.string() }),
     func: async ({ file_path }: { file_path: string }) => {
-      try { return await fs.readFile(file_path, "utf-8"); }
-      catch (e: any) { return `Error reading file: ${e.message}`; }
+      try {
+        return await fs.readFile(file_path, "utf-8");
+      } catch (e: any) {
+        return `Error reading file: ${e.message}`;
+      }
     },
   }),
   new DynamicStructuredTool({
     name: "write_file",
     description: "Writes content to a local file.",
     schema: z.object({ file_path: z.string(), content: z.string() }),
-    func: async ({ file_path, content }: { file_path: string; content: string }) => {
+    func: async ({
+      file_path,
+      content,
+    }: {
+      file_path: string;
+      content: string;
+    }) => {
       try {
         await fs.mkdir(path.dirname(file_path), { recursive: true });
         await fs.writeFile(file_path, content, "utf-8");
         return `File written successfully to ${file_path}.`;
+      } catch (e: any) {
+        return `Error writing file: ${e.message}`;
       }
-      catch (e: any) { return `Error writing file: ${e.message}`; }
     },
   }),
   new DynamicStructuredTool({
@@ -156,15 +185,21 @@ const tools = [
     schema: z.object({ command: z.string() }),
     func: async ({ command }: { command: string }) => {
       return new Promise((resolve) => {
-        child_process.exec(command, { timeout: 10000 }, (err, stdout, stderr) => {
-          let out = stdout ? `STDOUT:\n${stdout}\n` : "";
-          let errOut = stderr ? `STDERR:\n${stderr}\n` : "";
-          resolve(out + errOut || "Command executed successfully with no output.");
-        });
+        child_process.exec(
+          command,
+          { timeout: 10000 },
+          (err, stdout, stderr) => {
+            let out = stdout ? `STDOUT:\n${stdout}\n` : "";
+            let errOut = stderr ? `STDERR:\n${stderr}\n` : "";
+            resolve(
+              out + errOut || "Command executed successfully with no output.",
+            );
+          },
+        );
       });
     },
   }),
-  ...allTools
+  ...allTools,
 ];
 
 // ─────────────────────────────────────────────
@@ -203,15 +238,27 @@ router.post("/chat", async (req, res) => {
     if (provider === "groq" && !settings.groqApiKey && settings.nvidiaApiKey) {
       provider = "nvidia";
       isFallback = true;
-    } else if (provider === "nvidia" && !settings.nvidiaApiKey && settings.groqApiKey) {
+    } else if (
+      provider === "nvidia" &&
+      !settings.nvidiaApiKey &&
+      settings.groqApiKey
+    ) {
       provider = "groq";
       isFallback = true;
     }
 
     // const modelName = parsed.data.model || (!isFallback && settings.selectedModel) || (provider === "nvidia" ? "qwen/qwen3.5-122b-a10b" : "qwen/qwen3.5-122b-a10b");
-    const modelName = parsed.data.model || (!isFallback && settings.selectedModel) || (provider === "nvidia" ? "meta/llama-3.3-70b-instruct" : "llama-3.3-70b-versatile");
-    console.log("modle name : ", modelName, " ", provider)
-    const apiKey = provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
+    // const modelName =
+    //   parsed.data.model ||
+    //   (!isFallback && settings.selectedModel) ||
+    //   (provider === "nvidia"
+    //     ? "meta/llama-3.3-70b-instruct"
+    //     : "llama-3.3-70b-versatile");
+
+    const modelName = "mistralai/mistral-medium-3.5-128b";
+    console.log("modle name : ", modelName, " ", provider);
+    const apiKey =
+      provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
 
     if (!apiKey) {
       res.status(400).json({
@@ -220,9 +267,11 @@ router.post("/chat", async (req, res) => {
       return;
     }
 
-    const endpoint = provider === "nvidia"
-      ? "https://integrate.api.nvidia.com/v1"
-      : "https://api.groq.com/openai/v1";
+    // const endpoint = provider === "nvidia"
+    //   ? "https://integrate.api.nvidia.com/v1"
+    //   : "https://api.groq.com/openai/v1";
+
+    const endpoint = "https://integrate.api.nvidia.com/v1";
 
     // Setup LangChain Model
     const llm = new ChatOpenAI({
@@ -246,10 +295,14 @@ router.post("/chat", async (req, res) => {
       conversation = rows[0];
     }
     if (!conversation) {
-      const title = parsed.data.message.length > 50
-        ? parsed.data.message.slice(0, 47) + "..."
-        : parsed.data.message;
-      const [newConv] = await db.insert(conversationsTable).values({ title }).returning();
+      const title =
+        parsed.data.message.length > 50
+          ? parsed.data.message.slice(0, 47) + "..."
+          : parsed.data.message;
+      const [newConv] = await db
+        .insert(conversationsTable)
+        .values({ title })
+        .returning();
       conversation = newConv;
       conversationId = newConv.id;
     }
@@ -266,7 +319,8 @@ router.post("/chat", async (req, res) => {
     // This prevents the LLM from thinking it needs to execute tools for past messages
     let transcript = "";
     if (history.length > 0) {
-      transcript = "\n\n=== PAST CONVERSATION HISTORY ===\n(These actions are already completed. Do NOT execute any tools for these past requests.)\n";
+      transcript =
+        "\n\n=== PAST CONVERSATION HISTORY ===\n(These actions are already completed. Do NOT execute any tools for these past requests.)\n";
       history.reverse().forEach((m: any) => {
         const role = m.role === "assistant" ? "JARVIS" : "User";
         transcript += `${role}: ${m.content}\n`;
@@ -282,10 +336,11 @@ router.post("/chat", async (req, res) => {
     try {
       const relevantMemories = await searchMemory(parsed.data.message, 5);
       // Only include memories with cosine distance < 0.75 (meaningfully relevant)
-      const filtered = relevantMemories.filter(m => m.distance < 0.75);
+      const filtered = relevantMemories.filter((m) => m.distance < 0.75);
       if (filtered.length > 0) {
-        memoryContext = "\n\n=== YOUR LONG-TERM MEMORY (Auto-recalled) ===\n(These are relevant facts you've saved about this user. Use them naturally.)\n";
-        filtered.forEach(m => {
+        memoryContext =
+          "\n\n=== YOUR LONG-TERM MEMORY (Auto-recalled) ===\n(These are relevant facts you've saved about this user. Use them naturally.)\n";
+        filtered.forEach((m) => {
           memoryContext += `- [${m.metadata}] ${m.text_content}\n`;
         });
         memoryContext += "=============================================\n";
@@ -296,16 +351,20 @@ router.post("/chat", async (req, res) => {
 
     const finalMessages: any[] = [];
     if (memoryContext || transcript) {
-      finalMessages.push(new HumanMessage((memoryContext || "") + (transcript || "")));
+      finalMessages.push(
+        new HumanMessage((memoryContext || "") + (transcript || "")),
+      );
     }
 
     if (hasImage) {
-      finalMessages.push(new HumanMessage({
-        content: [
-          { type: "text", text: parsed.data.message },
-          { type: "image_url", image_url: { url: parsed.data.imageBase64! } }
-        ]
-      }));
+      finalMessages.push(
+        new HumanMessage({
+          content: [
+            { type: "text", text: parsed.data.message },
+            { type: "image_url", image_url: { url: parsed.data.imageBase64! } },
+          ],
+        }),
+      );
     } else {
       finalMessages.push(new HumanMessage(parsed.data.message));
     }
@@ -321,7 +380,10 @@ router.post("/chat", async (req, res) => {
     let agentResponse = "";
     const toolsUsed: string[] = [];
     try {
-      const agentResult = await agent.invoke({ messages: finalMessages, next: "Orchestrator" }, { recursionLimit: 25 });
+      const agentResult = await agent.invoke(
+        { messages: finalMessages, next: "Orchestrator" },
+        { recursionLimit: 25 },
+      );
       const lastMessage = agentResult.messages[agentResult.messages.length - 1];
       agentResponse = String(lastMessage.content);
 
@@ -337,7 +399,7 @@ router.post("/chat", async (req, res) => {
       }
 
       // Cleanup internal tags for user facing output (if the subagents talked to each other)
-      agentResponse = agentResponse.replace(/\[Orchestrator\]:/g, '').trim();
+      agentResponse = agentResponse.replace(/\[Orchestrator\]:/g, "").trim();
 
       // Fallback: If the LLM hallucinated raw JSON instead of using tool_calls
       if (!toolsUsed.length) {
@@ -345,20 +407,32 @@ router.post("/chat", async (req, res) => {
         if (jsonMatch) {
           try {
             const parsedJson = JSON.parse(jsonMatch[0]);
-            let toolName = parsedJson.function || parsedJson.tool || parsedJson.name;
+            let toolName =
+              parsedJson.function || parsedJson.tool || parsedJson.name;
             let toolArgs = parsedJson.arguments || parsedJson;
 
             // Handle { tool_calls: [...] } format
-            if (!toolName && parsedJson.tool_calls && Array.isArray(parsedJson.tool_calls) && parsedJson.tool_calls.length > 0) {
-              toolName = parsedJson.tool_calls[0].function?.name || parsedJson.tool_calls[0].name;
-              toolArgs = parsedJson.tool_calls[0].function?.arguments || parsedJson.tool_calls[0].arguments;
-              if (typeof toolArgs === 'string') {
-                try { toolArgs = JSON.parse(toolArgs); } catch (e) { }
+            if (
+              !toolName &&
+              parsedJson.tool_calls &&
+              Array.isArray(parsedJson.tool_calls) &&
+              parsedJson.tool_calls.length > 0
+            ) {
+              toolName =
+                parsedJson.tool_calls[0].function?.name ||
+                parsedJson.tool_calls[0].name;
+              toolArgs =
+                parsedJson.tool_calls[0].function?.arguments ||
+                parsedJson.tool_calls[0].arguments;
+              if (typeof toolArgs === "string") {
+                try {
+                  toolArgs = JSON.parse(toolArgs);
+                } catch (e) {}
               }
             }
 
             if (toolName && typeof toolName === "string") {
-              const tool = tools.find(t => t.name === toolName);
+              const tool = tools.find((t) => t.name === toolName);
               if (tool) {
                 toolsUsed.push(toolName);
                 if (toolArgs.function) delete toolArgs.function;
@@ -369,7 +443,11 @@ router.post("/chat", async (req, res) => {
 
                 // Query LLM again with the tool result
                 finalMessages.push(new AIMessage(agentResponse));
-                finalMessages.push(new HumanMessage(`Tool ${toolName} returned:\n${result}\nNow provide the final conversational answer.`));
+                finalMessages.push(
+                  new HumanMessage(
+                    `Tool ${toolName} returned:\n${result}\nNow provide the final conversational answer.`,
+                  ),
+                );
                 const finalResult = await llm.invoke(finalMessages);
                 agentResponse = String(finalResult.content);
               }
@@ -381,20 +459,31 @@ router.post("/chat", async (req, res) => {
       }
       // Fallback 2: Handle <use_tool>{...}</use_tool> XML-style hallucinations
       if (!toolsUsed.length) {
-        const useToolMatch = agentResponse.match(/<use_tool>\s*([\s\S]*?)\s*<\/use_tool>/i);
+        const useToolMatch = agentResponse.match(
+          /<use_tool>\s*([\s\S]*?)\s*<\/use_tool>/i,
+        );
         if (useToolMatch) {
           try {
             const parsed = JSON.parse(useToolMatch[1]);
             const toolName = parsed.name || parsed.tool;
-            const toolArgs = parsed.parameters || parsed.arguments || parsed.params || {};
-            const tool = tools.find(t => t.name === toolName);
+            const toolArgs =
+              parsed.parameters || parsed.arguments || parsed.params || {};
+            const tool = tools.find((t) => t.name === toolName);
             if (tool && toolName) {
               toolsUsed.push(toolName);
               const result = await (tool as any).invoke(toolArgs);
               // Strip the raw XML from the response and ask the LLM to finalize
-              const cleanedResponse = agentResponse.replace(/<use_tool>[\s\S]*?<\/use_tool>/gi, '').trim();
-              finalMessages.push(new AIMessage(cleanedResponse || `Executed tool ${toolName}.`));
-              finalMessages.push(new HumanMessage(`Tool "${toolName}" returned:\n${result}\n\nNow give the user a clean, conversational final answer based on this result. Do not output any tool blocks.`));
+              const cleanedResponse = agentResponse
+                .replace(/<use_tool>[\s\S]*?<\/use_tool>/gi, "")
+                .trim();
+              finalMessages.push(
+                new AIMessage(cleanedResponse || `Executed tool ${toolName}.`),
+              );
+              finalMessages.push(
+                new HumanMessage(
+                  `Tool "${toolName}" returned:\n${result}\n\nNow give the user a clean, conversational final answer based on this result. Do not output any tool blocks.`,
+                ),
+              );
               const finalResult = await llm.invoke(finalMessages);
               agentResponse = String(finalResult.content);
             }
@@ -405,16 +494,22 @@ router.post("/chat", async (req, res) => {
       }
       // Fallback if tool execution or LLM fails
     } catch (err: any) {
-      req.log.error({ err }, "Agentic loop failed, falling back to simple LLM call");
+      req.log.error(
+        { err },
+        "Agentic loop failed, falling back to simple LLM call",
+      );
       try {
         let handledTool = false;
 
         // Groq sometimes hallucinates `<function=...>` syntax which throws an error
-        const errString = typeof err?.error?.error?.failed_generation === "string"
-          ? err.error.error.failed_generation
-          : JSON.stringify(err, Object.getOwnPropertyNames(err));
+        const errString =
+          typeof err?.error?.error?.failed_generation === "string"
+            ? err.error.error.failed_generation
+            : JSON.stringify(err, Object.getOwnPropertyNames(err));
 
-        const functionMatch = errString.match(/<function=(\w+)\s+(.*?)\s*<\/function>/);
+        const functionMatch = errString.match(
+          /<function=(\w+)\s+(.*?)\s*<\/function>/,
+        );
 
         if (functionMatch) {
           const toolName = functionMatch[1];
@@ -424,14 +519,24 @@ router.post("/chat", async (req, res) => {
           }
 
           let toolArgs = {};
-          try { toolArgs = JSON.parse(toolArgsStr); } catch (e) { }
+          try {
+            toolArgs = JSON.parse(toolArgsStr);
+          } catch (e) {}
 
-          const tool = tools.find(t => t.name === toolName);
+          const tool = tools.find((t) => t.name === toolName);
           if (tool) {
             toolsUsed.push(toolName);
             const result = await (tool as any).invoke(toolArgs as any);
-            finalMessages.push(new AIMessage(`Used tool ${toolName} with args: ${JSON.stringify(toolArgs)}`));
-            finalMessages.push(new HumanMessage(`Tool ${toolName} returned:\n${result}\nNow provide the final conversational answer.`));
+            finalMessages.push(
+              new AIMessage(
+                `Used tool ${toolName} with args: ${JSON.stringify(toolArgs)}`,
+              ),
+            );
+            finalMessages.push(
+              new HumanMessage(
+                `Tool ${toolName} returned:\n${result}\nNow provide the final conversational answer.`,
+              ),
+            );
 
             const finalResult = await llm.invoke(finalMessages);
             agentResponse = String(finalResult.content);
@@ -444,7 +549,8 @@ router.post("/chat", async (req, res) => {
           agentResponse = String(fallbackResult.content);
         }
       } catch (fallbackErr) {
-        agentResponse = "I'm sorry, I encountered a service error while processing your request.";
+        agentResponse =
+          "I'm sorry, I encountered a service error while processing your request.";
       }
     }
 
