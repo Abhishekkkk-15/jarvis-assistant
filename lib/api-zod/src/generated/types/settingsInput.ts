@@ -24,5 +24,9 @@ export interface SettingsInput {
   /** @nullable */
   miniModeEnabled?: boolean | null;
   /** @nullable */
+  telegramBotToken?: string | null;
+  /** @nullable */
+  discordBotToken?: string | null;
+  /** @nullable */
   systemPrompt?: string | null;
 }

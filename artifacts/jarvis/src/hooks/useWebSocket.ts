@@ -40,6 +40,9 @@ export function useWebSocket() {
             // Auto clear question after 15 seconds or when answered
             setTimeout(() => setAgentQuestion(null), 15000);
           }
+          else if (data.type === 'system_notification') {
+            window.dispatchEvent(new CustomEvent('jarvis-system-notification', { detail: data }));
+          }
         } catch (err) {
           console.error('[WebSocket] Error parsing message', err);
         }

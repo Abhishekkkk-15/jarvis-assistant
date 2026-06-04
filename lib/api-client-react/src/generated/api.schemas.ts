@@ -67,6 +67,10 @@ export interface Settings {
   selectedCharacterId: string;
   miniModeEnabled: boolean;
   /** @nullable */
+  telegramBotToken?: string | null;
+  /** @nullable */
+  discordBotToken?: string | null;
+  /** @nullable */
   systemPrompt?: string | null;
 }
 
@@ -87,6 +91,10 @@ export interface SettingsInput {
   selectedCharacterId?: string | null;
   /** @nullable */
   miniModeEnabled?: boolean | null;
+  /** @nullable */
+  telegramBotToken?: string | null;
+  /** @nullable */
+  discordBotToken?: string | null;
   /** @nullable */
   systemPrompt?: string | null;
 }

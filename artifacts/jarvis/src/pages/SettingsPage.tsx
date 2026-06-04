@@ -150,6 +150,42 @@ export const SettingsPage: React.FC = () => {
             </div>
           </section>
 
+          {/* Official Integrations */}
+          <section className={sectionClass}>
+            <h3 className={sectionHeadingClass}>
+              <Cpu size={15} className="text-primary" /> Official Integrations
+            </h3>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Telegram Bot Token</label>
+                <div className="flex gap-2">
+                  <Input 
+                    type="password" 
+                    value={form.telegramBotToken || ''} 
+                    onChange={e => setForm(f => ({ ...f, telegramBotToken: e.target.value }))}
+                    placeholder="Enter Telegram Bot Token from BotFather" 
+                    className="flex-1 bg-background" 
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">JARVIS will connect to this bot to receive notifications and messages.</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Discord Bot Token</label>
+                <div className="flex gap-2">
+                  <Input 
+                    type="password" 
+                    value={form.discordBotToken || ''} 
+                    onChange={e => setForm(f => ({ ...f, discordBotToken: e.target.value }))}
+                    placeholder="Enter Discord Bot Token" 
+                    className="flex-1 bg-background" 
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Connect JARVIS to your Discord servers to receive notifications.</p>
+              </div>
+            </div>
+          </section>
+
           {/* TTS Voice Settings */}
           <section className={sectionClass}>
             <h3 className={sectionHeadingClass}>

@@ -331,6 +331,10 @@ components:
           type: string
         miniModeEnabled:
           type: boolean
+        telegramBotToken:
+          type: ["string", "null"]
+        discordBotToken:
+          type: ["string", "null"]
         systemPrompt:
           type: ["string", "null"]
 
@@ -353,6 +357,10 @@ components:
           type: ["string", "null"]
         miniModeEnabled:
           type: ["boolean", "null"]
+        telegramBotToken:
+          type: ["string", "null"]
+        discordBotToken:
+          type: ["string", "null"]
         systemPrompt:
           type: ["string", "null"]
 

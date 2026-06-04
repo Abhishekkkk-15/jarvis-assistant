@@ -17,5 +17,9 @@ export interface Settings {
   selectedCharacterId: string;
   miniModeEnabled: boolean;
   /** @nullable */
+  telegramBotToken?: string | null;
+  /** @nullable */
+  discordBotToken?: string | null;
+  /** @nullable */
   systemPrompt?: string | null;
 }

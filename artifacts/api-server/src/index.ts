@@ -4,6 +4,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { setupWsManager } from "./lib/wsManager";
 import { initializeScheduler } from "./lib/scheduler.js";
+import { integrationsManager } from "./lib/integrations/manager.js";
 let rawPort = process.env["PORT"];
 
 if (!rawPort) {
@@ -25,4 +26,5 @@ export const getWss = () => wss;
 server.listen(port, () => {
   logger.info({ port }, "Server listening (HTTP + WebSocket)");
   initializeScheduler();
+  integrationsManager.start();
 });

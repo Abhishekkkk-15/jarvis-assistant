@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './animations.css';
-export type CharacterAnimation = 'idle' | 'walk' | 'run' | 'wave' | 'dance' | 'sleep' | 'excited' | 'talk' | 'happy' | 'sad' | 'angry' | 'confused' | 'jealous' | 'bored' | 'surprised' | 'laughing' | 'thinking' | 'shy' | 'love' | 'scared' | 'dizzy' | 'cool' | 'dash' | 'jump' | 'teleport' | 'spin' | 'bounce' | 'zigzag' | 'crawl' | 'sneak' | 'cartwheel' | 'hover' | 'pace' | 'hide' | 'hang' | 'draw';
+export type CharacterAnimation = 'idle' | 'walk' | 'run' | 'wave' | 'dance' | 'sleep' | 'excited' | 'talk' | 'happy' | 'sad' | 'angry' | 'confused' | 'jealous' | 'bored' | 'surprised' | 'laughing' | 'thinking' | 'shy' | 'love' | 'scared' | 'dizzy' | 'cool' | 'dash' | 'jump' | 'teleport' | 'spin' | 'bounce' | 'zigzag' | 'crawl' | 'sneak' | 'cartwheel' | 'hover' | 'pace' | 'hide' | 'hang' | 'draw' | 'courier';
 export interface CharacterProps {
   animation: CharacterAnimation;
   size?: number;
@@ -156,6 +156,15 @@ const BaseCharacter: React.FC<{
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-500 drop-shadow-lg">
             <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" fill="#facc15" stroke="#ca8a04"/>
             <path d="m15 5 4 4" stroke="#ca8a04"/>
+          </svg>
+        </div>
+      )}
+      {animation === 'courier' && (
+        <div className="absolute top-1/2 -right-4 -translate-y-1/2 z-10 origin-bottom-left" style={{ animation: 'char-walk-body 0.5s infinite alternate' }}>
+          <svg width="40" height="30" viewBox="0 0 40 30" fill="none" className="drop-shadow-lg">
+            <rect width="40" height="30" rx="2" fill="#fef3c7" stroke="#d97706" strokeWidth="2" />
+            <path d="M 0 0 L 20 15 L 40 0" stroke="#d97706" strokeWidth="2" fill="none" />
+            <circle cx="20" cy="15" r="4" fill="#ef4444" />
           </svg>
         </div>
       )}

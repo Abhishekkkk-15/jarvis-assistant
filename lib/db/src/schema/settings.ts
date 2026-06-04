@@ -12,6 +12,8 @@ export const settingsTable = sqliteTable("settings", {
   voiceEnabled: integer("voice_enabled", { mode: "boolean" }).notNull().default(true),
   selectedCharacterId: text("selected_character_id").notNull().default("jarvis-bot"),
   miniModeEnabled: integer("mini_mode_enabled", { mode: "boolean" }).notNull().default(false),
+  telegramBotToken: text("telegram_bot_token"),
+  discordBotToken: text("discord_bot_token"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()).$onUpdate(() => new Date()),
 });

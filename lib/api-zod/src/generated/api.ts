@@ -64,6 +64,8 @@ export const GetSettingsResponse = zod.object({
   "voiceEnabled": zod.boolean(),
   "selectedCharacterId": zod.string(),
   "miniModeEnabled": zod.boolean(),
+  "telegramBotToken": zod.string().nullish(),
+  "discordBotToken": zod.string().nullish(),
   "systemPrompt": zod.string().nullish()
 })
 
@@ -80,6 +82,8 @@ export const UpdateSettingsBody = zod.object({
   "voiceEnabled": zod.boolean().nullish(),
   "selectedCharacterId": zod.string().nullish(),
   "miniModeEnabled": zod.boolean().nullish(),
+  "telegramBotToken": zod.string().nullish(),
+  "discordBotToken": zod.string().nullish(),
   "systemPrompt": zod.string().nullish()
 })
 
@@ -93,6 +97,8 @@ export const UpdateSettingsResponse = zod.object({
   "voiceEnabled": zod.boolean(),
   "selectedCharacterId": zod.string(),
   "miniModeEnabled": zod.boolean(),
+  "telegramBotToken": zod.string().nullish(),
+  "discordBotToken": zod.string().nullish(),
   "systemPrompt": zod.string().nullish()
 })
 

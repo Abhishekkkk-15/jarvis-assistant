@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, settingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { UpdateSettingsBody } from "@workspace/api-zod";
+import { integrationsManager } from "../lib/integrations/manager.js";
 
 const router = Router();
 
@@ -25,6 +26,8 @@ function toResponse(s: typeof settingsTable.$inferSelect) {
     voiceEnabled: s.voiceEnabled,
     selectedCharacterId: s.selectedCharacterId,
     miniModeEnabled: s.miniModeEnabled,
+    telegramBotToken: s.telegramBotToken,
+    discordBotToken: s.discordBotToken,
   };
 }
 
@@ -58,6 +61,8 @@ router.put("/settings", async (req, res) => {
     if (d.voiceEnabled != null) updates.voiceEnabled = d.voiceEnabled;
     if (d.selectedCharacterId != null) updates.selectedCharacterId = d.selectedCharacterId;
     if (d.miniModeEnabled != null) updates.miniModeEnabled = d.miniModeEnabled;
+    if (d.telegramBotToken !== undefined) updates.telegramBotToken = d.telegramBotToken;
+    if (d.discordBotToken !== undefined) updates.discordBotToken = d.discordBotToken;
 
 
     const [updated] = await db
@@ -65,6 +70,8 @@ router.put("/settings", async (req, res) => {
       .set(updates)
       .where(eq(settingsTable.id, settings.id))
       .returning();
+
+    integrationsManager.reload();
 
     res.json(toResponse(updated!));
   } catch (err) {

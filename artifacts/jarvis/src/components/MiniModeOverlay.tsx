@@ -80,6 +80,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [lastReply] = useLocalStorage('jarvisLastReply', '');
   const [toolsUsed, setToolsUsed] = useLocalStorage<string[]>('jarvisToolsUsed', []);
   const [customCharacters] = useLocalStorage<CustomCharacter[]>('jarvisCustomCharacters', []);
+  const [notificationMsg, setNotificationMsg] = useState<{ title: string; message: string } | null>(null);
 
   // Clear tools after 4 seconds so they don't stay forever
   useEffect(() => {
@@ -141,9 +142,11 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   // Derived animation state (Overrides base movement animation with emotions/listening state)
   const animation = isListening
     ? 'excited'
-    : (personality.emotionAnimation
-      ? personality.emotionAnimation
-      : (isDancingToMusic && !isDragging && !isPhysicsActive ? 'dance' : baseAnimation));
+    : (baseAnimation === 'courier'
+      ? 'courier'
+      : (personality.emotionAnimation
+        ? personality.emotionAnimation
+        : (isDancingToMusic && !isDragging && !isPhysicsActive ? 'dance' : baseAnimation)));
 
   // Sync mouse events for transparent window properly
   useEffect(() => {
@@ -168,6 +171,27 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     }
     return undefined;
   }, [lastReply]);
+
+  // System Notifications
+  useEffect(() => {
+    const handleSystemNotification = (e: any) => {
+      const data = e.detail;
+      setNotificationMsg(data);
+      setIsPhysicsActive(false);
+      setPosX(window.innerWidth / 2 - 60);
+      setPosY(window.innerHeight / 2 - 60);
+      setBaseAnimation('courier');
+      const say = `Notification from ${data.title}: ${data.message}`;
+      window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text: say } }));
+      setTimeout(() => {
+        setNotificationMsg(null);
+        setBaseAnimation('idle');
+        setIsPhysicsActive(true);
+      }, Math.max(5000, say.length * 80));
+    };
+    window.addEventListener('jarvis-system-notification', handleSystemNotification);
+    return () => { window.removeEventListener('jarvis-system-notification', handleSystemNotification); };
+  }, []);
 
   // Show restore hint briefly when minimized
   useEffect(() => {
@@ -796,6 +820,14 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
           </div>
         )}
 
+        {/* Notification Bubble */}
+        {notificationMsg && (
+          <div className="absolute -top-16 left-1/2 -translate-x-1/2 min-w-max max-w-xs bg-white/95 dark:bg-zinc-800/95 p-3 rounded-lg shadow-xl border border-border z-50 text-center animate-in fade-in slide-in-from-bottom-4">
+            <div className="font-bold text-xs text-primary mb-1 uppercase tracking-wider">{notificationMsg.title}</div>
+            <div className="text-sm text-foreground whitespace-pre-wrap">{notificationMsg.message}</div>
+          </div>
+        )}
+
         {isMinimized && activeApproval && (
           <div className="absolute bottom-[138px] left-1/2 -translate-x-1/2 z-20" style={{ width: 'clamp(200px, 320px, 90vw)' }}>
             <div className="relative bg-slate-900/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl border border-slate-700 shadow-2xl">
@@ -879,12 +911,12 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
           </div>
         )}
 
-        {!activeApproval && !agentQuestion && replyBubble && (
+        {!activeApproval && !agentQuestion && !notificationMsg && replyBubble && (
           <TypewriterBubble text={replyBubble} />
         )}
 
         {/* Accessories / Props */}
-        {toolsUsed && toolsUsed.length > 0 && (
+        {toolsUsed && toolsUsed.length > 0 && !notificationMsg && (
           <div className="absolute -top-4 -right-4 z-10 drop-shadow-md animate-bounce">
             {toolsUsed.includes('get_weather') && <span className="text-4xl">☂️</span>}
             {toolsUsed.includes('search_web') && <span className="text-4xl">🔍</span>}
