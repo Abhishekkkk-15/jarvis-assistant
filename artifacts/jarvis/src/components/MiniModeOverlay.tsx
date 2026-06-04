@@ -6,6 +6,7 @@ import { useLocation } from 'wouter';
 import { Maximize2 } from 'lucide-react';
 import { useAudioReactivity } from '@/hooks/useAudioReactivity';
 import ReactMarkdown from 'react-markdown';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 const TypewriterBubble: React.FC<{ text: string }> = ({ text }) => {
   const [displayedText, setDisplayedText] = useState('');
@@ -127,6 +128,8 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const isDancingToMusic = useAudioReactivity(40);
 
   const isHoveringRef = useRef(false);
+
+  const { activeApproval, agentQuestion, resolveApproval } = useWebSocket();
 
   const CharacterComponent = charactersMap[charId] || charactersMap['jarvis-bot'];
 
@@ -574,7 +577,88 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         </div>
       )}
 
-      {replyBubble && (
+      {isMinimized && activeApproval && (
+        <div className="absolute bottom-[138px] left-1/2 -translate-x-1/2 z-20" style={{ width: 'clamp(200px, 320px, 90vw)' }}>
+          <div className="relative bg-slate-900/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl border border-slate-700 shadow-2xl">
+            <div className="flex items-center gap-2 mb-2 text-yellow-400 font-bold text-sm">
+              <span className="animate-pulse">⚠️</span> Approval Needed
+            </div>
+            <div className="text-xs text-slate-300 mb-3 break-words max-h-24 overflow-y-auto">
+              {activeApproval.reason}
+            </div>
+            <div className="flex gap-2 w-full">
+              <button 
+                onClick={(e) => { e.stopPropagation(); resolveApproval(activeApproval.requestId, 'denied'); }}
+                className="flex-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 py-1.5 rounded-lg text-xs font-semibold"
+              >
+                Deny
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); resolveApproval(activeApproval.requestId, 'approved'); }}
+                className="flex-1 bg-green-500 hover:bg-green-600 text-white shadow-lg py-1.5 rounded-lg text-xs font-semibold"
+              >
+                Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isMinimized && !activeApproval && agentQuestion && (
+        <div className="absolute bottom-[138px] left-1/2 -translate-x-1/2 z-20" style={{ width: 'clamp(200px, 320px, 90vw)' }}>
+          <div className="relative bg-blue-900/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl border border-blue-700 shadow-2xl">
+            <div className="flex items-center gap-2 mb-2 text-blue-300 font-bold text-sm">
+              <span className="animate-bounce">💬</span> JARVIS asks:
+            </div>
+            <div className="text-sm text-slate-100 font-medium leading-relaxed">
+              "{agentQuestion}"
+            </div>
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-blue-500/30">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+              </span>
+              <span className="text-[10px] text-blue-200">Mic active... talk to reply</span>
+            </div>
+
+            <div className="w-full mt-3 flex gap-1.5">
+              <input 
+                type="text" 
+                id="mini-agent-question-input"
+                placeholder="Or type answer..."
+                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 min-w-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.currentTarget.focus();
+                }}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter') {
+                    const val = e.currentTarget.value;
+                    if (val.trim()) {
+                      window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message: val } }));
+                    }
+                  }
+                }}
+              />
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const input = document.getElementById('mini-agent-question-input') as HTMLInputElement;
+                  if (input && input.value.trim()) {
+                    window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message: input.value } }));
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!activeApproval && !agentQuestion && replyBubble && (
         <TypewriterBubble text={replyBubble} />
       )}
 

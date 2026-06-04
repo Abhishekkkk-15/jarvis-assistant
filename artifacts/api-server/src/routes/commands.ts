@@ -1,8 +1,30 @@
 import { Router } from "express";
 import { db, commandLogsTable } from "@workspace/db";
 import { ExecuteCommandBody } from "@workspace/api-zod";
+import { resolveApproval } from "../lib/wsManager.js";
+import { z } from "zod";
 
 const router = Router();
+
+router.post("/commands/approval", (req, res) => {
+  const schema = z.object({
+    requestId: z.string(),
+    decision: z.enum(["approved", "denied"])
+  });
+  
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body" });
+    return;
+  }
+  
+  const success = resolveApproval(parsed.data.requestId, parsed.data.decision);
+  if (success) {
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: "Approval request not found or expired" });
+  }
+});
 
 const COMMAND_CATEGORIES = [
   {

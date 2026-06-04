@@ -5,6 +5,9 @@ import { AudioVisualizer } from '../components/AudioVisualizer';
 import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import ReactMarkdown from 'react-markdown';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import { AgentInteractiveOverlay } from '@/components/ui/AgentInteractiveOverlay';
+
 export const JarvisMain: React.FC = () => {
   const [isListening, setIsListening] = useLocalStorage('jarvisIsListening', false);
   const [isSpeaking, setIsSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
@@ -33,6 +36,15 @@ export const JarvisMain: React.FC = () => {
   const silenceRafRef = useRef<number | null>(null);
 
   const [activeConversationId, setActiveConversationId] = useLocalStorage<number | null>('activeConversationId', null);
+
+  const { activeApproval, agentQuestion, resolveApproval, clearQuestion } = useWebSocket();
+
+  // Watch for agent_question to start listening
+  useEffect(() => {
+    if (agentQuestion && !isListening) {
+      startListening();
+    }
+  }, [agentQuestion]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -190,6 +202,10 @@ export const JarvisMain: React.FC = () => {
 
   const handleSendMessage = (text: string, imageBase64?: string) => {
     if (!text.trim()) return;
+    
+    // If we're answering an agent question, clear it now
+    if (agentQuestion) clearQuestion();
+    
     setMessages(prev => [...prev, { role: 'user', content: text }]);
     setToolsUsed([]); // Clear tools when starting a new message
     sendChat.mutate({
@@ -289,6 +305,15 @@ export const JarvisMain: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col p-5 md:p-8 max-w-6xl mx-auto w-full overflow-y-auto pb-6">
+      
+      <AgentInteractiveOverlay 
+        activeApproval={activeApproval} 
+        agentQuestion={agentQuestion} 
+        resolveApproval={resolveApproval} 
+        clearQuestion={clearQuestion} 
+        onSubmitAnswer={handleSendMessage}
+      />
+
       {/* Header */}
       <header className="flex justify-between items-center mb-6 shrink-0 select-none" style={{ WebkitAppRegion: 'drag' } as any}>
         <div>
