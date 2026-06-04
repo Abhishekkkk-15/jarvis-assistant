@@ -129,7 +129,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
   const isHoveringRef = useRef(false);
 
-  const { activeApproval, agentQuestion, resolveApproval } = useWebSocket();
+  const { activeApproval, agentQuestion, resolveApproval, clearQuestion } = useWebSocket();
 
   const CharacterComponent = charactersMap[charId] || charactersMap['jarvis-bot'];
 
@@ -636,6 +636,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
                   if (e.key === 'Enter') {
                     const val = e.currentTarget.value;
                     if (val.trim()) {
+                      clearQuestion();
                       window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message: val } }));
                     }
                   }
@@ -646,6 +647,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
                   e.stopPropagation();
                   const input = document.getElementById('mini-agent-question-input') as HTMLInputElement;
                   if (input && input.value.trim()) {
+                    clearQuestion();
                     window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message: input.value } }));
                   }
                 }}
