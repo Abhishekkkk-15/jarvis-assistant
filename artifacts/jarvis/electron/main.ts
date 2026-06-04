@@ -1,5 +1,6 @@
 import { app, BrowserWindow, shell, ipcMain, desktopCapturer } from 'electron';
 import path from 'path';
+import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -99,4 +100,35 @@ ipcMain.handle('capture-screen', async () => {
     console.error('Failed to capture screen:', error);
     return null;
   }
+});
+
+let activeWinBounds: any = null;
+
+// Start tracking process
+const trackerPath = app.isPackaged 
+  ? path.join(process.resourcesPath, 'window-tracker.ps1')
+  : path.join(__dirname, 'window-tracker.ps1');
+
+const tracker = spawn('powershell.exe', ['-ExecutionPolicy', 'Bypass', '-File', trackerPath]);
+tracker.stdout.on('data', (data) => {
+  const output = data.toString().trim().split('\n');
+  const latest = output[output.length - 1]; // take the latest line
+  if (latest) {
+    const parts = latest.split(',');
+    if (parts.length === 5) {
+      activeWinBounds = {
+        id: parseInt(parts[4]),
+        bounds: {
+          x: parseInt(parts[0]),
+          y: parseInt(parts[1]),
+          width: parseInt(parts[2]),
+          height: parseInt(parts[3])
+        }
+      };
+    }
+  }
+});
+
+ipcMain.handle('get-active-window', async () => {
+  return activeWinBounds;
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 import './animations.css';
 
-export type CharacterAnimation = 'idle' | 'walk' | 'run' | 'wave' | 'dance' | 'sleep' | 'excited' | 'talk' | 'happy' | 'sad' | 'angry' | 'confused' | 'jealous' | 'bored' | 'surprised' | 'laughing' | 'thinking' | 'shy' | 'love' | 'scared' | 'dizzy' | 'cool' | 'dash' | 'jump' | 'teleport' | 'spin' | 'bounce' | 'zigzag' | 'crawl' | 'sneak' | 'cartwheel' | 'hover' | 'pace' | 'hide';
+export type CharacterAnimation = 'idle' | 'walk' | 'run' | 'wave' | 'dance' | 'sleep' | 'excited' | 'talk' | 'happy' | 'sad' | 'angry' | 'confused' | 'jealous' | 'bored' | 'surprised' | 'laughing' | 'thinking' | 'shy' | 'love' | 'scared' | 'dizzy' | 'cool' | 'dash' | 'jump' | 'teleport' | 'spin' | 'bounce' | 'zigzag' | 'crawl' | 'sneak' | 'cartwheel' | 'hover' | 'pace' | 'hide' | 'hang';
 
 export interface CharacterProps {
   animation: CharacterAnimation;

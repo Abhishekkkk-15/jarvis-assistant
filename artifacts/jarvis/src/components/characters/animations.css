@@ -258,3 +258,9 @@
 .anim-hover { animation: char-idle 2s ease-in-out infinite; transform: translateY(-10px); }
 .anim-pace { animation: char-run 0.4s infinite; }
 .anim-hide { animation: char-idle 1s infinite; opacity: 0.3; }
+
+@keyframes char-hang {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+.anim-hang { animation: char-hang 1s ease-in-out infinite; transform-origin: top center; }
