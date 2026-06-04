@@ -91,7 +91,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     }
   }, [toolsUsed, setToolsUsed]);
 
-  const [animation, setAnimation] = useState<CharacterAnimation>('idle');
+  const [baseAnimation, setBaseAnimation] = useState<CharacterAnimation>('idle');
   const [flipped, setFlipped] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -136,6 +136,13 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const { activeApproval, agentQuestion, resolveApproval, clearQuestion } = useWebSocket();
 
   const CharacterComponent = charactersMap[charId] || charactersMap['jarvis-bot'];
+
+  // Derived animation state (Overrides base movement animation with emotions/listening state)
+  const animation = isListening 
+    ? 'excited' 
+    : (personality.emotionAnimation 
+        ? personality.emotionAnimation 
+        : (isDancingToMusic && !isDragging && !isPhysicsActive ? 'dance' : baseAnimation));
 
   // Sync mouse events for transparent window properly
   useEffect(() => {
@@ -194,14 +201,6 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     return () => window.removeEventListener('jarvis-action', handleJarvisAction);
   }, []);
 
-  // State animations
-  useEffect(() => {
-    if (isListening) setAnimation('excited');
-    else if (personality.emotionAnimation) setAnimation(personality.emotionAnimation);
-    else if (isDancingToMusic && !isDragging && !isPhysicsActive && animation === 'idle') setAnimation('dance');
-    else setAnimation('idle');
-  }, [isListening, isSpeaking, isDancingToMusic, isDragging, isPhysicsActive, personality.emotionAnimation]);
-
   // Cursor tracking listener
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -233,7 +232,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     if (isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic) return;
 
     const idleTimer = setTimeout(() => {
-      if (animation === 'idle' && !isTrackingCursor) setAnimation('sleep');
+      if (baseAnimation === 'idle' && !isTrackingCursor) setBaseAnimation('sleep');
     }, 20000);
 
     const moveTimer = setInterval(() => {
@@ -256,18 +255,18 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
       setFlipped(newX < posX);
 
-      if (nextStyle === 'dash') setAnimation('run');
-      else if (nextStyle === 'sneak') setAnimation('walk');
-      else if (nextStyle === 'crawl') { setAnimation('walk'); setSquash({ x: 1.2, y: 0.6 }); setTimeout(() => setSquash({ x: 1, y: 1 }), 2000); }
-      else if (nextStyle === 'spin') { setAnimation('idle'); setRotation(720); setTimeout(() => setRotation(0), 1000); }
-      else if (nextStyle === 'cartwheel') { setAnimation('run'); setRotation(1080); setTimeout(() => setRotation(0), 1500); }
-      else if (nextStyle === 'bounce') { setAnimation('happy'); }
+      if (nextStyle === 'dash') setBaseAnimation('run');
+      else if (nextStyle === 'sneak') setBaseAnimation('walk');
+      else if (nextStyle === 'crawl') { setBaseAnimation('walk'); setSquash({ x: 1.2, y: 0.6 }); setTimeout(() => setSquash({ x: 1, y: 1 }), 2000); }
+      else if (nextStyle === 'spin') { setBaseAnimation('idle'); setRotation(720); setTimeout(() => setRotation(0), 1000); }
+      else if (nextStyle === 'cartwheel') { setBaseAnimation('run'); setRotation(1080); setTimeout(() => setRotation(0), 1500); }
+      else if (nextStyle === 'bounce') { setBaseAnimation('happy'); }
       else if (nextStyle === 'teleport') {
-        setAnimation('idle');
+        setBaseAnimation('idle');
         setOpacity(0);
         setTimeout(() => { setPosX(newX); setPosY(newY); setOpacity(1); }, 400);
       }
-      else setAnimation('walk');
+      else setBaseAnimation('walk');
 
       if (nextStyle !== 'teleport') {
         setPosX(newX);
@@ -275,14 +274,14 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       }
 
       const duration = nextStyle === 'dash' ? 800 : (nextStyle === 'jump' ? 1200 : 2000);
-      setTimeout(() => setAnimation('idle'), duration);
+      setTimeout(() => setBaseAnimation('idle'), duration);
     }, 6000 + Math.random() * 6000);
 
     return () => {
       clearTimeout(idleTimer);
       clearInterval(moveTimer);
     };
-  }, [isDragging, isListening, isSpeaking, isTrackingCursor, isPhysicsActive, isDancingToMusic, posX, setPosX, setPosY, animation]);
+  }, [isDragging, isListening, isSpeaking, isTrackingCursor, isPhysicsActive, isDancingToMusic, posX, setPosX, setPosY, baseAnimation]);
 
   useEffect(() => {
     // Reset timer when Jarvis state changes (e.g. finishes speaking/listening)
@@ -295,7 +294,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     const attentionTimer = setInterval(async () => {
       if (Date.now() - lastInteractionTime.current > 1 * 60 * 1000) {
         // Trigger attention seeker!
-        setAnimation('jealous');
+        setBaseAnimation('jealous');
         lastInteractionTime.current = Date.now(); // reset timer so it doesn't spam
         if (window.electronAPI) {
           const imageBase64 = await window.electronAPI.captureScreen();
@@ -348,13 +347,13 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
       setPosX(dragRef.current.initialX + dx);
       setPosY(dragRef.current.initialY + dy);
-      setAnimation('hang');
+      setBaseAnimation('hang');
     };
 
     const handleMouseUp = () => {
       if (isDragging) {
         setIsDragging(false);
-        setAnimation('idle');
+        setBaseAnimation('idle');
 
         // Start physics loop if dragged
         if (hasDragged.current) {
@@ -422,9 +421,9 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
       // Angry if dropped or thrown very hard against floor or walls
       if ((hitFloor && Math.abs(velocity.current.y) > 12) || (hitWall && Math.abs(velocity.current.x) > 12)) {
-        setAnimation('angry');
+        setBaseAnimation('angry');
         setTimeout(() => {
-          setAnimation((prev) => prev === 'angry' ? 'idle' : prev);
+          setBaseAnimation((prev) => prev === 'angry' ? 'idle' : prev);
         }, 3000); // clear anger after 3s
       }
 
@@ -487,14 +486,14 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     // Some files have empty type but are text (e.g. .md, .ts)
     // We'll just try to read it as text. If it fails or is massive, we can handle it.
     if (file.size > 2 * 1024 * 1024) { // 2MB limit
-      setAnimation('confused');
+      setBaseAnimation('confused');
       setReplyBubble("Whoa, that file is too big for me to eat right now!");
       const timer = setTimeout(() => setReplyBubble(''), 4000);
       return;
     }
 
     if (file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/')) {
-      setAnimation('confused');
+      setBaseAnimation('confused');
       setReplyBubble("I can't read media files yet! Try dropping a text or code file on me.");
       const timer = setTimeout(() => setReplyBubble(''), 4000);
       return;
@@ -504,15 +503,15 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     reader.onload = (event) => {
       const content = event.target?.result as string;
       if (content) {
-        setAnimation('happy');
+        setBaseAnimation('happy');
         const message = `I just dropped a file named \`${file.name}\`. Here are the contents:\n\n\`\`\`\n${content}\n\`\`\``;
         window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message } }));
       } else {
-        setAnimation('confused');
+        setBaseAnimation('confused');
       }
     };
     reader.onerror = () => {
-      setAnimation('confused');
+      setBaseAnimation('confused');
     };
     reader.readAsText(file);
   };
@@ -571,8 +570,8 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       onClick={() => {
         if (!hasDragged.current && !showContextMenu) {
           // Pet the character
-          setAnimation('happy');
-          setTimeout(() => setAnimation('idle'), 2000);
+          setBaseAnimation('happy');
+          setTimeout(() => setBaseAnimation('idle'), 2000);
         }
       }}
     >
@@ -734,7 +733,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
             onClick={async (e) => {
               e.stopPropagation();
               setShowContextMenu(false);
-              setAnimation('excited');
+              setBaseAnimation('excited');
               setReplyBubble('Analyzing screen...');
               if (window.electronAPI) {
                 const imageBase64 = await window.electronAPI.captureScreen();
@@ -743,7 +742,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
                     detail: { message: "What am I looking at right now?", imageBase64 }
                   }));
                 } else {
-                  setAnimation('confused');
+                  setBaseAnimation('confused');
                   setReplyBubble('Failed to capture screen.');
                   setTimeout(() => setReplyBubble(''), 3000);
                 }
