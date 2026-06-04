@@ -10,5 +10,7 @@ interface Window {
     setFullscreen: (isFullscreen: boolean) => void;
     captureScreen: () => Promise<string | null>;
     getActiveWindow: () => Promise<{ title: string; id: number; bounds: { x: number; y: number; width: number; height: number; }; owner: { name: string; processId: number; path: string; }; url?: string; memoryUsage?: number; } | null>;
+    hideQuickInput: () => void;
+    sendToMain: (msg: string) => void;
   };
 }

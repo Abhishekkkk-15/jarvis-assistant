@@ -1,3 +1,4 @@
+import React from 'react';
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -9,6 +10,7 @@ import { JarvisMain } from "@/pages/JarvisMain";
 import { CharactersPage } from "@/pages/CharactersPage";
 import { ConversationsPage } from "@/pages/ConversationsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { QuickInputPage } from "@/pages/QuickInputPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,19 +23,47 @@ const queryClient = new QueryClient({
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={JarvisMain} />
-        <Route path="/characters" component={CharactersPage} />
-        <Route path="/conversations" component={ConversationsPage} />
-        <Route path="/settings" component={SettingsPage} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/quick-input" component={QuickInputPage} />
+      <Route path="*">
+        <Layout>
+          <Switch>
+            <Route path="/" component={JarvisMain} />
+            <Route path="/characters" component={CharactersPage} />
+            <Route path="/conversations" component={ConversationsPage} />
+            <Route path="/settings" component={SettingsPage} />
+            <Route component={NotFound} />
+          </Switch>
+        </Layout>
+      </Route>
+    </Switch>
   );
 }
 
 function App() {
+  const [isQuickInput, setIsQuickInput] = React.useState(
+    window.location.hash === '#/quick-input' || window.location.hash === '#quick-input'
+  );
+
+  React.useEffect(() => {
+    const handleHashChange = () => {
+      setIsQuickInput(window.location.hash === '#/quick-input' || window.location.hash === '#quick-input');
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  if (isQuickInput) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <QuickInputPage />
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

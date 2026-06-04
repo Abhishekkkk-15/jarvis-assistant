@@ -1,5 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+declare const window: any;
+declare const CustomEvent: any;
+
 contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
   versions: {
@@ -11,4 +14,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setFullscreen: (isFullscreen: boolean) => ipcRenderer.send('set-fullscreen', isFullscreen),
   captureScreen: () => ipcRenderer.invoke('capture-screen'),
   getActiveWindow: () => ipcRenderer.invoke('get-active-window'),
+  hideQuickInput: () => ipcRenderer.send('hide-quick-input'),
+  sendToMain: (msg: string) => ipcRenderer.send('send-to-main', msg),
+});
+
+ipcRenderer.on('message-from-quick-input', (event, message) => {
+  (window as any).dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message } }));
 });

@@ -46,8 +46,8 @@ router.post("/transcribe", async (req, res) => {
     const addField = (name: string, value: string) => {
       parts.push(
         Buffer.from(
-          `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`
-        )
+          `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`,
+        ),
       );
     };
     addField("model", "whisper-large-v3");
@@ -56,8 +56,8 @@ router.post("/transcribe", async (req, res) => {
     // File part
     parts.push(
       Buffer.from(
-        `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${mimeType}\r\n\r\n`
-      )
+        `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${mimeType}\r\n\r\n`,
+      ),
     );
     parts.push(audioBuffer);
     parts.push(Buffer.from(`\r\n--${boundary}--\r\n`));
@@ -74,12 +74,15 @@ router.post("/transcribe", async (req, res) => {
           "Content-Length": String(body.length),
         },
         body,
-      }
+      },
     );
 
     if (!response.ok) {
       const errText = await response.text();
-      req.log.error({ status: response.status, err: errText }, "Groq Whisper error");
+      req.log.error(
+        { status: response.status, err: errText },
+        "Groq Whisper error",
+      );
       res.status(500).json({ error: `Transcription failed: ${errText}` });
       return;
     }
