@@ -221,17 +221,10 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       let minX = 0;
       let newY;
 
-      if (isWindowRoamingRef.current && activeWindowRef.current) {
-        const win = activeWindowRef.current.bounds;
-        minX = win.x;
-        maxX = win.x + win.width - 120;
-        newY = win.y - 110;
-      } else {
-        const maxY = window.innerHeight - 120;
-        // If we have gravity, we want it to roam mostly along the bottom floor
-        const isFloorRoaming = Math.random() > 0.3;
-        newY = isFloorRoaming ? maxY : Math.max(0, Math.min(Math.random() * maxY, maxY));
-      }
+      const maxY = window.innerHeight - 120;
+      // If we have gravity, we want it to roam mostly along the bottom floor
+      const isFloorRoaming = Math.random() > 0.3;
+      newY = isFloorRoaming ? maxY : Math.max(0, Math.min(Math.random() * maxY, maxY));
 
       const newX = Math.max(minX, Math.min(minX + Math.random() * (maxX - minX), maxX));
 
@@ -343,34 +336,8 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
         // Start physics loop if dragged
         if (hasDragged.current) {
-          if (window.electronAPI && typeof window.electronAPI.getActiveWindow === 'function') {
-            window.electronAPI.getActiveWindow().then((win: any) => {
-              if (win && win.bounds) {
-                // Check if dropped near the top edge of the active window
-                // (Allowing some margin: 0 to 60px above the window content)
-                if (posY >= win.bounds.y - 120 && posY <= win.bounds.y + 40 && posX >= win.bounds.x && posX <= win.bounds.x + win.bounds.width) {
-                  isWindowRoamingRef.current = true;
-                  activeWindowRef.current = win;
-                  setPosY(win.bounds.y - 110); // Sit on top
-                  setAnimation('happy');
-                  setIsPhysicsActive(false); // Make sure physics is off
-                  startRoamingLoop(win, posX, win.bounds.y - 110);
-                  return;
-                }
-              }
-              isWindowRoamingRef.current = false;
-              activeWindowRef.current = null;
-              setIsPhysicsActive(true);
-              startPhysicsLoop(posX, posY);
-            }).catch(() => {
-              // Fallback on error
-              setIsPhysicsActive(true);
-              startPhysicsLoop(posX, posY);
-            });
-          } else {
-            setIsPhysicsActive(true);
-            startPhysicsLoop(posX, posY);
-          }
+          setIsPhysicsActive(true);
+          startPhysicsLoop(posX, posY);
         }
       }
     };
@@ -384,57 +351,6 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDragging, posX, posY]);
-
-  const startRoamingLoop = (win: any, startX: number, startY: number) => {
-    let currentX = startX;
-    let currentY = startY;
-    let lastWinBounds = win.bounds;
-    
-    const loop = async () => {
-      if (!isWindowRoamingRef.current) return;
-      if (isDragging) return;
-
-      if (window.electronAPI && typeof window.electronAPI.getActiveWindow === 'function') {
-        try {
-          const currentWin = await window.electronAPI.getActiveWindow();
-          if (currentWin && currentWin.bounds && currentWin.id === activeWindowRef.current.id) {
-            const dx = currentWin.bounds.x - lastWinBounds.x;
-            const dy = currentWin.bounds.y - lastWinBounds.y;
-            
-            if (dx !== 0 || dy !== 0) {
-              currentX += dx;
-              currentY += dy;
-              setPosX(currentX);
-              setPosY(currentY);
-              lastWinBounds = currentWin.bounds;
-            }
-            
-            // Edge reactions
-            const minX = currentWin.bounds.x - 20;
-            const maxX = currentWin.bounds.x + currentWin.bounds.width - 100;
-            
-            if (currentX < minX || currentX > maxX) {
-              if (animation !== 'scared') {
-                setAnimation('scared');
-              }
-            } else {
-              // Restore animation if they move away from edge
-              if (animation === 'scared') setAnimation('idle');
-            }
-          }
-        } catch (e) {
-          // Window closed or lost focus? We can optionally fall back to physics
-        }
-      }
-
-      // Throttle to roughly 30fps for polling
-      setTimeout(() => {
-        if (isWindowRoamingRef.current) physicsRaf.current = requestAnimationFrame(loop);
-      }, 33);
-    };
-    
-    physicsRaf.current = requestAnimationFrame(loop);
-  };
 
   const startPhysicsLoop = (startX: number, startY: number) => {
     let currentX = startX;
