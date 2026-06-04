@@ -12,6 +12,10 @@ export interface CharacterProps {
   moodLabel?: string;
   showEmotionBubble?: string | null;
   showParticleBurst?: boolean;
+  mouseX?: number;
+  mouseY?: number;
+  posX?: number;
+  posY?: number;
 }
 
 export interface CustomCharacter {
@@ -46,6 +50,25 @@ const EmotionBubble: React.FC<{ animation: CharacterAnimation }> = ({ animation 
   const text = EMOTION_BUBBLE_TEXT[animation];
   if (!text) return null;
   return <div className="emotion-bubble">{text}</div>;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Eye Tracking Helper
+// ─────────────────────────────────────────────────────────────────────────────
+const computeEyeOffset = (mouseX?: number, mouseY?: number, posX?: number, posY?: number, size = 80, maxOffset = 3) => {
+  if (mouseX === undefined || mouseY === undefined || posX === undefined || posY === undefined) return { x: 0, y: 0 };
+  const centerX = posX + size / 2;
+  const centerY = posY + size / 2;
+  const dx = mouseX - centerX;
+  const dy = mouseY - centerY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  if (distance === 0) return { x: 0, y: 0 };
+  
+  const factor = Math.min(distance / 150, 1); 
+  return {
+    x: (dx / distance) * factor * maxOffset,
+    y: (dy / distance) * factor * maxOffset
+  };
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -164,7 +187,10 @@ const BaseCharacter: React.FC<{
   );
 };
 
-export const JarvisBot: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, isSpeaking = false, moodLabel, showParticleBurst }) => {
+export const JarvisBot: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, isSpeaking = false, moodLabel, showParticleBurst, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
+  
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation} isBlinking={isBlinking} isSpeaking={isSpeaking} moodLabel={moodLabel} showParticleBurst={showParticleBurst}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
@@ -175,22 +201,22 @@ export const JarvisBot: React.FC<CharacterProps> = ({ animation = 'idle', size =
         <rect x="35" y="20" width="30" height="25" rx="5" fill="#1a1a2e" stroke="#0ff" strokeWidth="2" />
         {/* Eyes — support blink by collapsing scaleY */}
         {(animation === 'happy' || animation === 'excited') ? (
-          <g className={isBlinking ? 'eye-blink' : ''}>
+          <g className={isBlinking ? 'eye-blink' : ''} transform={eyeTransform}>
             <path d="M 38 30 Q 42 26 46 30" fill="none" stroke="#0ff" strokeWidth="3" strokeLinecap="round" />
             <path d="M 50 30 Q 54 26 58 30" fill="none" stroke="#0ff" strokeWidth="3" strokeLinecap="round" />
           </g>
         ) : animation === 'sad' ? (
-          <g className={isBlinking ? 'eye-blink' : ''}>
+          <g className={isBlinking ? 'eye-blink' : ''} transform={eyeTransform}>
             <path d="M 38 28 Q 42 26 46 30" fill="none" stroke="#0ff" strokeWidth="3" strokeLinecap="round" />
             <path d="M 50 30 Q 54 26 58 28" fill="none" stroke="#0ff" strokeWidth="3" strokeLinecap="round" />
           </g>
         ) : animation === 'angry' ? (
-          <g className={isBlinking ? 'eye-blink' : ''}>
+          <g className={isBlinking ? 'eye-blink' : ''} transform={eyeTransform}>
             <path d="M 38 28 L 46 32" stroke="#f00" strokeWidth="3" strokeLinecap="round" />
             <path d="M 50 32 L 58 28" stroke="#f00" strokeWidth="3" strokeLinecap="round" />
           </g>
         ) : (
-          <g className={isBlinking ? 'eye-blink' : ''}>
+          <g className={isBlinking ? 'eye-blink' : ''} transform={eyeTransform}>
             <rect x="40" y="28" width="8" height={isBlinking ? 0.5 : 4} fill="#0ff" className={animation === 'sleep' ? 'opacity-20' : ''} />
             <rect x="52" y="28" width="8" height={isBlinking ? 0.5 : 4} fill="#0ff" className={animation === 'sleep' ? 'opacity-20' : ''} />
           </g>
@@ -224,7 +250,10 @@ export const JarvisBot: React.FC<CharacterProps> = ({ animation = 'idle', size =
   );
 };
 
-export const PixelFox: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, isSpeaking = false, moodLabel, showParticleBurst }) => {
+export const PixelFox: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, isSpeaking = false, moodLabel, showParticleBurst, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
+
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation} isBlinking={isBlinking} isSpeaking={isSpeaking} moodLabel={moodLabel} showParticleBurst={showParticleBurst}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible" shapeRendering="crispEdges">
@@ -245,26 +274,26 @@ export const PixelFox: React.FC<CharacterProps> = ({ animation = 'idle', size = 
         <rect x="70" y="10" width="10" height="15" fill="#333" />
         {/* Eyes & Nose */}
         {(animation === 'happy' || animation === 'excited') ? (
-          <g>
+          <g transform={eyeTransform}>
             <rect x="48" y="43" width="9" height="3" fill="#000" />
             <rect x="68" y="43" width="9" height="3" fill="#000" />
           </g>
         ) : animation === 'sad' ? (
-          <g>
+          <g transform={eyeTransform}>
             <rect x="50" y="47" width="5" height="5" fill="#000" />
             <rect x="70" y="47" width="5" height="5" fill="#000" />
             <rect x="48" y="45" width="5" height="2" fill="#000" />
             <rect x="72" y="45" width="5" height="2" fill="#000" />
           </g>
         ) : animation === 'angry' ? (
-          <g>
+          <g transform={eyeTransform}>
             <rect x="50" y="45" width="5" height="5" fill="#000" />
             <rect x="70" y="45" width="5" height="5" fill="#000" />
             <rect x="50" y="43" width="7" height="2" fill="#000" transform="rotate(20 50 43)" />
             <rect x="68" y="43" width="7" height="2" fill="#000" transform="rotate(-20 68 43)" />
           </g>
         ) : (
-          <g>
+          <g transform={eyeTransform}>
             <rect x="50" y="45" width="5" height="5" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
             <rect x="70" y="45" width="5" height="5" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
             {animation === 'sleep' && (
@@ -281,7 +310,10 @@ export const PixelFox: React.FC<CharacterProps> = ({ animation = 'idle', size = 
   );
 };
 
-export const SpaceCat: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const SpaceCat: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
+
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
@@ -306,24 +338,24 @@ export const SpaceCat: React.FC<CharacterProps> = ({ animation = 'idle', size = 
         <polygon points="62,22 55,18 58,28" fill="#ffb347" />
         {/* Face */}
         {(animation === 'happy' || animation === 'excited') ? (
-          <g>
+          <g transform={eyeTransform}>
             <path d="M 42 30 Q 44 27 46 30" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
             <path d="M 54 30 Q 56 27 58 30" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
           </g>
         ) : animation === 'sad' ? (
-          <g>
+          <g transform={eyeTransform}>
             <path d="M 42 29 Q 44 27 46 31" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
             <path d="M 54 31 Q 56 27 58 29" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
           </g>
         ) : animation === 'angry' ? (
-          <g>
+          <g transform={eyeTransform}>
             <path d="M 42 29 L 46 31" stroke="#000" strokeWidth="2" strokeLinecap="round" />
             <circle cx="44" cy="30" r="2" fill="#000" />
             <path d="M 54 31 L 58 29" stroke="#000" strokeWidth="2" strokeLinecap="round" />
             <circle cx="56" cy="30" r="2" fill="#000" />
           </g>
         ) : (
-          <g>
+          <g transform={eyeTransform}>
             <circle cx="44" cy="30" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
             <circle cx="56" cy="30" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
             {animation === 'sleep' && (
@@ -555,7 +587,10 @@ export const CyberPunk: React.FC<CharacterProps> = ({ animation = 'idle', size =
   );
 };
 
-export const MinionBob: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const MinionBob: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
+
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
@@ -579,19 +614,19 @@ export const MinionBob: React.FC<CharacterProps> = ({ animation = 'idle', size =
         <circle cx="50" cy="35" r="9" fill="#fff" />
         {/* Eye */}
         {(animation === 'happy' || animation === 'excited') ? (
-          <path d="M 46 35 Q 50 32 54 35" fill="none" stroke="#8e44ad" strokeWidth="3" strokeLinecap="round" />
+          <path d="M 46 35 Q 50 32 54 35" fill="none" stroke="#8e44ad" strokeWidth="3" strokeLinecap="round" transform={eyeTransform} />
         ) : animation === 'sad' ? (
-          <g>
+          <g transform={eyeTransform}>
             <circle cx="50" cy="36" r="3" fill="#8e44ad" />
             <path d="M 47 32 Q 50 31 53 32" fill="none" stroke="#333" strokeWidth="1.5" />
           </g>
         ) : animation === 'angry' ? (
-          <g>
+          <g transform={eyeTransform}>
             <circle cx="50" cy="35" r="3" fill="#8e44ad" />
             <path d="M 46 32 L 54 34" stroke="#333" strokeWidth="1.5" />
           </g>
         ) : (
-          <g>
+          <g transform={eyeTransform}>
             <circle cx="50" cy="35" r="3" fill="#8e44ad" className={animation === 'sleep' ? 'opacity-0' : ''} />
             {animation === 'sleep' && (
               <line x1="45" y1="35" x2="55" y2="35" stroke="#000" strokeWidth="2" />

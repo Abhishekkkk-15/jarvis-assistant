@@ -132,6 +132,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const isDancingToMusic = useAudioReactivity(40);
 
   const isHoveringRef = useRef(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const { activeApproval, agentQuestion, resolveApproval, clearQuestion } = useWebSocket();
 
@@ -292,22 +293,94 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   useEffect(() => {
     if (isDragging || isListening || isSpeaking || !isMinimized) return;
     const attentionTimer = setInterval(async () => {
+      // Expose a debug global to easily test this
+      (window as any).triggerAttention = () => { lastInteractionTime.current = 0; };
+
       if (Date.now() - lastInteractionTime.current > 15 * 60 * 1000) {
-        // Trigger attention seeker!
-        setBaseAnimation('jealous');
+        // Trigger clumsy tumble
+        setBaseAnimation('dizzy');
+        setMovementStyle('spin');
+        setIsPhysicsActive(true);
+        velocity.current = { x: (Math.random() - 0.5) * 40, y: -20 }; // Toss up wildly
+        startPhysicsLoop(posX, posY);
+
+        // Draw attention animation on canvas
+        const canvas = canvasRef.current;
+        if (canvas) {
+          // ensure canvas is sized properly to screen
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 12;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.shadowColor = '#000';
+            ctx.shadowBlur = 10;
+
+            // Draw a big question mark near the character
+            const startX = posX - 40;
+            const startY = posY - 40;
+            
+            let progress = 0;
+            const drawQMark = () => {
+              progress += 0.04;
+              if (progress > 1.2) {
+                // Fade out after 4 seconds
+                setTimeout(() => {
+                  if (canvas) {
+                    canvas.style.transition = 'opacity 1s ease';
+                    canvas.style.opacity = '0';
+                    setTimeout(() => {
+                      ctx.clearRect(0, 0, canvas.width, canvas.height);
+                      canvas.style.opacity = '1';
+                      canvas.style.transition = 'none';
+                    }, 1000);
+                  }
+                }, 4000);
+                return;
+              }
+              
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.beginPath();
+              
+              // Top curve
+              if (progress > 0) ctx.arc(startX, startY, 50, Math.PI, Math.PI * (1 + Math.min(progress, 0.5)*2));
+              // Stem
+              if (progress > 0.5) {
+                ctx.moveTo(startX + 50, startY);
+                ctx.lineTo(startX + 50, startY + 40 + Math.min((progress-0.5)*2, 1)*30);
+              }
+              // Dot
+              if (progress > 1) {
+                ctx.moveTo(startX + 50, startY + 100);
+                ctx.arc(startX + 50, startY + 100, 3, 0, Math.PI*2);
+              }
+              ctx.stroke();
+              
+              requestAnimationFrame(drawQMark);
+            };
+            drawQMark();
+          }
+        }
+
         lastInteractionTime.current = Date.now(); // reset timer so it doesn't spam
+        
+        // Let's also do the LLM prompt, but make it clumsy
         if (window.electronAPI) {
           const imageBase64 = await window.electronAPI.captureScreen();
           if (imageBase64) {
             window.dispatchEvent(new CustomEvent('jarvis-send-message', {
-              detail: { message: "IGNORE PREVIOUS CONTEXT. I have been ignoring you for 15 minutes. Look at my screen and say something very jealous, sassy, or fun to grab my attention! Keep it to 1 sentence.", imageBase64 }
+              detail: { message: "IGNORE PREVIOUS CONTEXT. I fell over because you ignored me for 15 minutes. Look at my screen and say something clumsy and funny to grab my attention! Keep it to 1 sentence.", imageBase64 }
             }));
           }
         }
       }
-    }, 60000); // Check every minute
+    }, 10000); // Check every 10 seconds
     return () => clearInterval(attentionTimer);
-  }, [isDragging, isListening, isSpeaking, isMinimized]);
+  }, [isDragging, isListening, isSpeaking, isMinimized, posX, posY]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
@@ -535,8 +608,13 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
                 : 'left 2s ease-in-out, top 2s ease-in-out';
 
   const content = (
-    <div
-      className="fixed z-50 select-none touch-none"
+    <>
+      <canvas
+        ref={canvasRef}
+        className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-[40]"
+      />
+      <div
+        className="fixed z-50 select-none touch-none"
       style={{
         left: posX,
         top: posY,
@@ -685,11 +763,11 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         {charId.startsWith('custom-') ? (() => {
           const customChar = customCharacters.find(c => c.id === charId);
           if (customChar) {
-            return <CustomCharacterRenderer character={customChar} animation={animation} size={120} flipped={flipped} />;
+            return <CustomCharacterRenderer character={customChar} animation={animation} size={120} flipped={flipped} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />;
           }
-          return <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} />;
+          return <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />;
         })() : (
-          <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} />
+          <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />
         )}
       </div>
 
@@ -766,6 +844,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         </div>
       )}
     </div>
+    </>
   );
 
   return createPortal(content, document.body);
