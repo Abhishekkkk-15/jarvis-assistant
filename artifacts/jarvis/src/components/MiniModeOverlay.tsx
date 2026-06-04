@@ -163,22 +163,36 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     return undefined;
   }, [isMinimized]);
 
-  // Handle Confused state from JARVIS replies
+  // Handle custom LLM action tags
   useEffect(() => {
-    if (lastReply && lastReply.includes('?')) {
-      setAnimation('confused');
-      const timer = setTimeout(() => setAnimation('idle'), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [lastReply]);
+    const handleJarvisAction = (e: any) => {
+      const { action } = e.detail;
+      if (action) {
+        // We know action is one of CharacterAnimation because we instructed the LLM
+        setAnimation(action as CharacterAnimation);
+        
+        // Also map some tags to movement styles if applicable
+        if (['dash', 'jump', 'teleport', 'spin', 'bounce', 'zigzag', 'crawl', 'sneak', 'cartwheel', 'hover'].includes(action)) {
+          setMovementStyle(action as any);
+        }
+        
+        // Reset back to idle/float after 4 seconds
+        setTimeout(() => {
+          setAnimation('idle');
+          setMovementStyle('float');
+        }, 4000);
+      }
+    };
+    window.addEventListener('jarvis-action', handleJarvisAction);
+    return () => window.removeEventListener('jarvis-action', handleJarvisAction);
+  }, []);
 
   // State animations
   useEffect(() => {
     if (isListening) setAnimation('excited');
-    else if (isSpeaking) setAnimation('talk');
-    else if (isDancingToMusic && !isDragging && !isPhysicsActive) setAnimation('dance');
-    else if (!isDragging && !isPhysicsActive && animation !== 'happy' && animation !== 'angry' && animation !== 'confused') setAnimation('idle');
-  }, [isListening, isSpeaking, isDancingToMusic, isDragging, isPhysicsActive]);
+    else if (isSpeaking && animation === 'idle') setAnimation('talk');
+    else if (isDancingToMusic && !isDragging && !isPhysicsActive && animation === 'idle') setAnimation('dance');
+  }, [isListening, isSpeaking, isDancingToMusic, isDragging, isPhysicsActive, animation]);
 
   // Cursor tracking listener
   useEffect(() => {

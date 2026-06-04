@@ -203,13 +203,27 @@ export const JarvisMain: React.FC = () => {
     }, {
       onSuccess: (data) => {
         if (data.conversationId) setActiveConversationId(data.conversationId);
-        setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-        setLastReply(data.reply);
+        
+        let finalReply = data.reply;
+        let animTag = '';
+        const animMatch = finalReply.match(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i);
+        if (animMatch) {
+            animTag = animMatch[1];
+            finalReply = finalReply.replace(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i, '').trim();
+        }
+
+        setMessages(prev => [...prev, { role: 'assistant', content: finalReply }]);
+        setLastReply(finalReply);
+        
+        if (animTag) {
+            window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: animTag.toLowerCase() } }));
+        }
+
         if (data.toolsUsed && data.toolsUsed.length > 0) {
           setToolsUsed(data.toolsUsed);
         }
         if (!muted && settings?.voiceEnabled !== false) {
-          speak(data.reply);
+          speak(finalReply);
         } else {
           // If muted, clear accessories after 5 seconds so they don't stay forever
           setTimeout(() => {
