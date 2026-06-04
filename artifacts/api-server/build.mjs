@@ -32,6 +32,8 @@ async function buildAll() {
       "sharp",
       "better-sqlite3",
       "sqlite3",
+      "sqlite-vec",
+      "sqlite-vec-windows-x64",
       "canvas",
       "bcrypt",
       "argon2",

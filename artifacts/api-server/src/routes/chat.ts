@@ -193,7 +193,6 @@ router.post("/chat", async (req, res) => {
 
     const hasImage = !!parsed.data.imageBase64;
 
-    // Hardcode Nvidia and model selection
     const provider = "nvidia";
     const modelName = hasImage ? "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" : "mistralai/mistral-medium-3.5-128b";
 

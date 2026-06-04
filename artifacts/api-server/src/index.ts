@@ -4,12 +4,10 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { setupWsManager } from "./lib/wsManager";
 
-const rawPort = process.env["PORT"];
+let rawPort = process.env["PORT"];
 
 if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
+  rawPort = "4000"
 }
 
 const port = Number(rawPort);

@@ -38,8 +38,10 @@ minimumReleaseAgeExclude:
 
 onlyBuiltDependencies:
   - '@swc/core'
+  - better-sqlite3
   - esbuild
   - msw
+  - puppeteer
   - unrs-resolver
 
 overrides:
