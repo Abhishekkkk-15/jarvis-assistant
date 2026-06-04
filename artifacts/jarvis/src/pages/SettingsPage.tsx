@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Key, Cpu, Mic, MessageSquareCode, Save } from 'lucide-react';
+import { Key, Cpu, Mic, MessageSquareCode, Save, Volume2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -10,12 +10,14 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useTTS } from '@/hooks/useTTS';
 
 export const SettingsPage: React.FC = () => {
   const { data: settings, isLoading } = useGetSettings({ query: { queryKey: getGetSettingsQueryKey() } });
   const updateSettings = useUpdateSettings();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const tts = useTTS();
 
   const [miniModeEnabled, setMiniModeEnabled] = useLocalStorage('miniModeEnabled', true);
 
@@ -145,6 +147,95 @@ export const SettingsPage: React.FC = () => {
               </div>
 
 
+            </div>
+          </section>
+
+          {/* TTS Voice Settings */}
+          <section className={sectionClass}>
+            <h3 className={sectionHeadingClass}>
+              <Volume2 size={15} className="text-primary" /> Voice Output (TTS)
+            </h3>
+            <div className="space-y-5">
+
+              {/* Enable/Disable */}
+              <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Enable TTS</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">JARVIS speaks responses aloud (Web Speech API, free)</p>
+                </div>
+                <Switch checked={tts.isEnabled} onCheckedChange={tts.toggleEnabled} />
+              </div>
+
+              {/* Voice Selector */}
+              {tts.voices.length > 0 && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">Voice</label>
+                  <Select
+                    value={tts.selectedVoice?.name || ""}
+                    onValueChange={(name) => {
+                      const v = tts.voices.find(v => v.name === name);
+                      if (v) tts.updateVoice(v);
+                    }}
+                  >
+                    <SelectTrigger className="text-sm">
+                      <SelectValue placeholder="Select a voice" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tts.voices
+                        .filter(v => v.lang.startsWith("en"))
+                        .map(v => (
+                          <SelectItem key={v.name} value={v.name}>
+                            {v.name} ({v.lang})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Showing English voices. Windows Microsoft voices sound best.</p>
+                </div>
+              )}
+
+              {/* Speed */}
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <label className="text-sm font-medium text-foreground">Speed</label>
+                  <span className="text-xs text-muted-foreground">{tts.rate.toFixed(1)}x</span>
+                </div>
+                <input
+                  type="range" min="0.5" max="2" step="0.1"
+                  value={tts.rate}
+                  onChange={(e) => tts.updateRate(parseFloat(e.target.value))}
+                  className="w-full accent-primary"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Slow (0.5x)</span><span>Normal (1.0x)</span><span>Fast (2.0x)</span>
+                </div>
+              </div>
+
+              {/* Pitch */}
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <label className="text-sm font-medium text-foreground">Pitch</label>
+                  <span className="text-xs text-muted-foreground">{tts.pitch.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range" min="0.5" max="2" step="0.1"
+                  value={tts.pitch}
+                  onChange={(e) => tts.updatePitch(parseFloat(e.target.value))}
+                  className="w-full accent-primary"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Low</span><span>Normal</span><span>High</span>
+                </div>
+              </div>
+
+              {/* Test button */}
+              <button
+                type="button"
+                onClick={() => tts.speak("Hello! I am JARVIS, your AI assistant. How may I help you today?")}
+                className="w-full py-2 rounded-lg border border-primary/40 text-primary text-sm hover:bg-primary/5 transition-colors"
+              >
+                🔊 Test Voice
+              </button>
             </div>
           </section>
 

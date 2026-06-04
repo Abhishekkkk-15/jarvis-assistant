@@ -12,6 +12,7 @@ import * as child_process from "child_process";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { allTools } from "../tools/index.js";
+import { searchMemory } from "../lib/memory.js";
 const router = Router();
 
 // ─────────────────────────────────────────────
@@ -233,6 +234,17 @@ Core Rules:
    - Use \`forget_memory\` when the user asks you to forget something specific.
 6. When done, give a concise human-readable summary of what you did and what the result was.
 
+OS COMPUTER CONTROL:
+You have REAL, working tools for controlling this Windows computer. These are NOT simulated:
+- \\`get_screen_size\\` — always call this first to know the screen dimensions before clicking
+- \\`get_cursor_position\\` — get current mouse position  
+- \\`mouse_control\\` — REALLY moves/clicks/scrolls the mouse using pyautogui
+- \\`keyboard_control\\` — REALLY types text and presses keys using pyautogui
+- \\`screen_capture\\` — takes a REAL screenshot
+- \\`window_management\\` — list, minimize, maximize, close windows
+- \\`clipboard\\` — read and write clipboard
+When controlling the PC: always call \\`get_screen_size\\` and \\`get_cursor_position\\` first, then use \\`window_management\\` to list/focus windows if needed, then use \\`mouse_control\\` and \\`keyboard_control\\` to interact.
+
 PHYSICAL AVATAR INSTRUCTIONS:
 You have a physical avatar on the user's screen. You can control your physical actions by prepending your text response with an action tag: \`[anim: <animation>]\`.
 Valid animations: idle, walk, run, wave, dance, sleep, excited, talk, happy, sad, angry, confused, jealous, bored, surprised, laughing, thinking, shy, love, scared, dizzy, cool, dash, jump, teleport, spin, bounce, zigzag, crawl, sneak, cartwheel, hover, pace, hide, hang.
@@ -287,8 +299,28 @@ CRITICAL INSTRUCTION: The conversation history represents ALREADY COMPLETED turn
       transcript += "=================================\n";
     }
 
+    // ── Auto Memory Injection ──────────────────────────────────────────────
+    // Silently search long-term memory for relevant context using the user's
+    // message. Inject relevant facts directly into the system prompt so JARVIS
+    // always has personal context without needing to call recall_memory first.
+    let memoryContext = "";
+    try {
+      const relevantMemories = await searchMemory(parsed.data.message, 5);
+      // Only include memories with cosine distance < 0.75 (meaningfully relevant)
+      const filtered = relevantMemories.filter(m => m.distance < 0.75);
+      if (filtered.length > 0) {
+        memoryContext = "\n\n=== YOUR LONG-TERM MEMORY (Auto-recalled) ===\n(These are relevant facts you've saved about this user. Use them naturally.)\n";
+        filtered.forEach(m => {
+          memoryContext += `- [${m.metadata}] ${m.text_content}\n`;
+        });
+        memoryContext += "=============================================\n";
+      }
+    } catch {
+      // Memory search failed silently — embeddings may not be available, continue without it
+    }
+
     const finalMessages: any[] = [
-      new SystemMessage(MASTER_PROMPT + transcript)
+      new SystemMessage(MASTER_PROMPT + memoryContext + transcript)
     ];
 
     if (hasImage) {

@@ -7,6 +7,7 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import ReactMarkdown from 'react-markdown';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { AgentInteractiveOverlay } from '@/components/ui/AgentInteractiveOverlay';
+import { useTTS } from '@/hooks/useTTS';
 
 export const JarvisMain: React.FC = () => {
   const [isListening, setIsListening] = useLocalStorage('jarvisIsListening', false);
@@ -16,7 +17,10 @@ export const JarvisMain: React.FC = () => {
   const [transcript, setTranscript] = useState('');
   const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
-  const [muted, setMuted] = useState(false);
+
+  // TTS via Web Speech API hook
+  const tts = useTTS();
+  const muted = !tts.isEnabled;
 
   const { data: settings } = useGetSettings({ query: { queryKey: getGetSettingsQueryKey() } });
   const { data: stats } = useGetStats({ query: { queryKey: getGetStatsQueryKey() } });
@@ -239,7 +243,10 @@ export const JarvisMain: React.FC = () => {
           setToolsUsed(data.toolsUsed);
         }
         if (!muted && settings?.voiceEnabled !== false) {
-          speak(finalReply);
+          tts.speak(finalReply);
+          // Clear tools badge after speaking finishes (estimated)
+          const wordCount = finalReply.split(/\s+/).length;
+          setTimeout(() => setToolsUsed([]), Math.max(3000, wordCount * 350));
         } else {
           // If muted, clear accessories after 5 seconds so they don't stay forever
           setTimeout(() => {
@@ -265,43 +272,10 @@ export const JarvisMain: React.FC = () => {
     return () => window.removeEventListener('jarvis-send-message', handleGlobalMessage);
   }, [activeConversationId, settings]);
 
-  const speak = (text: string) => {
-    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
-    setIsSpeaking(true);
-    
-    // Chrome Windows bug: onend fires when audio is sent to OS spooler, not when it finishes playing.
-    // We calculate a mathematically safe minimum duration (assuming ~180 WPM / 3 words per sec) + 1.5s buffer
-    const wordCount = text.split(/\s+/).length;
-    const estimatedDurationMs = (wordCount * 333) + 1500;
-    const startTime = performance.now();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    const voices = window.speechSynthesis.getVoices();
-    const preferred = voices.find(v => v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Daniel'));
-    if (preferred) utterance.voice = preferred;
-    utterance.pitch = 1;
-    utterance.rate = 1.05;
-    
-    const finalizeSpeaking = () => {
-      if (synthesisRef.current === utterance) {
-        const elapsed = performance.now() - startTime;
-        const remainingDelay = Math.max(0, estimatedDurationMs - elapsed);
-        
-        setTimeout(() => {
-          if (synthesisRef.current === utterance) {
-            setIsSpeaking(false);
-            setToolsUsed([]);
-          }
-        }, remainingDelay);
-      }
-    };
-
-    utterance.onend = finalizeSpeaking;
-    utterance.onerror = finalizeSpeaking;
-    
-    synthesisRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
-  };
+  // Sync isSpeaking from TTS hook to local storage so MiniMode can read it
+  useEffect(() => {
+    setIsSpeaking(tts.isSpeaking);
+  }, [tts.isSpeaking]);
 
   return (
     <div className="h-full flex flex-col p-5 md:p-8 max-w-6xl mx-auto w-full overflow-y-auto pb-6">
@@ -321,8 +295,9 @@ export const JarvisMain: React.FC = () => {
           <p className="text-sm text-muted-foreground">{settings?.selectedModel || 'No model selected'}</p>
         </div>
         <button
-          onClick={() => setMuted(!muted)}
+          onClick={() => tts.toggleEnabled()}
           className={`p-2 rounded-lg border transition-colors ${muted ? 'border-destructive/40 text-destructive bg-destructive/5' : 'border-border text-muted-foreground hover:text-foreground hover:bg-slate-100'}`}
+          title={muted ? 'Click to enable JARVIS voice' : 'Click to mute JARVIS voice'}
           data-testid="button-mute"
           style={{ WebkitAppRegion: 'no-drag' } as any}
         >

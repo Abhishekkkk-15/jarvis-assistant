@@ -9,7 +9,7 @@ export const systemTools = [
     description: "Returns a list of all tools currently available to the agent.",
     schema: z.object({}),
     func: async () => {
-      return "Available tools: web_browser_page_reader, website_screenshot_capture, pdf_reader, youtube_transcript_extractor, rss_feed_reader, news_search, mouse_control, keyboard_control, screen_capture, window_management, read_file, write_file, edit_file, create_directory, delete_file, move_rename_file, search_files, execute_bash, execute_powershell, execute_cmd, process_management, listTools, requestApproval, askQuestion.";
+      return "Available tools: web_browser_page_reader, website_screenshot_capture, pdf_reader, youtube_transcript_extractor, rss_feed_reader, news_search, mouse_control, get_cursor_position, get_screen_size, keyboard_control, screen_capture, window_management, clipboard, read_file, write_file, edit_file, create_directory, delete_file, move_rename_file, search_files, execute_bash, execute_powershell, execute_cmd, process_management, remember_fact, recall_memory, list_memories, forget_memory, listTools, requestApproval, askQuestion.";
     },
   }),
   new DynamicStructuredTool({
