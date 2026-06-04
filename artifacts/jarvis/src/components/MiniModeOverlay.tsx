@@ -297,86 +297,91 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       (window as any).triggerAttention = () => { lastInteractionTime.current = 0; };
 
       if (Date.now() - lastInteractionTime.current > 15 * 60 * 1000) {
-        // Trigger clumsy tumble
-        setBaseAnimation('dizzy');
-        setMovementStyle('spin');
-        setIsPhysicsActive(true);
-        velocity.current = { x: (Math.random() - 0.5) * 40, y: -20 }; // Toss up wildly
-        startPhysicsLoop(posX, posY);
+        const actionType = Math.floor(Math.random() * 3);
 
-        // Draw attention animation on canvas
-        const canvas = canvasRef.current;
-        if (canvas) {
-          // ensure canvas is sized properly to screen
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = '#e74c3c';
-            ctx.lineWidth = 12;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.shadowColor = '#000';
-            ctx.shadowBlur = 10;
-
-            // Draw a big question mark near the character
-            const startX = posX - 40;
-            const startY = posY - 40;
-            
-            let progress = 0;
-            const drawQMark = () => {
-              progress += 0.04;
-              if (progress > 1.2) {
-                // Fade out after 4 seconds
-                setTimeout(() => {
-                  if (canvas) {
-                    canvas.style.transition = 'opacity 1s ease';
-                    canvas.style.opacity = '0';
-                    setTimeout(() => {
-                      ctx.clearRect(0, 0, canvas.width, canvas.height);
-                      canvas.style.opacity = '1';
-                      canvas.style.transition = 'none';
-                    }, 1000);
-                  }
-                }, 4000);
-                return;
-              }
-              
+        if (actionType === 0) {
+          // 1. Trigger clumsy tumble
+          setBaseAnimation('dizzy');
+          setMovementStyle('spin');
+          setIsPhysicsActive(true);
+          velocity.current = { x: (Math.random() - 0.5) * 40, y: -20 }; // Toss up wildly
+          startPhysicsLoop(posX, posY);
+        } else if (actionType === 1) {
+          // 2. Draw attention animation on canvas
+          const canvas = canvasRef.current;
+          if (canvas) {
+            // ensure canvas is sized properly to screen
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
               ctx.clearRect(0, 0, canvas.width, canvas.height);
-              ctx.beginPath();
+              ctx.strokeStyle = '#e74c3c';
+              ctx.lineWidth = 12;
+              ctx.lineCap = 'round';
+              ctx.lineJoin = 'round';
+              ctx.shadowColor = '#000';
+              ctx.shadowBlur = 10;
+
+              // Draw a big question mark near the character
+              const startX = posX - 40;
+              const startY = posY - 40;
               
-              // Top curve
-              if (progress > 0) ctx.arc(startX, startY, 50, Math.PI, Math.PI * (1 + Math.min(progress, 0.5)*2));
-              // Stem
-              if (progress > 0.5) {
-                ctx.moveTo(startX + 50, startY);
-                ctx.lineTo(startX + 50, startY + 40 + Math.min((progress-0.5)*2, 1)*30);
-              }
-              // Dot
-              if (progress > 1) {
-                ctx.moveTo(startX + 50, startY + 100);
-                ctx.arc(startX + 50, startY + 100, 3, 0, Math.PI*2);
-              }
-              ctx.stroke();
-              
-              requestAnimationFrame(drawQMark);
-            };
-            drawQMark();
+              let progress = 0;
+              const drawQMark = () => {
+                progress += 0.04;
+                if (progress > 1.2) {
+                  // Fade out after 4 seconds
+                  setTimeout(() => {
+                    if (canvas) {
+                      canvas.style.transition = 'opacity 1s ease';
+                      canvas.style.opacity = '0';
+                      setTimeout(() => {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        canvas.style.opacity = '1';
+                        canvas.style.transition = 'none';
+                      }, 1000);
+                    }
+                  }, 4000);
+                  return;
+                }
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.beginPath();
+                
+                // Top curve
+                if (progress > 0) ctx.arc(startX, startY, 50, Math.PI, Math.PI * (1 + Math.min(progress, 0.5)*2));
+                // Stem
+                if (progress > 0.5) {
+                  ctx.moveTo(startX + 50, startY);
+                  ctx.lineTo(startX + 50, startY + 40 + Math.min((progress-0.5)*2, 1)*30);
+                }
+                // Dot
+                if (progress > 1) {
+                  ctx.moveTo(startX + 50, startY + 100);
+                  ctx.arc(startX + 50, startY + 100, 3, 0, Math.PI*2);
+                }
+                ctx.stroke();
+                
+                requestAnimationFrame(drawQMark);
+              };
+              drawQMark();
+            }
+          }
+        } else {
+          // 3. Jealous/clumsy LLM screen capture
+          setBaseAnimation('jealous'); // Give some visual feedback
+          if (window.electronAPI) {
+            const imageBase64 = await window.electronAPI.captureScreen();
+            if (imageBase64) {
+              window.dispatchEvent(new CustomEvent('jarvis-send-message', {
+                detail: { message: "IGNORE PREVIOUS CONTEXT. I have been ignoring you for 15 minutes. Look at my screen and say something very jealous, sassy, or fun to grab my attention! Keep it to 1 sentence.", imageBase64 }
+              }));
+            }
           }
         }
 
         lastInteractionTime.current = Date.now(); // reset timer so it doesn't spam
-        
-        // Let's also do the LLM prompt, but make it clumsy
-        if (window.electronAPI) {
-          const imageBase64 = await window.electronAPI.captureScreen();
-          if (imageBase64) {
-            window.dispatchEvent(new CustomEvent('jarvis-send-message', {
-              detail: { message: "IGNORE PREVIOUS CONTEXT. I fell over because you ignored me for 15 minutes. Look at my screen and say something clumsy and funny to grab my attention! Keep it to 1 sentence.", imageBase64 }
-            }));
-          }
-        }
       }
     }, 10000); // Check every 10 seconds
     return () => clearInterval(attentionTimer);
