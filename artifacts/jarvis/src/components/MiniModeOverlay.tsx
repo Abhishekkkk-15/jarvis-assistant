@@ -76,8 +76,18 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [isListening] = useLocalStorage('jarvisIsListening', false);
   const [isSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
   const [lastReply] = useLocalStorage('jarvisLastReply', '');
-  const [toolsUsed] = useLocalStorage<string[]>('jarvisToolsUsed', []);
+  const [toolsUsed, setToolsUsed] = useLocalStorage<string[]>('jarvisToolsUsed', []);
   const [customCharacters] = useLocalStorage<CustomCharacter[]>('jarvisCustomCharacters', []);
+
+  // Clear tools after 4 seconds so they don't stay forever
+  useEffect(() => {
+    if (toolsUsed && toolsUsed.length > 0) {
+      const timer = setTimeout(() => {
+        setToolsUsed([]);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toolsUsed, setToolsUsed]);
 
   const [animation, setAnimation] = useState<CharacterAnimation>('idle');
   const [flipped, setFlipped] = useState(false);
@@ -85,21 +95,26 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [replyBubble, setReplyBubble] = useState('');
   const [showRestoreHint, setShowRestoreHint] = useState(false);
-  
+
   const [isDragHovering, setIsDragHovering] = useState(false);
-  
+
   const dragRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number } | null>(null);
   const hasDragged = useRef(false);
   const [, setLocation] = useLocation();
 
   // Smart movement states
   const [isTrackingCursor, setIsTrackingCursor] = useState(false);
-  const [movementStyle, setMovementStyle] = useState<'float' | 'dash' | 'jump'>('float');
+  const [movementStyle, setMovementStyle] = useState<'float' | 'dash' | 'jump' | 'teleport' | 'spin' | 'bounce' | 'zigzag' | 'crawl' | 'sneak' | 'cartwheel' | 'hover' | 'pace' | 'hide'>('float');
   const cursorRef = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+
+  // Attention Seeker Tracker
+  const lastInteractionTime = useRef(Date.now());
 
   // Physics states
   const [isPhysicsActive, setIsPhysicsActive] = useState(false);
   const [squash, setSquash] = useState({ x: 1, y: 1 });
+  const [rotation, setRotation] = useState(0);
+  const [opacity, setOpacity] = useState(1);
   const velocity = useRef({ x: 0, y: 0 });
   const lastMousePos = useRef({ x: 0, y: 0, time: 0 });
   const physicsRaf = useRef<number | null>(null);
@@ -114,7 +129,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   // Sync mouse events for transparent window properly
   useEffect(() => {
     if (!isMinimized || !window.electronAPI) return;
-    
+
     if (isDragging || showContextMenu || isHoveringRef.current) {
       window.electronAPI.setIgnoreMouseEvents(false);
     } else {
@@ -196,26 +211,40 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     }, 20000);
 
     const moveTimer = setInterval(() => {
-      if (isTrackingCursor) return; 
+      if (isTrackingCursor) return;
 
       const maxX = window.innerWidth - 120;
       const maxY = window.innerHeight - 120;
       const newX = Math.max(0, Math.min(Math.random() * maxX, maxX));
-      
+
       // If we have gravity, we want it to roam mostly along the bottom floor
       const isFloorRoaming = Math.random() > 0.3;
       const newY = isFloorRoaming ? maxY : Math.max(0, Math.min(Math.random() * maxY, maxY));
-      
-      const styles: ('float' | 'dash' | 'jump')[] = ['float', 'float', 'dash', 'jump'];
+
+      const styles: ('float' | 'dash' | 'jump' | 'teleport' | 'spin' | 'bounce' | 'zigzag' | 'crawl' | 'sneak' | 'cartwheel' | 'hover' | 'pace' | 'hide')[] = ['float', 'float', 'dash', 'jump', 'teleport', 'spin', 'bounce', 'zigzag', 'crawl', 'sneak', 'cartwheel', 'hover', 'pace', 'hide'];
       const nextStyle = styles[Math.floor(Math.random() * styles.length)];
       setMovementStyle(nextStyle);
-      
+
       setFlipped(newX < posX);
-      setAnimation(nextStyle === 'dash' ? 'run' : 'walk');
-      
-      setPosX(newX);
-      setPosY(newY);
-      
+
+      if (nextStyle === 'dash') setAnimation('run');
+      else if (nextStyle === 'sneak') setAnimation('walk');
+      else if (nextStyle === 'crawl') { setAnimation('walk'); setSquash({ x: 1.2, y: 0.6 }); setTimeout(() => setSquash({ x: 1, y: 1 }), 2000); }
+      else if (nextStyle === 'spin') { setAnimation('idle'); setRotation(720); setTimeout(() => setRotation(0), 1000); }
+      else if (nextStyle === 'cartwheel') { setAnimation('run'); setRotation(1080); setTimeout(() => setRotation(0), 1500); }
+      else if (nextStyle === 'bounce') { setAnimation('happy'); }
+      else if (nextStyle === 'teleport') {
+        setAnimation('idle');
+        setOpacity(0);
+        setTimeout(() => { setPosX(newX); setPosY(newY); setOpacity(1); }, 400);
+      }
+      else setAnimation('walk');
+
+      if (nextStyle !== 'teleport') {
+        setPosX(newX);
+        setPosY(newY);
+      }
+
       const duration = nextStyle === 'dash' ? 800 : (nextStyle === 'jump' ? 1200 : 2000);
       setTimeout(() => setAnimation('idle'), duration);
     }, 6000 + Math.random() * 6000);
@@ -226,8 +255,35 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     };
   }, [isDragging, isListening, isSpeaking, isTrackingCursor, isPhysicsActive, isDancingToMusic, posX, setPosX, setPosY, animation]);
 
+  useEffect(() => {
+    // Reset timer when Jarvis state changes (e.g. finishes speaking/listening)
+    lastInteractionTime.current = Date.now();
+  }, [isListening, isSpeaking]);
+
+  // Attention Seeker logic (15 minutes of inactivity)
+  useEffect(() => {
+    if (isDragging || isListening || isSpeaking || !isMinimized) return;
+    const attentionTimer = setInterval(async () => {
+      if (Date.now() - lastInteractionTime.current > 15 * 60 * 1000) {
+        // Trigger attention seeker!
+        setAnimation('jealous');
+        lastInteractionTime.current = Date.now(); // reset timer so it doesn't spam
+        if (window.electronAPI) {
+          const imageBase64 = await window.electronAPI.captureScreen();
+          if (imageBase64) {
+            window.dispatchEvent(new CustomEvent('jarvis-send-message', {
+              detail: { message: "IGNORE PREVIOUS CONTEXT. I have been ignoring you for 15 minutes. Look at my screen and say something very jealous, sassy, or fun to grab my attention! Keep it to 1 sentence.", imageBase64 }
+            }));
+          }
+        }
+      }
+    }, 60000); // Check every minute
+    return () => clearInterval(attentionTimer);
+  }, [isDragging, isListening, isSpeaking, isMinimized]);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
+    lastInteractionTime.current = Date.now();
     if (physicsRaf.current) cancelAnimationFrame(physicsRaf.current);
     hasDragged.current = false;
     setIsDragging(true);
@@ -249,7 +305,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       const dx = e.clientX - dragRef.current.startX;
       const dy = e.clientY - dragRef.current.startY;
       if (Math.abs(dx) > 4 || Math.abs(dy) > 4) hasDragged.current = true;
-      
+
       const now = performance.now();
       const dt = now - lastMousePos.current.time;
       if (dt > 0) {
@@ -260,17 +316,17 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         };
       }
       lastMousePos.current = { x: e.clientX, y: e.clientY, time: now };
-      
+
       setPosX(dragRef.current.initialX + dx);
       setPosY(dragRef.current.initialY + dy);
       setAnimation('wave');
     };
-    
+
     const handleMouseUp = () => {
       if (isDragging) {
         setIsDragging(false);
         setAnimation('idle');
-        
+
         // Start physics loop if dragged
         if (hasDragged.current) {
           setIsPhysicsActive(true);
@@ -278,7 +334,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         }
       }
     };
-    
+
     if (isDragging) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
@@ -434,13 +490,21 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
   if (!enabled && !isMinimized) return null;
 
-  const transitionStyle = isDragging || isPhysicsActive
-    ? 'none' 
-    : movementStyle === 'dash' 
+  const transitionStyle = isDragging || isPhysicsActive || movementStyle === 'teleport'
+    ? 'none'
+    : movementStyle === 'dash'
       ? 'left 0.8s cubic-bezier(0.1, 0.9, 0.2, 1), top 0.8s cubic-bezier(0.1, 0.9, 0.2, 1)'
-      : movementStyle === 'jump'
+      : movementStyle === 'jump' || movementStyle === 'bounce'
         ? 'left 1.2s linear, top 1.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
-        : 'left 2s ease-in-out, top 2s ease-in-out';
+        : movementStyle === 'spin' || movementStyle === 'cartwheel'
+          ? 'left 1.5s ease-in-out, top 1.5s ease-in-out'
+          : movementStyle === 'zigzag'
+            ? 'left 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55), top 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55)'
+            : movementStyle === 'sneak' || movementStyle === 'crawl'
+              ? 'left 4s linear, top 4s linear'
+              : movementStyle === 'pace'
+                ? 'left 1s cubic-bezier(0.25, 1, 0.5, 1), top 1s cubic-bezier(0.25, 1, 0.5, 1)'
+                : 'left 2s ease-in-out, top 2s ease-in-out';
 
   const content = (
     <div
@@ -450,7 +514,8 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         top: posY,
         width: 120,
         height: 120,
-        transition: transitionStyle,
+        opacity: opacity,
+        transition: transitionStyle === 'none' ? 'opacity 0.4s ease-in-out' : `${transitionStyle}, opacity 0.4s ease-in-out`,
         cursor: isDragging ? 'grabbing' : 'grab',
         filter: isDragHovering ? 'brightness(1.2) drop-shadow(0 0 15px rgba(255,255,255,0.8))' : 'none',
       }}
@@ -459,14 +524,15 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       onDoubleClick={() => {
         if (!showContextMenu && isMinimized) onOpen();
       }}
-      onMouseEnter={() => { 
+      onMouseEnter={() => {
         isHoveringRef.current = true;
-        if (isMinimized && window.electronAPI) window.electronAPI.setIgnoreMouseEvents(false); 
+        lastInteractionTime.current = Date.now();
+        if (isMinimized && window.electronAPI) window.electronAPI.setIgnoreMouseEvents(false);
       }}
-      onMouseLeave={() => { 
+      onMouseLeave={() => {
         isHoveringRef.current = false;
         if (isMinimized && window.electronAPI && !isDragging && !showContextMenu) {
-          window.electronAPI.setIgnoreMouseEvents(true); 
+          window.electronAPI.setIgnoreMouseEvents(true);
         }
       }}
       onDragOver={handleDragOver}
@@ -504,7 +570,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         </div>
       )}
 
-      <div style={{ transform: `scale(${squash.x}, ${squash.y})`, transition: 'transform 0.15s ease-out', width: '100%', height: '100%' }}>
+      <div style={{ transform: `scale(${squash.x}, ${squash.y}) rotate(${rotation}deg)`, transition: 'transform 0.15s ease-out', width: '100%', height: '100%' }}>
         {charId.startsWith('custom-') ? (() => {
           const customChar = customCharacters.find(c => c.id === charId);
           if (customChar) {
@@ -517,7 +583,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       </div>
 
       {isMinimized && !showContextMenu && (
-        <button 
+        <button
           className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary hover:bg-primary/90 transition-colors rounded-full flex items-center justify-center shadow-md cursor-pointer z-50"
           onClick={(e) => {
             e.stopPropagation();
@@ -531,9 +597,8 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
       {showContextMenu && (
         <div
-          className={`absolute left-0 w-48 bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-[60] overflow-hidden ${
-            posY > window.innerHeight - 200 ? 'bottom-full mb-2' : 'top-full mt-2'
-          }`}
+          className={`absolute left-0 w-48 bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-[60] overflow-hidden ${posY > window.innerHeight - 200 ? 'bottom-full mb-2' : 'top-full mt-2'
+            }`}
           onMouseLeave={() => setShowContextMenu(false)}
         >
           {isMinimized && (
@@ -554,16 +619,16 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
           )}
           <button
             className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-            onClick={async (e) => { 
-              e.stopPropagation(); 
-              setShowContextMenu(false); 
+            onClick={async (e) => {
+              e.stopPropagation();
+              setShowContextMenu(false);
               setAnimation('excited');
               setReplyBubble('Analyzing screen...');
               if (window.electronAPI) {
                 const imageBase64 = await window.electronAPI.captureScreen();
                 if (imageBase64) {
-                  window.dispatchEvent(new CustomEvent('jarvis-send-message', { 
-                    detail: { message: "What am I looking at right now?", imageBase64 } 
+                  window.dispatchEvent(new CustomEvent('jarvis-send-message', {
+                    detail: { message: "What am I looking at right now?", imageBase64 }
                   }));
                 } else {
                   setAnimation('confused');

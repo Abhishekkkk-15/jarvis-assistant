@@ -1,7 +1,7 @@
 import React from 'react';
 import './animations.css';
 
-export type CharacterAnimation = 'idle' | 'walk' | 'run' | 'wave' | 'dance' | 'sleep' | 'excited' | 'talk' | 'happy' | 'sad' | 'angry' | 'confused';
+export type CharacterAnimation = 'idle' | 'walk' | 'run' | 'wave' | 'dance' | 'sleep' | 'excited' | 'talk' | 'happy' | 'sad' | 'angry' | 'confused' | 'jealous' | 'bored' | 'surprised' | 'laughing' | 'thinking' | 'shy' | 'love' | 'scared' | 'dizzy' | 'cool' | 'dash' | 'jump' | 'teleport' | 'spin' | 'bounce' | 'zigzag' | 'crawl' | 'sneak' | 'cartwheel' | 'hover' | 'pace' | 'hide';
 
 export interface CharacterProps {
   animation: CharacterAnimation;
@@ -37,8 +37,45 @@ const BaseCharacter: React.FC<{
           <div className="absolute zzz-3">Z</div>
         </div>
       )}
-      {animation === 'confused' && (
-        <div className="q-mark">?</div>
+      {animation === 'confused' && <div className="q-mark">?</div>}
+      {animation === 'surprised' && <div className="exclamation-mark">!</div>}
+      {animation === 'thinking' && <div className="thinking-bubble">...</div>}
+      {animation === 'love' && (
+        <div className="heart-particles">
+          <div className="absolute heart-1">❤️</div>
+          <div className="absolute heart-2">❤️</div>
+        </div>
+      )}
+      {animation === 'scared' && <div className="sweat-drop">💧</div>}
+      {animation === 'dizzy' && (
+        <div className="dizzy-stars">
+          <div className="absolute star-1">⭐</div>
+          <div className="absolute star-2">⭐</div>
+          <div className="absolute star-3">⭐</div>
+        </div>
+      )}
+      {animation === 'bored' && <div className="bored-sigh">sigh...</div>}
+      {animation === 'jealous' && <div className="jealous-hmph">hmph!</div>}
+      {animation === 'laughing' && (
+        <div className="laugh-particles">
+          <div className="absolute laugh-1">ha</div>
+          <div className="absolute laugh-2">ha</div>
+        </div>
+      )}
+      {animation === 'cool' && (
+        <div className="cool-glasses absolute top-1/4 left-1/4 w-1/2 h-1/4 z-10 flex items-center justify-center">
+          <svg viewBox="0 0 100 40" className="w-full drop-shadow-md">
+            <rect x="10" y="10" width="35" height="20" rx="4" fill="#111" />
+            <rect x="55" y="10" width="35" height="20" rx="4" fill="#111" />
+            <path d="M 45 20 L 55 20" stroke="#111" strokeWidth="4" />
+          </svg>
+        </div>
+      )}
+      {animation === 'shy' && (
+        <div className="shy-blush absolute top-1/3 left-0 w-full flex justify-between px-[15%] z-10 opacity-70">
+          <div className="w-4 h-3 bg-pink-400 rounded-full blur-[2px]" />
+          <div className="w-4 h-3 bg-pink-400 rounded-full blur-[2px]" />
+        </div>
       )}
       {children}
     </div>

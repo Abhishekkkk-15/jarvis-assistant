@@ -152,3 +152,109 @@
   pointer-events: none;
   animation: char-confused-q 2s infinite;
 }
+
+/* New Emotions */
+
+@keyframes char-surprised {
+  0%, 100% { transform: translateY(0) scale(1); }
+  20% { transform: translateY(-15px) scale(0.9, 1.1); }
+  40% { transform: translateY(0) scale(1.1, 0.9); }
+}
+.anim-surprised { animation: char-surprised 1s ease-in-out infinite; }
+.exclamation-mark {
+  position: absolute; top: -25px; right: -5px; color: #e74c3c; font-family: monospace; font-weight: bold; font-size: 24px; text-shadow: 1px 1px 0 #000; animation: char-confused-q 1s infinite;
+}
+
+@keyframes char-thinking {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(5deg) translateY(-2px); }
+}
+.anim-thinking { animation: char-thinking 3s ease-in-out infinite; }
+.thinking-bubble {
+  position: absolute; top: -20px; right: -15px; color: #fff; background: #333; border-radius: 10px; padding: 2px 6px; font-weight: bold; font-size: 12px; border: 1px solid #555; animation: char-sleep-zzz 3s infinite linear;
+}
+
+@keyframes char-love {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255, 105, 180, 0.5)); }
+  50% { transform: scale(1.05); filter: drop-shadow(0 0 15px rgba(255, 105, 180, 0.8)); }
+}
+.anim-love { animation: char-love 1.5s ease-in-out infinite; }
+.heart-particles { position: absolute; top: -10px; right: 0; width: 100%; height: 100%; pointer-events: none; }
+.heart-1 { animation: char-sleep-zzz 1.5s infinite linear; left: 10px; font-size: 16px; }
+.heart-2 { animation: char-sleep-zzz 1.5s infinite linear 0.7s; right: 10px; font-size: 20px; }
+
+@keyframes char-scared {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+.anim-scared { animation: char-scared 0.1s linear infinite; }
+.sweat-drop {
+  position: absolute; top: 10px; right: -10px; font-size: 20px; animation: char-walk-body 1s infinite;
+}
+
+@keyframes char-dizzy {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.anim-dizzy .body { animation: char-dizzy 2s linear infinite; }
+.dizzy-stars { position: absolute; top: -15px; width: 100%; height: 20px; pointer-events: none; }
+.star-1 { animation: char-dizzy 1s linear infinite; left: 10px; font-size: 14px; }
+.star-2 { animation: char-dizzy 1.5s linear infinite reverse; right: 10px; top: -10px; font-size: 16px; }
+.star-3 { animation: char-dizzy 1.2s linear infinite; left: 30px; top: -5px; font-size: 12px; }
+
+@keyframes char-bored {
+  0%, 100% { transform: scale(1, 0.95) translateY(2px); opacity: 0.8; }
+  50% { transform: scale(1.05, 0.9) translateY(4px); opacity: 0.7; }
+}
+.anim-bored { animation: char-bored 4s ease-in-out infinite; }
+.bored-sigh { position: absolute; top: -10px; right: -20px; color: #888; font-size: 12px; animation: char-sleep-zzz 4s infinite linear; }
+
+@keyframes char-jealous {
+  0%, 100% { transform: rotate(-5deg); filter: drop-shadow(0 0 5px rgba(46, 204, 113, 0.5)); }
+  50% { transform: rotate(-8deg) translateX(-2px); filter: drop-shadow(0 0 10px rgba(46, 204, 113, 0.8)); }
+}
+.anim-jealous { animation: char-jealous 2s ease-in-out infinite; }
+.jealous-hmph { position: absolute; top: -15px; left: -10px; color: #2ecc71; font-weight: bold; font-size: 14px; animation: char-confused-q 2s infinite; }
+
+@keyframes char-laughing {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-4px) rotate(2deg); }
+  75% { transform: translateY(-4px) rotate(-2deg); }
+}
+.anim-laughing { animation: char-laughing 0.3s ease-in-out infinite; }
+.laugh-particles { position: absolute; top: -10px; right: -10px; color: #f1c40f; font-weight: bold; }
+.laugh-1 { animation: char-sleep-zzz 1s infinite linear; font-size: 14px; }
+.laugh-2 { animation: char-sleep-zzz 1s infinite linear 0.5s; font-size: 18px; left: 20px; }
+
+@keyframes char-cool {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px); }
+}
+.anim-cool { animation: char-cool 2s ease-in-out infinite; }
+@keyframes drop-glasses {
+  0% { transform: translateY(-50px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.cool-glasses { animation: drop-glasses 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+.anim-shy { animation: char-idle 2s ease-in-out infinite; }
+@keyframes blush-fade {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.2); }
+}
+.shy-blush > div { animation: blush-fade 3s ease-in-out infinite; }
+
+/* New Movements */
+.anim-dash { animation: char-run 0.2s infinite; }
+.anim-jump { animation: char-walk-body 0.3s infinite alternate; }
+.anim-teleport { animation: char-idle 0.1s infinite; opacity: 0.5; filter: blur(2px); }
+.anim-spin { animation: char-dizzy 0.5s linear infinite; }
+.anim-bounce { animation: char-walk-body 0.2s infinite alternate; }
+.anim-zigzag { animation: char-run 0.3s infinite; }
+.anim-crawl { animation: char-walk 1s infinite; transform: scale(1.2, 0.6) translateY(10px); }
+.anim-sneak { animation: char-walk 1s infinite; }
+.anim-cartwheel { animation: char-dizzy 0.8s linear infinite; }
+.anim-hover { animation: char-idle 2s ease-in-out infinite; transform: translateY(-10px); }
+.anim-pace { animation: char-run 0.4s infinite; }
+.anim-hide { animation: char-idle 1s infinite; opacity: 0.3; }

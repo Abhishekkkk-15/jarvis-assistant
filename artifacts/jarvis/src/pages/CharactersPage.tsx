@@ -42,9 +42,13 @@ export const CharactersPage: React.FC = () => {
     { id: 'samurai-warrior', name: 'Samurai', desc: 'Honorable warrior' },
     { id: 'astronaut', name: 'Astronaut', desc: 'Zero-G space explorer' },
   ];
-
-  const animations: CharacterAnimation[] = ['idle', 'walk', 'run', 'wave', 'dance', 'sleep', 'excited', 'talk'];
-
+  const animations: CharacterAnimation[] = [
+    'idle', 'walk', 'run', 'wave', 'dance', 'sleep', 'excited', 'talk', 
+    'happy', 'sad', 'angry', 'confused', 'jealous', 'bored', 'surprised', 
+    'laughing', 'thinking', 'shy', 'love', 'scared', 'dizzy', 'cool',
+    'dash', 'jump', 'teleport', 'spin', 'bounce', 'zigzag', 'crawl',
+    'sneak', 'cartwheel', 'hover', 'pace', 'hide'
+  ];
   const handleSetActive = (id: string) => {
     setSelectedCharacterId(id);
     updateSettings.mutate({ data: { selectedCharacterId: id } }, {
