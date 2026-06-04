@@ -115,7 +115,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
   // Attention Seeker Tracker
   const lastInteractionTime = useRef(Date.now());
-  
+
   // Personality Hook (Blinking, microexpressions, sentiment emotion)
   const personality = useCharacterPersonality();
 
@@ -139,11 +139,11 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const CharacterComponent = charactersMap[charId] || charactersMap['jarvis-bot'];
 
   // Derived animation state (Overrides base movement animation with emotions/listening state)
-  const animation = isListening 
-    ? 'excited' 
-    : (personality.emotionAnimation 
-        ? personality.emotionAnimation 
-        : (isDancingToMusic && !isDragging && !isPhysicsActive ? 'dance' : baseAnimation));
+  const animation = isListening
+    ? 'excited'
+    : (personality.emotionAnimation
+      ? personality.emotionAnimation
+      : (isDancingToMusic && !isDragging && !isPhysicsActive ? 'dance' : baseAnimation));
 
   // Sync mouse events for transparent window properly
   useEffect(() => {
@@ -183,7 +183,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   useEffect(() => {
     const handleJarvisAction = (e: any) => {
       const { action, path } = e.detail;
-      
+
       if (action === 'draw' && path) {
         // Trigger LLM path drawing!
         setBaseAnimation('draw');
@@ -198,7 +198,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
         const canvas = canvasRef.current;
         if (!canvas) return;
-        
+
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         const ctx = canvas.getContext('2d');
@@ -241,7 +241,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
             requestAnimationFrame(animateDraw);
           } else {
             setTimeout(() => setBaseAnimation('idle'), 1000);
-            
+
             // Fade out masterpiece after 10 seconds
             setTimeout(() => {
               if (canvas) {
@@ -261,12 +261,12 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       } else if (action) {
         // Direct override of emotion
         personality.triggerDirectEmotion(action as CharacterAnimation, 4000);
-        
+
         // Also map some tags to movement styles if applicable
         if (['dash', 'jump', 'teleport', 'spin', 'bounce', 'zigzag', 'crawl', 'sneak', 'cartwheel', 'hover'].includes(action)) {
           setMovementStyle(action as any);
         }
-        
+
         // Reset movement back to float after 4 seconds
         setTimeout(() => {
           setMovementStyle('float');
@@ -277,17 +277,43 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     return () => window.removeEventListener('jarvis-action', handleJarvisAction);
   }, [posX, posY]);
 
-  // Cursor tracking listener
+  // Cursor tracking listener & Global Idle
   useEffect(() => {
+    let idleTimeout: ReturnType<typeof setTimeout>;
+
     const handleMouseMove = (e: MouseEvent) => {
       cursorRef.current = { x: e.clientX, y: e.clientY };
       if (isTrackingCursor && !isDragging && !isPhysicsActive && !isDancingToMusic) {
         setFlipped(e.clientX < posX);
       }
+
+      // Wake up from sleep if mouse moves globally
+      if (baseAnimation === 'sleep') {
+        setBaseAnimation('idle');
+      }
+
+      // Reset global idle timer
+      clearTimeout(idleTimeout);
+      idleTimeout = setTimeout(() => {
+        if (!isDragging && !isListening && !isSpeaking && !isPhysicsActive && !isDancingToMusic) {
+          setBaseAnimation('sleep');
+        }
+      }, 5 * 60 * 1000); // 5 minutes
     };
+
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [isTrackingCursor, isDragging, isPhysicsActive, isDancingToMusic, posX]);
+
+    idleTimeout = setTimeout(() => {
+      if (!isDragging && !isListening && !isSpeaking && !isPhysicsActive && !isDancingToMusic) {
+        setBaseAnimation('sleep');
+      }
+    }, 1 * 60 * 1000);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      clearTimeout(idleTimeout);
+    };
+  }, [isTrackingCursor, isDragging, isPhysicsActive, isDancingToMusic, posX, baseAnimation, isListening, isSpeaking]);
 
   // Randomize tracking state
   useEffect(() => {
@@ -314,16 +340,20 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     const moveTimer = setInterval(() => {
       if (isTrackingCursor) return;
 
-      let maxX = window.innerWidth - 120;
-      let minX = 0;
-      let newY;
-
+      const maxX = window.innerWidth - 120;
       const maxY = window.innerHeight - 120;
-      // If we have gravity, we want it to roam mostly along the bottom floor
-      const isFloorRoaming = Math.random() > 0.3;
-      newY = isFloorRoaming ? maxY : Math.max(0, Math.min(Math.random() * maxY, maxY));
-
-      const newX = Math.max(minX, Math.min(minX + Math.random() * (maxX - minX), maxX));
+      
+      // Calculate a local roaming destination (150px to 500px away)
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 150 + Math.random() * 350;
+      
+      const newX = Math.max(0, Math.min(maxX, posX + Math.cos(angle) * distance));
+      let newY = Math.max(0, Math.min(maxY, posY + Math.sin(angle) * distance));
+      
+      // 20% chance to occasionally drop to the taskbar/bottom of screen to hang out
+      if (Math.random() > 0.8) {
+        newY = maxY;
+      }
 
       const styles: ('float' | 'dash' | 'jump' | 'teleport' | 'spin' | 'bounce' | 'zigzag' | 'crawl' | 'sneak' | 'cartwheel' | 'hover' | 'pace' | 'hide')[] = ['float', 'float', 'dash', 'jump', 'teleport', 'spin', 'bounce', 'zigzag', 'crawl', 'sneak', 'cartwheel', 'hover', 'pace', 'hide'];
       const nextStyle = styles[Math.floor(Math.random() * styles.length)];
@@ -331,14 +361,15 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
       setFlipped(newX < posX);
 
-      if (nextStyle === 'dash') setBaseAnimation('run');
-      else if (nextStyle === 'sneak') setBaseAnimation('walk');
-      else if (nextStyle === 'crawl') { setBaseAnimation('walk'); setSquash({ x: 1.2, y: 0.6 }); setTimeout(() => setSquash({ x: 1, y: 1 }), 2000); }
-      else if (nextStyle === 'spin') { setBaseAnimation('idle'); setRotation(720); setTimeout(() => setRotation(0), 1000); }
-      else if (nextStyle === 'cartwheel') { setBaseAnimation('run'); setRotation(1080); setTimeout(() => setRotation(0), 1500); }
-      else if (nextStyle === 'bounce') { setBaseAnimation('happy'); }
+      if (nextStyle === 'dash') setBaseAnimation('dash');
+      else if (nextStyle === 'sneak') setBaseAnimation('sneak');
+      else if (nextStyle === 'crawl') { setBaseAnimation('crawl'); setSquash({ x: 1.2, y: 0.6 }); setTimeout(() => setSquash({ x: 1, y: 1 }), 2000); }
+      else if (nextStyle === 'spin') { setBaseAnimation('spin'); setRotation(720); setTimeout(() => setRotation(0), 1000); }
+      else if (nextStyle === 'cartwheel') { setBaseAnimation('cartwheel'); setRotation(1080); setTimeout(() => setRotation(0), 1500); }
+      else if (nextStyle === 'bounce') { setBaseAnimation('bounce'); }
+      else if (nextStyle === 'jump') { setBaseAnimation('jump'); }
       else if (nextStyle === 'teleport') {
-        setBaseAnimation('idle');
+        setBaseAnimation('teleport');
         setOpacity(0);
         setTimeout(() => { setPosX(newX); setPosY(newY); setOpacity(1); }, 400);
       }
@@ -351,7 +382,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
       const duration = nextStyle === 'dash' ? 800 : (nextStyle === 'jump' ? 1200 : 2000);
       setTimeout(() => setBaseAnimation('idle'), duration);
-    }, 6000 + Math.random() * 6000);
+    }, 3000 + Math.random() * 4000); // move every 3 to 7 seconds (much more hyperactive)
 
     return () => {
       clearTimeout(idleTimer);
@@ -401,7 +432,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
               // Draw a big question mark near the character
               const startX = posX - 40;
               const startY = posY - 40;
-              
+
               let progress = 0;
               const drawQMark = () => {
                 progress += 0.04;
@@ -420,24 +451,24 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
                   }, 4000);
                   return;
                 }
-                
+
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.beginPath();
-                
+
                 // Top curve
-                if (progress > 0) ctx.arc(startX, startY, 50, Math.PI, Math.PI * (1 + Math.min(progress, 0.5)*2));
+                if (progress > 0) ctx.arc(startX, startY, 50, Math.PI, Math.PI * (1 + Math.min(progress, 0.5) * 2));
                 // Stem
                 if (progress > 0.5) {
                   ctx.moveTo(startX + 50, startY);
-                  ctx.lineTo(startX + 50, startY + 40 + Math.min((progress-0.5)*2, 1)*30);
+                  ctx.lineTo(startX + 50, startY + 40 + Math.min((progress - 0.5) * 2, 1) * 30);
                 }
                 // Dot
                 if (progress > 1) {
                   ctx.moveTo(startX + 50, startY + 100);
-                  ctx.arc(startX + 50, startY + 100, 3, 0, Math.PI*2);
+                  ctx.arc(startX + 50, startY + 100, 3, 0, Math.PI * 2);
                 }
                 ctx.stroke();
-                
+
                 requestAnimationFrame(drawQMark);
               };
               drawQMark();
@@ -478,6 +509,29 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     };
     lastMousePos.current = { x: e.clientX, y: e.clientY, time: performance.now() };
     velocity.current = { x: 0, y: 0 };
+  };
+
+  const lastPetTime = useRef(0);
+  const petMotionCount = useRef(0);
+  const lastPetMouseX = useRef(0);
+
+  const handleMouseMoveCharacter = (e: React.MouseEvent) => {
+    const dx = Math.abs(e.clientX - lastPetMouseX.current);
+    if (dx > 4) { // moving fast enough
+      const now = performance.now();
+      if (now - lastPetTime.current < 150) {
+        petMotionCount.current += 1;
+      } else {
+        petMotionCount.current = 1;
+      }
+      lastPetTime.current = now;
+      lastPetMouseX.current = e.clientX;
+
+      if (petMotionCount.current > 12) { // vigorously petted 12 times quickly
+        personality.triggerDirectEmotion('love', 3000);
+        petMotionCount.current = 0; // reset count
+      }
+    }
   };
 
   useEffect(() => {
@@ -695,235 +749,240 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       />
       <div
         className="fixed z-50 select-none touch-none"
-      style={{
-        left: posX,
-        top: posY,
-        width: 120,
-        height: 120,
-        opacity: opacity,
-        transition: transitionStyle === 'none' ? 'opacity 0.4s ease-in-out' : `${transitionStyle}, opacity 0.4s ease-in-out`,
-        cursor: isDragging ? 'grabbing' : 'grab',
-        filter: isDragHovering ? 'brightness(1.2) drop-shadow(0 0 15px rgba(255,255,255,0.8))' : 'none',
-      }}
-      onMouseDown={handleMouseDown}
-      onContextMenu={handleContextMenu}
-      onDoubleClick={() => {
-        if (!showContextMenu && isMinimized) onOpen();
-      }}
-      onMouseEnter={() => {
-        isHoveringRef.current = true;
-        lastInteractionTime.current = Date.now();
-        if (isMinimized && window.electronAPI) window.electronAPI.setIgnoreMouseEvents(false);
-      }}
-      onMouseLeave={() => {
-        isHoveringRef.current = false;
-        if (isMinimized && window.electronAPI && !isDragging && !showContextMenu) {
-          window.electronAPI.setIgnoreMouseEvents(true);
-        }
-      }}
-      onDragOver={handleDragOver}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      onClick={() => {
-        if (!hasDragged.current && !showContextMenu) {
-          // Pet the character
-          setBaseAnimation('happy');
-          setTimeout(() => setBaseAnimation('idle'), 2000);
-        }
-      }}
-    >
-      {isMinimized && showRestoreHint && (
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap flex items-center gap-1.5 shadow-lg pointer-events-none">
-          <Maximize2 size={11} /> Click to restore
-        </div>
-      )}
-
-      {isMinimized && activeApproval && (
-        <div className="absolute bottom-[138px] left-1/2 -translate-x-1/2 z-20" style={{ width: 'clamp(200px, 320px, 90vw)' }}>
-          <div className="relative bg-slate-900/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl border border-slate-700 shadow-2xl">
-            <div className="flex items-center gap-2 mb-2 text-yellow-400 font-bold text-sm">
-              <span className="animate-pulse">⚠️</span> Approval Needed
-            </div>
-            <div className="text-xs text-slate-300 mb-3 break-words max-h-24 overflow-y-auto">
-              {activeApproval.reason}
-            </div>
-            <div className="flex gap-2 w-full">
-              <button 
-                onClick={(e) => { e.stopPropagation(); resolveApproval(activeApproval.requestId, 'denied'); }}
-                className="flex-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 py-1.5 rounded-lg text-xs font-semibold"
-              >
-                Deny
-              </button>
-              <button 
-                onClick={(e) => { e.stopPropagation(); resolveApproval(activeApproval.requestId, 'approved'); }}
-                className="flex-1 bg-green-500 hover:bg-green-600 text-white shadow-lg py-1.5 rounded-lg text-xs font-semibold"
-              >
-                Approve
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {isMinimized && !activeApproval && agentQuestion && (
-        <div className="absolute bottom-[138px] left-1/2 -translate-x-1/2 z-20" style={{ width: 'clamp(200px, 320px, 90vw)' }}>
-          <div className="relative bg-blue-900/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl border border-blue-700 shadow-2xl">
-            <div className="flex items-center gap-2 mb-2 text-blue-300 font-bold text-sm">
-              <span className="animate-bounce">💬</span> JARVIS asks:
-            </div>
-            <div className="text-sm text-slate-100 font-medium leading-relaxed">
-              "{agentQuestion}"
-            </div>
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-blue-500/30">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-              </span>
-              <span className="text-[10px] text-blue-200">Mic active... talk to reply</span>
-            </div>
-
-            <div className="w-full mt-3 flex gap-1.5">
-              <input 
-                type="text" 
-                id="mini-agent-question-input"
-                placeholder="Or type answer..."
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 min-w-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.currentTarget.focus();
-                }}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
-                  if (e.key === 'Enter') {
-                    const val = e.currentTarget.value;
-                    if (val.trim()) {
-                      clearQuestion();
-                      window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message: val } }));
-                    }
-                  }
-                }}
-              />
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const input = document.getElementById('mini-agent-question-input') as HTMLInputElement;
-                  if (input && input.value.trim()) {
-                    clearQuestion();
-                    window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message: input.value } }));
-                  }
-                }}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0"
-              >
-                Send
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {!activeApproval && !agentQuestion && replyBubble && (
-        <TypewriterBubble text={replyBubble} />
-      )}
-
-      {/* Accessories / Props */}
-      {toolsUsed && toolsUsed.length > 0 && (
-        <div className="absolute -top-4 -right-4 z-10 drop-shadow-md animate-bounce">
-          {toolsUsed.includes('get_weather') && <span className="text-4xl">☂️</span>}
-          {toolsUsed.includes('search_web') && <span className="text-4xl">🔍</span>}
-          {toolsUsed.includes('calculate') && <span className="text-4xl">🧮</span>}
-          {toolsUsed.includes('run_command') && <span className="text-4xl">💻</span>}
-          {toolsUsed.includes('read_file') && <span className="text-4xl">📄</span>}
-          {toolsUsed.includes('open_app') && <span className="text-4xl">🚀</span>}
-          {toolsUsed.includes('open_website') && <span className="text-4xl">🌐</span>}
-        </div>
-      )}
-
-      <div style={{ transform: `scale(${squash.x}, ${squash.y}) rotate(${rotation}deg)`, transition: 'transform 0.15s ease-out', width: '100%', height: '100%' }}>
-        {charId.startsWith('custom-') ? (() => {
-          const customChar = customCharacters.find(c => c.id === charId);
-          if (customChar) {
-            return <CustomCharacterRenderer character={customChar} animation={animation} size={120} flipped={flipped} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />;
+        style={{
+          left: posX,
+          top: posY,
+          width: 120,
+          height: 120,
+          opacity: opacity,
+          transition: transitionStyle === 'none' || baseAnimation === 'draw' ? 'none' : `${transitionStyle}, opacity 0.4s ease-in-out`,
+          cursor: isDragging ? 'grabbing' : 'grab',
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMoveCharacter}
+        onContextMenu={handleContextMenu}
+        onDoubleClick={() => {
+          if (!showContextMenu && isMinimized) onOpen();
+        }}
+        onMouseEnter={() => {
+          isHoveringRef.current = true;
+          setIsDragHovering(true);
+          lastInteractionTime.current = Date.now();
+          if (isMinimized && window.electronAPI) window.electronAPI.setIgnoreMouseEvents(false);
+        }}
+        onMouseLeave={() => {
+          isHoveringRef.current = false;
+          setIsDragHovering(false);
+          petMotionCount.current = 0; // reset petting on leave
+          if (isMinimized && window.electronAPI && !isDragging && !showContextMenu) {
+            window.electronAPI.setIgnoreMouseEvents(true);
           }
-          return <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />;
-        })() : (
-          <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />
+        }}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => {
+          if (!hasDragged.current && !showContextMenu) {
+            // Pet the character
+            setBaseAnimation('happy');
+            setTimeout(() => setBaseAnimation('idle'), 2000);
+          }
+        }}
+      >
+        {isMinimized && showRestoreHint && (
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-3 py-1.5 rounded-full whitespace-nowrap flex items-center gap-1.5 shadow-lg pointer-events-none">
+            <Maximize2 size={11} /> Click to restore
+          </div>
         )}
-      </div>
 
-      {isMinimized && !showContextMenu && (
-        <button
-          className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary hover:bg-primary/90 transition-colors rounded-full flex items-center justify-center shadow-md cursor-pointer z-50"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpen();
-          }}
-          title="Restore Application"
-        >
-          <Maximize2 size={12} className="text-white" />
-        </button>
-      )}
+        {isMinimized && activeApproval && (
+          <div className="absolute bottom-[138px] left-1/2 -translate-x-1/2 z-20" style={{ width: 'clamp(200px, 320px, 90vw)' }}>
+            <div className="relative bg-slate-900/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl border border-slate-700 shadow-2xl">
+              <div className="flex items-center gap-2 mb-2 text-yellow-400 font-bold text-sm">
+                <span className="animate-pulse">⚠️</span> Approval Needed
+              </div>
+              <div className="text-xs text-slate-300 mb-3 break-words max-h-24 overflow-y-auto">
+                {activeApproval.reason}
+              </div>
+              <div className="flex gap-2 w-full">
+                <button
+                  onClick={(e) => { e.stopPropagation(); resolveApproval(activeApproval.requestId, 'denied'); }}
+                  className="flex-1 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 py-1.5 rounded-lg text-xs font-semibold"
+                >
+                  Deny
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); resolveApproval(activeApproval.requestId, 'approved'); }}
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white shadow-lg py-1.5 rounded-lg text-xs font-semibold"
+                >
+                  Approve
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {showContextMenu && (
-        <div
-          className={`absolute left-0 w-48 bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-[60] overflow-hidden ${posY > window.innerHeight - 200 ? 'bottom-full mb-2' : 'top-full mt-2'
-            }`}
-          onMouseLeave={() => setShowContextMenu(false)}
-        >
-          {isMinimized && (
+        {isMinimized && !activeApproval && agentQuestion && (
+          <div className="absolute bottom-[138px] left-1/2 -translate-x-1/2 z-20" style={{ width: 'clamp(200px, 320px, 90vw)' }}>
+            <div className="relative bg-blue-900/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl border border-blue-700 shadow-2xl">
+              <div className="flex items-center gap-2 mb-2 text-blue-300 font-bold text-sm">
+                <span className="animate-bounce">💬</span> JARVIS asks:
+              </div>
+              <div className="text-sm text-slate-100 font-medium leading-relaxed">
+                "{agentQuestion}"
+              </div>
+              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-blue-500/30">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                </span>
+                <span className="text-[10px] text-blue-200">Mic active... talk to reply</span>
+              </div>
+
+              <div className="w-full mt-3 flex gap-1.5">
+                <input
+                  type="text"
+                  id="mini-agent-question-input"
+                  placeholder="Or type answer..."
+                  className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500/50 min-w-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.currentTarget.focus();
+                  }}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === 'Enter') {
+                      const val = e.currentTarget.value;
+                      if (val.trim()) {
+                        clearQuestion();
+                        window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message: val } }));
+                      }
+                    }
+                  }}
+                />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const input = document.getElementById('mini-agent-question-input') as HTMLInputElement;
+                    if (input && input.value.trim()) {
+                      clearQuestion();
+                      window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message: input.value } }));
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!activeApproval && !agentQuestion && replyBubble && (
+          <TypewriterBubble text={replyBubble} />
+        )}
+
+        {/* Accessories / Props */}
+        {toolsUsed && toolsUsed.length > 0 && (
+          <div className="absolute -top-4 -right-4 z-10 drop-shadow-md animate-bounce">
+            {toolsUsed.includes('get_weather') && <span className="text-4xl">☂️</span>}
+            {toolsUsed.includes('search_web') && <span className="text-4xl">🔍</span>}
+            {toolsUsed.includes('calculate') && <span className="text-4xl">🧮</span>}
+            {toolsUsed.includes('run_command') && <span className="text-4xl">💻</span>}
+            {toolsUsed.includes('read_file') && <span className="text-4xl">📄</span>}
+            {toolsUsed.includes('open_app') && <span className="text-4xl">🚀</span>}
+            {toolsUsed.includes('open_website') && <span className="text-4xl">🌐</span>}
+          </div>
+        )}
+
+        <div style={{ transform: `scale(${squash.x}, ${squash.y}) rotate(${rotation}deg)`, transition: 'transform 0.15s ease-out', width: '100%', height: '100%' }}>
+          <div className={`w-full h-full ${movementStyle === 'jump' ? 'roam-jump-arc' : ''} ${movementStyle === 'bounce' ? 'roam-bounce-arc' : ''} ${movementStyle === 'zigzag' ? 'roam-zigzag-arc' : ''}`}>
+            {charId.startsWith('custom-') ? (() => {
+              const customChar = customCharacters.find(c => c.id === charId);
+              if (customChar) {
+                return <CustomCharacterRenderer character={customChar} animation={animation} size={120} flipped={flipped} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />;
+              }
+              return <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />;
+            })() : (
+              <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />
+            )}
+          </div>
+        </div>
+
+        {isMinimized && !showContextMenu && (
+          <button
+            className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary hover:bg-primary/90 transition-colors rounded-full flex items-center justify-center shadow-md cursor-pointer z-50"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen();
+            }}
+            title="Restore Application"
+          >
+            <Maximize2 size={12} className="text-white" />
+          </button>
+        )}
+
+        {showContextMenu && (
+          <div
+            className={`absolute left-0 w-48 bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-[60] overflow-hidden ${posY > window.innerHeight - 200 ? 'bottom-full mb-2' : 'top-full mt-2'
+              }`}
+            onMouseLeave={() => setShowContextMenu(false)}
+          >
+            {isMinimized && (
+              <button
+                className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-2"
+                onClick={(e) => { e.stopPropagation(); setShowContextMenu(false); onOpen(); }}
+              >
+                <Maximize2 size={14} /> Restore App
+              </button>
+            )}
+            {!isMinimized && (
+              <button
+                className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+                onClick={(e) => { e.stopPropagation(); setShowContextMenu(false); onOpen(); }}
+              >
+                Open Dashboard
+              </button>
+            )}
             <button
-              className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-2"
-              onClick={(e) => { e.stopPropagation(); setShowContextMenu(false); onOpen(); }}
+              className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+              onClick={async (e) => {
+                e.stopPropagation();
+                setShowContextMenu(false);
+                setBaseAnimation('excited');
+                setReplyBubble('Analyzing screen...');
+                if (window.electronAPI) {
+                  const imageBase64 = await window.electronAPI.captureScreen();
+                  if (imageBase64) {
+                    window.dispatchEvent(new CustomEvent('jarvis-send-message', {
+                      detail: { message: "What am I looking at right now?", imageBase64 }
+                    }));
+                  } else {
+                    setBaseAnimation('confused');
+                    setReplyBubble('Failed to capture screen.');
+                    setTimeout(() => setReplyBubble(''), 3000);
+                  }
+                }
+              }}
             >
-              <Maximize2 size={14} /> Restore App
+              👁️ Analyze Screen
             </button>
-          )}
-          {!isMinimized && (
             <button
               className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
-              onClick={(e) => { e.stopPropagation(); setShowContextMenu(false); onOpen(); }}
+              onClick={(e) => { e.stopPropagation(); setShowContextMenu(false); setLocation('/characters'); if (isMinimized) onOpen(); }}
             >
-              Open Dashboard
+              Change Character
             </button>
-          )}
-          <button
-            className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-            onClick={async (e) => {
-              e.stopPropagation();
-              setShowContextMenu(false);
-              setBaseAnimation('excited');
-              setReplyBubble('Analyzing screen...');
-              if (window.electronAPI) {
-                const imageBase64 = await window.electronAPI.captureScreen();
-                if (imageBase64) {
-                  window.dispatchEvent(new CustomEvent('jarvis-send-message', {
-                    detail: { message: "What am I looking at right now?", imageBase64 }
-                  }));
-                } else {
-                  setBaseAnimation('confused');
-                  setReplyBubble('Failed to capture screen.');
-                  setTimeout(() => setReplyBubble(''), 3000);
-                }
-              }
-            }}
-          >
-            👁️ Analyze Screen
-          </button>
-          <button
-            className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
-            onClick={(e) => { e.stopPropagation(); setShowContextMenu(false); setLocation('/characters'); if (isMinimized) onOpen(); }}
-          >
-            Change Character
-          </button>
-          <button
-            className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
-            onClick={(e) => { e.stopPropagation(); setShowContextMenu(false); setLocation('/settings'); if (isMinimized) onOpen(); }}
-          >
-            Settings
-          </button>
-        </div>
-      )}
-    </div>
+            <button
+              className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+              onClick={(e) => { e.stopPropagation(); setShowContextMenu(false); setLocation('/settings'); if (isMinimized) onOpen(); }}
+            >
+              Settings
+            </button>
+          </div>
+        )}
+      </div>
     </>
   );
 

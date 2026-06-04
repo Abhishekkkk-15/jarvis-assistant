@@ -134,11 +134,22 @@ const BaseCharacter: React.FC<{
       {/* Particle celebration burst */}
       {showParticleBurst && <ParticleBurst />}
       {animation === 'sleep' && (
-        <div className="zzz-particles">
-          <div className="absolute zzz-1">Z</div>
-          <div className="absolute zzz-2">z</div>
-          <div className="absolute zzz-3">Z</div>
-        </div>
+        <>
+          <div className="zzz-particles">
+            <div className="absolute zzz-1">Z</div>
+            <div className="absolute zzz-2">z</div>
+            <div className="absolute zzz-3">Z</div>
+          </div>
+          <div className="absolute -bottom-2 -left-4 z-20 pointer-events-none drop-shadow-lg">
+            <svg width="140" height="60" viewBox="0 0 140 60" fill="none">
+              {/* Cozy sleeping bag tucked over the character */}
+              <path d="M 5 50 C 5 20, 135 25, 135 50 C 135 60, 5 60, 5 50 Z" fill="#3b82f6" opacity="0.95" />
+              <path d="M 5 50 C 5 40, 135 42, 135 50 C 135 60, 5 60, 5 50 Z" fill="#1d4ed8" />
+              <path d="M 20 28 Q 60 45 100 28" stroke="#1e3a8a" strokeWidth="4" strokeLinecap="round" fill="none"/>
+              <circle cx="20" cy="50" r="10" fill="#facc15" opacity="0.8"/>
+            </svg>
+          </div>
+        </>
       )}
       {animation === 'draw' && (
         <div className="absolute top-1/2 -right-4 -translate-y-1/2 animate-bounce z-10 origin-bottom-left" style={{ animationDuration: '0.3s' }}>
