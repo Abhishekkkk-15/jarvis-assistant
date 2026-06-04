@@ -14,6 +14,7 @@ import * as path from "path";
 import { allTools } from "../tools/index.js";
 import { searchMemory } from "../lib/memory.js";
 import { createJarvisGraph } from "../lib/multiagent.js";
+import { compose } from "stream";
 const router = Router();
 
 // ─────────────────────────────────────────────
@@ -195,19 +196,33 @@ router.post("/chat", async (req, res) => {
 
     const hasImage = !!parsed.data.imageBase64;
 
-    const provider = "nvidia";
-    const modelName = hasImage ? "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" : "mistralai/mistral-medium-3.5-128b";
+    let provider = parsed.data.provider || settings.selectedProvider || "groq";
+    let isFallback = false;
 
-    const apiKey = settings.nvidiaApiKey;
+    // Fallback if the selected provider lacks a key but the other one has it
+    if (provider === "groq" && !settings.groqApiKey && settings.nvidiaApiKey) {
+      provider = "nvidia";
+      isFallback = true;
+    } else if (provider === "nvidia" && !settings.nvidiaApiKey && settings.groqApiKey) {
+      provider = "groq";
+      isFallback = true;
+    }
+
+    // const modelName = parsed.data.model || (!isFallback && settings.selectedModel) || (provider === "nvidia" ? "qwen/qwen3.5-122b-a10b" : "qwen/qwen3.5-122b-a10b");
+    const modelName = parsed.data.model || (!isFallback && settings.selectedModel) || (provider === "nvidia" ? "meta/llama-3.3-70b-instruct" : "llama-3.3-70b-versatile");
+    console.log("modle name : ", modelName, " ", provider)
+    const apiKey = provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
 
     if (!apiKey) {
       res.status(400).json({
-        error: `No NVIDIA API key configured. Please add your API key in Settings.`,
+        error: `No ${provider.toUpperCase()} API key configured. Please add your API key in Settings.`,
       });
       return;
     }
 
-    const endpoint = "https://integrate.api.nvidia.com/v1";
+    const endpoint = provider === "nvidia"
+      ? "https://integrate.api.nvidia.com/v1"
+      : "https://api.groq.com/openai/v1";
 
     // Setup LangChain Model
     const llm = new ChatOpenAI({
@@ -281,7 +296,7 @@ router.post("/chat", async (req, res) => {
 
     const finalMessages: any[] = [];
     if (memoryContext || transcript) {
-      finalMessages.push(new SystemMessage((memoryContext || "") + (transcript || "")));
+      finalMessages.push(new HumanMessage((memoryContext || "") + (transcript || "")));
     }
 
     if (hasImage) {

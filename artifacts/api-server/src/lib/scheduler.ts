@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { db } from "@workspace/db";
+import { db, settingsTable } from "@workspace/db";
 import { scheduledTasksTable } from "@workspace/db/schema";
 import { HumanMessage } from "@langchain/core/messages";
 import { createJarvisGraph } from "./multiagent.js";
@@ -18,20 +18,53 @@ export function scheduleTaskInMemory(id: number, cronExpression: string, taskDes
 
   const task = cron.schedule(cronExpression, async () => {
     console.log(`[Cron] Triggering task ${id}: ${taskDescription}`);
-    
-    // Set up the LLM & Graph
+
+    // Get settings
+    const settingsRows = await db.select().from(settingsTable).limit(1);
+    const settings = settingsRows[0];
+
+    if (!settings) {
+      console.error(`[Cron] Task ${id} failed: No settings found in DB.`);
+      return;
+    }
+
+    let provider = settings.selectedProvider || "groq";
+    let isFallback = false;
+
+    // Fallback if the selected provider lacks a key but the other one has it
+    if (provider === "groq" && !settings.groqApiKey && settings.nvidiaApiKey) {
+      provider = "nvidia";
+      isFallback = true;
+    } else if (provider === "nvidia" && !settings.nvidiaApiKey && settings.groqApiKey) {
+      provider = "groq";
+      isFallback = true;
+    }
+
+    const apiKey = provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
+
+    if (!apiKey) {
+      console.error(`[Cron] Task ${id} failed: Missing API key for provider ${provider}`);
+      return;
+    }
+
+    const baseURL = provider === "nvidia"
+      ? "https://integrate.api.nvidia.com/v1"
+      : "https://api.groq.com/openai/v1";
+
+    const modelName = (isFallback || !settings.selectedModel)
+      ? (provider === "nvidia" ? "meta/llama-3.3-70b-instruct" : "llama-3.3-70b-versatile")
+      : settings.selectedModel;
+
     const llm = new ChatOpenAI({
-      modelName: process.env.SELECTED_MODEL || "llama-3.3-70b-versatile",
+      modelName: modelName,
       temperature: 0,
-      openAIApiKey: process.env.GROQ_API_KEY || "",
-      configuration: {
-        baseURL: "https://api.groq.com/openai/v1",
-      },
+      apiKey: apiKey,
+      configuration: { baseURL: "https://integrate.api.nvidia.com/v1" },
       maxTokens: 1024,
     });
-    
+
     const agent = createJarvisGraph(llm as any, allTools);
-    
+
     // Invoke graph with a synthetic system/human message
     const messages = [
       new HumanMessage({
@@ -39,12 +72,12 @@ export function scheduleTaskInMemory(id: number, cronExpression: string, taskDes
         name: "System"
       })
     ];
-    
+
     try {
       const agentResult = await agent.invoke({ messages, next: "Orchestrator" }, { recursionLimit: 25 });
       const lastMessage = agentResult.messages[agentResult.messages.length - 1];
       let agentResponse = String(lastMessage.content);
-      
+
       agentResponse = agentResponse.replace(/\[Orchestrator\]:/g, '').trim();
 
       // Send the response to the frontend via WebSocket
@@ -53,13 +86,14 @@ export function scheduleTaskInMemory(id: number, cronExpression: string, taskDes
         wss.clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify({
-              type: "message",
-              sender: "jarvis",
-              content: agentResponse,
+              type: "system_notification",
+              title: "Background Task",
+              message: agentResponse,
             }));
           }
         });
       }
+      console.log(`[Cron] Task ${id} completed successfully.`);
     } catch (err) {
       console.error(`[Cron] Task ${id} failed:`, err);
     }

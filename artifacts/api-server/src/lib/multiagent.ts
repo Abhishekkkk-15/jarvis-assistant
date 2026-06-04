@@ -71,14 +71,12 @@ INSTRUCTIONS:
 
   const orchestratorAgent = createReactAgent({
     llm,
-    tools: [...orchestratorToolsList, routeTool]
+    tools: [...orchestratorToolsList, routeTool],
+    messageModifier: supervisorPrompt
   });
 
   const supervisorNode = async (state: typeof GraphState.State) => {
-    const messages = [
-      new SystemMessage(supervisorPrompt),
-      ...state.messages,
-    ];
+    const messages = state.messages;
 
     const result = await orchestratorAgent.invoke({ messages });
     const lastMessage = result.messages[result.messages.length - 1] as AIMessage;
@@ -131,17 +129,14 @@ You have tools to control a visible Puppeteer Chromium browser.
 - \`browser_click\` and \`browser_type\` to interact with forms.
 Execute your browsing actions autonomously and summarize your results.`;
 
-  const plannerAgent = createReactAgent({ llm, tools: [] });
-  const terminalAgent = createReactAgent({ llm, tools: terminalToolsList });
-  const computerAgent = createReactAgent({ llm, tools: computerToolsList });
-  const webAgent = createReactAgent({ llm, tools: webAgentToolsList });
+  const plannerAgent = createReactAgent({ llm, tools: [], messageModifier: plannerPrompt });
+  const terminalAgent = createReactAgent({ llm, tools: terminalToolsList, messageModifier: terminalPrompt });
+  const computerAgent = createReactAgent({ llm, tools: computerToolsList, messageModifier: computerPrompt });
+  const webAgent = createReactAgent({ llm, tools: webAgentToolsList, messageModifier: webPrompt });
 
   const createNode = (agentObj: any, name: string, prompt: string) => {
     return async (state: typeof GraphState.State) => {
-      const messages = [
-        new SystemMessage(prompt),
-        ...state.messages,
-      ];
+      const messages = state.messages;
       const result = await agentObj.invoke({ messages });
       const lastMessage = result.messages[result.messages.length - 1];
 

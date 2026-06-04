@@ -160,7 +160,12 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   }, [isDragging, showContextMenu, isMinimized]);
 
   // Speech bubble
+  const initialMountRef = useRef(true);
   useEffect(() => {
+    if (initialMountRef.current) {
+      initialMountRef.current = false;
+      return;
+    }
     if (lastReply) {
       setReplyBubble(lastReply);
       personality.triggerEmotion(lastReply);
