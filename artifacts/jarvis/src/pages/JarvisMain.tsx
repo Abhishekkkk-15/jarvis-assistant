@@ -232,11 +232,21 @@ export const JarvisMain: React.FC = () => {
             finalReply = finalReply.replace(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i, '').trim();
         }
 
+        let drawPath = '';
+        const drawMatch = finalReply.match(/\[draw:\s*(.+?)\]/i);
+        if (drawMatch) {
+            drawPath = drawMatch[1].trim();
+            finalReply = finalReply.replace(/\[draw:\s*(.+?)\]/i, '').trim();
+        }
+
         setMessages(prev => [...prev, { role: 'assistant', content: finalReply }]);
         setLastReply(finalReply);
         
         if (animTag) {
             window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: animTag.toLowerCase() } }));
+        }
+        if (drawPath) {
+            window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: 'draw', path: drawPath } }));
         }
 
         if (data.toolsUsed && data.toolsUsed.length > 0) {

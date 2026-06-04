@@ -50,8 +50,11 @@ INSTRUCTIONS:
 4. If it requires navigating websites or scraping, route to WebAgent.
 5. If it's a massive coding task, route to Planner first.
 6. If you can handle it directly (e.g. conversational, memory retrieval, simple questions), do so.
-6. When the sub-agents finish, review their work. If the user's task is fully complete, output FINISH to end the loop and give your final answer.
-7. You control your physical avatar via animation tags: [anim: <animation>] (e.g. [anim: excited] Hello!).
+7. When the sub-agents finish, review their work. If the user's task is fully complete, output FINISH to end the loop and give your final answer.
+8. You control your physical avatar via animation tags: [anim: <animation>] (e.g. [anim: excited] Hello!).
+9. DRAWING: If the user asks you to "draw" something on their screen, output a standard SVG path string inside a draw tag: [draw: <svg_path>]. 
+   Example: [draw: M 100 100 L 200 200 C 250 150 300 200 200 300 Z]
+   Keep the paths within a reasonable coordinate space (e.g. 0 to 500). The avatar will physically move along this path and draw it!
 `;
 
   // The Orchestrator is a React Agent that has a "route" tool to decide who acts next.

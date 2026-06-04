@@ -182,8 +182,83 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   // Handle custom LLM action tags
   useEffect(() => {
     const handleJarvisAction = (e: any) => {
-      const { action } = e.detail;
-      if (action) {
+      const { action, path } = e.detail;
+      
+      if (action === 'draw' && path) {
+        // Trigger LLM path drawing!
+        setBaseAnimation('draw');
+        setIsPhysicsActive(false);
+        setIsTrackingCursor(false);
+        setMovementStyle('float');
+
+        const pathNode = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        pathNode.setAttribute('d', path);
+        const length = pathNode.getTotalLength();
+        if (length === 0) return;
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#3b82f6'; // beautiful blue pencil
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = '#60a5fa';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+
+        const duration = Math.max(3000, length * 5); // 5ms per pixel, min 3s
+        const startTime = performance.now();
+        let firstPoint = true;
+
+        const animateDraw = (time: number) => {
+          const elapsed = time - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const point = pathNode.getPointAtLength(progress * length);
+
+          // Update character position to match the drawing point
+          // The pencil is on the right side of the character (about +60x, +60y from top-left)
+          const newX = point.x - 120; // 120 is the character width, pencil is on right
+          const newY = point.y - 60;
+          setPosX(newX);
+          setPosY(newY);
+
+          if (firstPoint) {
+            ctx.moveTo(point.x, point.y);
+            firstPoint = false;
+          } else {
+            ctx.lineTo(point.x, point.y);
+            ctx.stroke();
+          }
+
+          if (progress < 1) {
+            requestAnimationFrame(animateDraw);
+          } else {
+            setTimeout(() => setBaseAnimation('idle'), 1000);
+            
+            // Fade out masterpiece after 10 seconds
+            setTimeout(() => {
+              if (canvas) {
+                canvas.style.transition = 'opacity 2s ease';
+                canvas.style.opacity = '0';
+                setTimeout(() => {
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+                  canvas.style.opacity = '1';
+                  canvas.style.transition = 'none';
+                }, 2000);
+              }
+            }, 10000);
+          }
+        };
+        requestAnimationFrame(animateDraw);
+
+      } else if (action) {
         // Direct override of emotion
         personality.triggerDirectEmotion(action as CharacterAnimation, 4000);
         
@@ -200,7 +275,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     };
     window.addEventListener('jarvis-action', handleJarvisAction);
     return () => window.removeEventListener('jarvis-action', handleJarvisAction);
-  }, []);
+  }, [posX, posY]);
 
   // Cursor tracking listener
   useEffect(() => {
