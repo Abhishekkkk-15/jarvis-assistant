@@ -436,11 +436,9 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   // Attention Seeker logic (15 minutes of inactivity)
   useEffect(() => {
     if (isDragging || isListening || isSpeaking || !isMinimized) return;
-    const attentionTimer = setInterval(async () => {
-      // Expose a debug global to easily test this
-      (window as any).triggerAttention = () => { lastInteractionTime.current = 0; };
 
-      if (Date.now() - lastInteractionTime.current > 15 * 60 * 1000) {
+    const checkAttention = async (force = false) => {
+      if (force || Date.now() - lastInteractionTime.current > 15 * 60 * 1000) {
         const actionType = Math.floor(Math.random() * 3);
 
         if (actionType === 0) {
@@ -527,7 +525,12 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
         lastInteractionTime.current = Date.now(); // reset timer so it doesn't spam
       }
-    }, 10000); // Check every 10 seconds
+    };
+
+    // Expose a debug global to easily test this
+    (window as any).triggerAttention = () => { checkAttention(true); };
+
+    const attentionTimer = setInterval(checkAttention, 10000); // Check every 10 seconds
     return () => clearInterval(attentionTimer);
   }, [isDragging, isListening, isSpeaking, isMinimized, posX, posY]);
 

@@ -191,6 +191,12 @@ export function createJarvisGraph(
   3. NEVER use generic terminal tools (like \`run_command\`) if a dedicated tool exists for the task (like scheduling, cron, memory, etc.).
   4. If there is no tool available to complete the task, DO NOT generate any steps. Instead, provide a conversational 'reply' explaining the limitation.
   5. Ensure steps are ATOMIC and executable. Do not combine multiple actions into one step.
+  6. **CHARACTER ANIMATIONS**: You can make the desktop character express emotions or perform movements! To do this, include \`[anim: <action>]\` anywhere in your \`reply\`. 
+     Available actions: happy, sad, angry, confused, surprised, thinking, excited, love, scared, dizzy, cool, shy, dash, jump, teleport, spin, bounce, zigzag, crawl, sneak, cartwheel, hover, pace, hide.
+     Example: "I can definitely help with that! [anim: excited]"
+  7. **SCREEN DRAWING**: You can make the character physically draw an SVG path on the user's screen! To do this, include \`[draw: <svg path data>]\` anywhere in your \`reply\`.
+     Provide ONLY the raw SVG path data string (e.g., M... L... Z). Do not include the <path> tags.
+     Example: "Let me draw a star for you! [draw: M 50 15 L 61 38 L 87 41 L 68 59 L 72 85 L 50 73 L 28 85 L 32 59 L 13 41 L 39 38 Z]"
   
   Retrieve relevant memories if necessary and inject them into your context before planning.`;
 
@@ -230,7 +236,15 @@ export function createJarvisGraph(
 
   CRITICAL INSTRUCTION: You MUST invoke the tool named '${currentStepDef.tool_name}' to execute the current step. 
   DO NOT provide a conversational text response. You MUST invoke a tool call.
-  If you don't know the exact tool names, call list_tools first.`;
+  If you don't know the exact tool names, call list_tools first.
+  
+  **CHARACTER ANIMATIONS**: If you do output a summary or conversational response along with the tool call, you can include \`[anim: <action>]\` to animate the character!
+  Available actions: happy, sad, angry, confused, surprised, thinking, excited, love, scared, dizzy, cool, shy, dash, jump, teleport, spin, bounce, zigzag, crawl, sneak, cartwheel, hover, pace, hide.
+  Example: "Executing the command now! [anim: dash]"
+  
+  **SCREEN DRAWING**: You can make the character physically draw an SVG path on the user's screen! Include \`[draw: <svg path data>]\` in your response.
+  Provide ONLY the raw SVG path data string.
+  Example: "Drawing a star! [draw: M 50 15 L 61 38 L 87 41 L 68 59 L 72 85 L 50 73 L 28 85 L 32 59 L 13 41 L 39 38 Z]"`;
 
     let toolsToBind = availableTools;
     if (currentStepDef.tool_name && toolsByName[currentStepDef.tool_name]) {
