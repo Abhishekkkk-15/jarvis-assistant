@@ -1,4 +1,4 @@
-import cron from "node-cron";
+import cron, { ScheduledTask } from "node-cron";
 import { db, settingsTable } from "@workspace/db";
 import { scheduledTasksTable } from "@workspace/db/schema";
 import { HumanMessage } from "@langchain/core/messages";
@@ -9,7 +9,7 @@ import { getWss } from "../index.js";
 import WebSocket from "ws";
 
 // In-memory task registry
-const activeTasks = new Map<number, cron.ScheduledTask>();
+const activeTasks = new Map<number, ScheduledTask>();
 
 export function scheduleTaskInMemory(
   id: number,
@@ -75,7 +75,7 @@ export function scheduleTaskInMemory(
       temperature: 0,
       apiKey: apiKey,
       configuration: { baseURL },
-      maxTokens: 1024,
+      maxTokens: 4096,
     });
 
     const agent = createJarvisGraph(llm as any, allTools);

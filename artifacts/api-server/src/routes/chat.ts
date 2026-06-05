@@ -247,11 +247,11 @@ router.post("/chat", async (req, res) => {
       isFallback = true;
     }
 
-    const modelName =
-      parsed.data.model ||
-      (!isFallback && settings.selectedModel) ||
-      (provider === "nvidia" ? "z-ai/glm-5.1" : "llama-3.3-70b-versatile");
-
+    // const modelName =
+    //   parsed.data.model ||
+    //   (!isFallback && settings.selectedModel) ||
+    //   (provider === "nvidia" ? "z-ai/glm-5.1" : "llama-3.3-70b-versatile");
+    const modelName = "minimaxai/minimax-m2.7";
     const apiKey =
       provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
     console.log("apiKey : ", apiKey, " ", provider, "model : ", modelName);
@@ -262,18 +262,20 @@ router.post("/chat", async (req, res) => {
       return;
     }
 
-    const endpoint =
-      provider === "nvidia"
-        ? "https://integrate.api.nvidia.com/v1"
-        : "https://api.groq.com/openai/v1";
+    // const endpoint =
+    //   provider === "nvidia"
+    //     ? "https://integrate.api.nvidia.com/v1"
+    //     : "https://api.groq.com/openai/v1";
+
+    const endpoint = "https://integrate.api.nvidia.com/v1";
 
     // Setup LangChain Model
     const llm = new ChatOpenAI({
-      modelName,
-      apiKey,
+      modelName: "openai/gpt-oss-120b",
+      apiKey: process.env.NVIDIA_API_KEY || process.env.GROQ_API_KEY,
       configuration: { baseURL: endpoint },
       temperature: 0.7,
-      maxTokens: 1024,
+      maxTokens: 4096,
     });
 
     const agent = createJarvisGraph(llm as any, tools);
@@ -421,7 +423,7 @@ router.post("/chat", async (req, res) => {
               if (typeof toolArgs === "string") {
                 try {
                   toolArgs = JSON.parse(toolArgs);
-                } catch (e) {}
+                } catch (e) { }
               }
             }
 
@@ -515,7 +517,7 @@ router.post("/chat", async (req, res) => {
           let toolArgs = {};
           try {
             toolArgs = JSON.parse(toolArgsStr);
-          } catch (e) {}
+          } catch (e) { }
 
           const tool = tools.find((t) => t.name === toolName);
           if (tool) {

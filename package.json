@@ -5,6 +5,7 @@
   "packageManager": "pnpm@10.29.2",
   "scripts": {
     "dev": "turbo dev",
+    "dev:desktop": "npx concurrently -n \"API,ELECTRON\" -c \"bgBlue.bold,bgMagenta.bold\" \"pnpm --filter @workspace/api-server dev\" \"pnpm --filter @workspace/jarvis electron:dev\"",
     "build": "turbo build",
     "test": "turbo test",
     "lint": "turbo lint",
