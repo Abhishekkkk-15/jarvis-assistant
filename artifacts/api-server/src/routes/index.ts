@@ -6,6 +6,7 @@ import chatRouter from "./chat";
 import transcribeRouter from "./transcribe";
 import commandsRouter from "./commands";
 import statsRouter from "./stats";
+import { autonomousRouter } from "./autonomous";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(chatRouter);
 router.use(transcribeRouter);
 router.use(commandsRouter);
 router.use(statsRouter);
+router.use("/autonomous", autonomousRouter);
 
 export default router;

@@ -8,6 +8,7 @@ import { useAudioReactivity } from '@/hooks/useAudioReactivity';
 import ReactMarkdown from 'react-markdown';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useCharacterPersonality } from '@/hooks/useCharacterPersonality';
+import { useAutonomousAgent } from '@/hooks/useAutonomousAgent';
 
 const TypewriterBubble: React.FC<{ text: string }> = ({ text }) => {
   const [displayedText, setDisplayedText] = useState('');
@@ -73,6 +74,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [charId] = useLocalStorage('selectedCharacterId', 'jarvis-bot');
   const [posX, setPosX] = useLocalStorage('characterPositionX', window.innerWidth - 150);
   const [posY, setPosY] = useLocalStorage('characterPositionY', window.innerHeight - 150);
+  const [autonomousMode] = useLocalStorage('jarvisAutonomousMode', false);
 
   // JARVIS global state
   const [isListening] = useLocalStorage('jarvisIsListening', false);
@@ -129,12 +131,15 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const velocity = useRef({ x: 0, y: 0 });
   const lastMousePos = useRef({ x: 0, y: 0, time: 0 });
   const physicsRaf = useRef<number | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Initialize the autonomous brain background loop
+  useAutonomousAgent();
 
   // Audio Reactivity
   const isDancingToMusic = useAudioReactivity(40);
 
   const isHoveringRef = useRef(false);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const { activeApproval, agentQuestion, resolveApproval, clearQuestion } = useWebSocket();
 
@@ -192,12 +197,30 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       setTimeout(() => {
         setNotificationMsg(null);
         setBaseAnimation('idle');
-        setIsPhysicsActive(true);
+        if (!autonomousMode) setIsPhysicsActive(true);
       }, Math.max(5000, say.length * 80));
     };
     window.addEventListener('jarvis-system-notification', handleSystemNotification);
-    return () => { window.removeEventListener('jarvis-system-notification', handleSystemNotification); };
-  }, []);
+    
+    // Autonomous Proactive Speech
+    const handleAutonomousSpeech = (e: any) => {
+      const { text } = e.detail;
+      if (!text) return;
+      
+      setReplyBubble(text);
+      personality.triggerEmotion(text);
+      window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text } }));
+      
+      const readTime = Math.min(10000, Math.max(4000, text.length * 60));
+      setTimeout(() => setReplyBubble(''), readTime);
+    };
+    window.addEventListener('jarvis-autonomous-speech', handleAutonomousSpeech);
+
+    return () => {
+      window.removeEventListener('jarvis-system-notification', handleSystemNotification);
+      window.removeEventListener('jarvis-autonomous-speech', handleAutonomousSpeech);
+    };
+  }, [autonomousMode, personality]);
 
   // Show restore hint briefly when minimized
   useEffect(() => {
@@ -294,7 +317,10 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
           if (progress < 1) {
             requestAnimationFrame(animateDraw);
           } else {
-            setTimeout(() => setBaseAnimation('idle'), 1000);
+            setTimeout(() => {
+              setBaseAnimation('idle');
+              if (!autonomousMode) setIsPhysicsActive(true);
+            }, 1000);
 
             // Fade out masterpiece after 10 seconds
             setTimeout(() => {
@@ -352,7 +378,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     };
     window.addEventListener('jarvis-action', handleJarvisAction);
     return () => window.removeEventListener('jarvis-action', handleJarvisAction);
-  }, [posX, posY]);
+  }, [posX, posY, autonomousMode]);
 
   // Cursor tracking listener & Global Idle
   useEffect(() => {
@@ -417,7 +443,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
   // Autonomous movement
   useEffect(() => {
-    if (isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic) return;
+    if (autonomousMode || isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic) return;
 
     const idleTimer = setTimeout(() => {
       if (baseAnimation === 'idle' && !isTrackingCursor) setBaseAnimation('sleep');
@@ -483,7 +509,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       clearTimeout(idleTimer);
       clearInterval(moveTimer);
     };
-  }, [isDragging, isListening, isSpeaking, isTrackingCursor, isPhysicsActive, isDancingToMusic, posX, setPosX, setPosY, baseAnimation]);
+  }, [autonomousMode, isDragging, isListening, isSpeaking, isTrackingCursor, isPhysicsActive, isDancingToMusic, posX, setPosX, setPosY, baseAnimation]);
 
   useEffect(() => {
     // Reset timer when Jarvis state changes (e.g. finishes speaking/listening)

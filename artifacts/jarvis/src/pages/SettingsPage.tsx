@@ -20,6 +20,8 @@ export const SettingsPage: React.FC = () => {
   const tts = useTTS();
 
   const [miniModeEnabled, setMiniModeEnabled] = useLocalStorage('miniModeEnabled', true);
+  const [autonomousMode, setAutonomousMode] = useLocalStorage('jarvisAutonomousMode', false);
+  const [persona, setPersona] = useLocalStorage('jarvisPersona', 'Friendly');
 
   const form = useForm({
     defaultValues: {
@@ -166,6 +168,33 @@ export const SettingsPage: React.FC = () => {
                   </div>
                   <Switch checked={miniModeEnabled} onCheckedChange={setMiniModeEnabled} />
                 </div>
+
+                <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Autonomous AI Mode</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Allow AI to completely control idle physical behaviors</p>
+                  </div>
+                  <Switch checked={autonomousMode} onCheckedChange={setAutonomousMode} />
+                </div>
+
+                {autonomousMode && (
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground">Character Persona</label>
+                    <Select value={persona} onValueChange={setPersona}>
+                      <SelectTrigger className="text-sm">
+                        <SelectValue placeholder="Select a persona" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Friendly">Friendly & Helpful</SelectItem>
+                        <SelectItem value="Funny">Funny & Playful</SelectItem>
+                        <SelectItem value="Sarcastic">Sarcastic & Witty</SelectItem>
+                        <SelectItem value="Professional">Professional Assistant</SelectItem>
+                        <SelectItem value="Chaotic">Chaotic & Random</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">How the character behaves when idle in autonomous mode.</p>
+                  </div>
+                )}
               </div>
 
 
