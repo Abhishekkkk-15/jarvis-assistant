@@ -252,8 +252,9 @@ router.post("/chat", async (req, res) => {
     //   (!isFallback && settings.selectedModel) ||
     //   (provider === "nvidia" ? "z-ai/glm-5.1" : "llama-3.3-70b-versatile");
     const modelName = "minimaxai/minimax-m2.7";
-    const apiKey =
-      provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
+    // const apiKey =
+    //   provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
+    const apiKey = settings.nvidiaApiKey;
     console.log("apiKey : ", apiKey, " ", provider, "model : ", modelName);
     if (!apiKey) {
       res.status(400).json({
@@ -268,11 +269,10 @@ router.post("/chat", async (req, res) => {
     //     : "https://api.groq.com/openai/v1";
 
     const endpoint = "https://integrate.api.nvidia.com/v1";
-
     // Setup LangChain Model
     const llm = new ChatOpenAI({
       modelName: "openai/gpt-oss-120b",
-      apiKey: process.env.NVIDIA_API_KEY || process.env.GROQ_API_KEY,
+      apiKey,
       configuration: { baseURL: endpoint },
       temperature: 0.7,
       maxTokens: 4096,
