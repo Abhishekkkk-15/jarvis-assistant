@@ -6,6 +6,7 @@ import { systemTools } from "./system.js";
 import { memoryTools } from "./memory.js";
 import { browserTools } from "./browser.js";
 import { cronTools } from "./cron.js";
+import { notifyTools } from "./notify.js"
 export const allTools = [
   ...webTools,
   ...computerTools,
@@ -14,5 +15,6 @@ export const allTools = [
   ...systemTools,
   ...memoryTools,
   ...browserTools,
-  ...cronTools
+  ...cronTools,
+  ...notifyTools
 ];

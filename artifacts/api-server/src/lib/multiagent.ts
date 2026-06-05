@@ -20,6 +20,7 @@ export type PlanStep = {
   id: string;
   description: string;
   category: string;
+  tool_name: string;
   expectedOutcome: string;
 };
 
@@ -112,7 +113,7 @@ export function createJarvisGraph(
   const availableTools = [...allTools, listToolsTool];
   const toolsByName = Object.fromEntries(availableTools.map((t) => [t.name, t]));
   const toolDescriptions = availableTools.map(t => `- ${t.name}: ${t.description}`).join('\n');
-  console.log("Tool Descriptions: ", toolDescriptions, "toolsByName: ", toolsByName);
+  console.log("Tool Descriptions: ", toolDescriptions);
   // --- Nodes ---
 
   const initNode = async (state: typeof GraphState.State) => {
@@ -126,8 +127,8 @@ export function createJarvisGraph(
 
   const supervisorNode = async (state: typeof GraphState.State) => {
     let next = "";
-    console.log("Running", state.iterationCount, state.plan, " ", state.currentStep)
-    if (state.iterationCount > 10) {
+    console.log("Running", state.iterationCount, state.plan, " ", state.next)
+    if (state.iterationCount > 50) {
       next = "FINISH";
     } else if (state.plan === null || state.plan === undefined) {
       next = "Planner";
@@ -170,12 +171,13 @@ export function createJarvisGraph(
           id: z.string().describe("Unique identifier for the step"),
           description: z.string().describe("Atomic step description"),
           category: z.string().describe("The tool or category of action this step belongs to"),
+          tool_name: z.string().describe("The exact name of the tool from the Available Tools list to be used. Use 'none' if no tool is needed."),
           expectedOutcome: z.string().describe("What indicates this step is successful"),
         })
       ).describe("List of atomic execution steps. Leave empty if the request is purely conversational.")
     });
 
-    const plannerLlm = llm.withStructuredOutput(plannerSchema, { name: "planner" });
+    const plannerLlm = llm.withStructuredOutput(plannerSchema, { name: "planner", strict: false });
 
     const prompt = `You are the JARVIS Planner Agent. 
   Objective: ${state.objective}.
@@ -183,9 +185,13 @@ export function createJarvisGraph(
   Available Tools:
   ${toolDescriptions}
 
-  You must ONLY plan steps using the available tools listed above.
-  If there is no tool available to complete the user's task, DO NOT generate any steps. Instead, provide a conversational 'reply' explaining that you don't have the necessary tools to do that.
-  Ensure steps are ATOMIC and executable. Do not combine multiple actions into one step.
+  CRITICAL INSTRUCTIONS:
+  1. You must ONLY plan steps using the available tools listed above.
+  2. For each step, you MUST specify the exact \`tool_name\` from the list.
+  3. NEVER use generic terminal tools (like \`run_command\`) if a dedicated tool exists for the task (like scheduling, cron, memory, etc.).
+  4. If there is no tool available to complete the task, DO NOT generate any steps. Instead, provide a conversational 'reply' explaining the limitation.
+  5. Ensure steps are ATOMIC and executable. Do not combine multiple actions into one step.
+  
   Retrieve relevant memories if necessary and inject them into your context before planning.`;
 
     const result = await plannerLlm.invoke([
@@ -222,10 +228,15 @@ export function createJarvisGraph(
   Available Tools:
   ${toolDescriptions}
 
-  You must execute ONLY the current step using ONLY the tools listed above. Never execute future steps.
+  CRITICAL INSTRUCTION: You MUST invoke the tool named '${currentStepDef.tool_name}' to execute the current step. 
+  DO NOT provide a conversational text response. You MUST invoke a tool call.
   If you don't know the exact tool names, call list_tools first.`;
 
-    const executorLlm = llm.bindTools(availableTools);
+    let toolsToBind = availableTools;
+    if (currentStepDef.tool_name && toolsByName[currentStepDef.tool_name]) {
+      toolsToBind = [toolsByName[currentStepDef.tool_name], toolsByName["list_tools"]];
+    }
+    const executorLlm = llm.bindTools(toolsToBind);
     const result = await executorLlm.invoke([
       new SystemMessage(executorPrompt)
     ]);
@@ -278,13 +289,14 @@ export function createJarvisGraph(
       observations: z.array(z.string()).describe("List of observations about what changed, current state, and evidence.")
     });
 
-    const observerLlm = llm.withStructuredOutput(observerSchema, { name: "observer" });
+    const observerLlm = llm.withStructuredOutput(observerSchema, { name: "observer", strict: false });
     const observerPrompt = `You are the JARVIS Observer Agent.
   Objective: ${state.objective}
   Current Step: ${JSON.stringify(currentStepDef)}
   Last Execution Result: ${JSON.stringify(state.lastResult)}
 
-  Observe what happened and determine what changed. Review tool traces and outputs.`;
+  Observe what happened and determine what changed. Review tool traces and outputs.
+  CRITICAL: Do NOT use markdown code blocks (\`\`\`) or complex quotes in your JSON response. Keep text flat and simple to avoid JSON parsing errors.`;
 
     const result = await observerLlm.invoke([
       new SystemMessage(observerPrompt)
@@ -309,7 +321,7 @@ export function createJarvisGraph(
       nextAction: z.enum(["continue", "retry", "replan"]),
     });
 
-    const verifierLlm = llm.withStructuredOutput(verifierSchema, { name: "verifier" });
+    const verifierLlm = llm.withStructuredOutput(verifierSchema, { name: "verifier", strict: false });
     const verifierPrompt = `You are the JARVIS Verifier Agent.
   Step: ${JSON.stringify(currentStepDef)}
   Expected Outcome: ${currentStepDef.expectedOutcome}
@@ -350,12 +362,13 @@ export function createJarvisGraph(
           id: z.string(),
           description: z.string(),
           category: z.string(),
+          tool_name: z.string(),
           expectedOutcome: z.string(),
         })
       )
     });
 
-    const replannerLlm = llm.withStructuredOutput(replannerSchema, { name: "replanner" });
+    const replannerLlm = llm.withStructuredOutput(replannerSchema, { name: "replanner", strict: false });
     const replannerPrompt = `You are the JARVIS Replanner Agent.
   Objective: ${state.objective}
   Current Plan: ${JSON.stringify(state.plan)}
