@@ -341,8 +341,9 @@ export function createJarvisGraph(
   Expected Outcome: ${currentStepDef.expectedOutcome}
   Actual Observations: ${JSON.stringify(currentObservations)}
 
-  Compare expected outcome vs actual observations and determine success.`;
-
+  Compare expected outcome vs actual observations and determine success.
+  CRITICAL: If the observation states that the tool executed successfully or returned data, you MUST consider it verified: true, even if you cannot physically see the screen.
+`
     const result = await verifierLlm.invoke([
       new SystemMessage(verifierPrompt)
     ]);
@@ -391,7 +392,12 @@ export function createJarvisGraph(
 
   Execution repeatedly failed. Generate a revised plan.
   Preserve completed steps (indices 0 to ${state.currentStep - 1}).
-  Only modify unfinished steps from the failure point onward.`;
+  Only modify unfinished steps from the failure point onward.
+  
+  Available Tools:
+  ${toolDescriptions}
+  
+  CRITICAL: You MUST select the exact \`tool_name\` from the Available Tools list.`;
 
     const result = await replannerLlm.invoke([
       new SystemMessage(replannerPrompt)

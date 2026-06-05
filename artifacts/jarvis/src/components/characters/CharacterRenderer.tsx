@@ -702,9 +702,9 @@ export const SpaceBean: React.FC<CharacterProps> = ({ animation = 'idle', size =
   );
 };
 
-export const AlienDude: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const AlienDude: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false }) => {
   return (
-    <BaseCharacter size={size} flipped={flipped} animation={animation}>
+    <BaseCharacter size={size} flipped={flipped} animation={animation} isBlinking={isBlinking}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
         {/* Legs */}
         <g className="limb-l"><rect x="38" y="75" width="6" height="25" rx="3" fill="#2ecc71" /></g>
@@ -737,8 +737,8 @@ export const AlienDude: React.FC<CharacterProps> = ({ animation = 'idle', size =
           </g>
         ) : (
           <g>
-            <ellipse cx="38" cy="28" rx="8" ry="12" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            <ellipse cx="62" cy="28" rx="8" ry="12" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+            <ellipse cx="38" cy="28" rx="8" ry={isBlinking ? 0.5 : 12} fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+            <ellipse cx="62" cy="28" rx="8" ry={isBlinking ? 0.5 : 12} fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
             {animation === 'sleep' && (
               <g>
                 <line x1="30" y1="28" x2="46" y2="28" stroke="#000" strokeWidth="3" />
