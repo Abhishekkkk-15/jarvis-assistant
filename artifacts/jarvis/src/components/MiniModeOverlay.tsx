@@ -317,14 +317,37 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         personality.triggerDirectEmotion(action as CharacterAnimation, 4000);
 
         // Also map some tags to movement styles if applicable
-        if (['dash', 'jump', 'teleport', 'spin', 'bounce', 'zigzag', 'crawl', 'sneak', 'cartwheel', 'hover'].includes(action)) {
+        if (['dash', 'jump', 'teleport', 'spin', 'bounce', 'zigzag', 'crawl', 'sneak', 'cartwheel', 'hover', 'pace'].includes(action)) {
           setMovementStyle(action as any);
+          
+          // Apply physical transformations
+          if (action === 'spin') { setRotation(720); setTimeout(() => setRotation(0), 1000); }
+          else if (action === 'cartwheel') { setRotation(1080); setTimeout(() => setRotation(0), 1500); }
+          else if (action === 'crawl') { setSquash({ x: 1.2, y: 0.6 }); setTimeout(() => setSquash({ x: 1, y: 1 }), 2000); }
+          
+          // Calculate a random nearby destination for the movement
+          const maxX = window.innerWidth - 100;
+          const maxY = window.innerHeight - 100;
+          const newX = Math.max(0, Math.min(maxX, posX + (Math.random() - 0.5) * 400));
+          const newY = Math.max(0, Math.min(maxY, posY + (Math.random() - 0.5) * 400));
+          
+          setFlipped(newX < posX);
+
+          if (action === 'teleport') {
+            setOpacity(0);
+            setTimeout(() => { setPosX(newX); setPosY(newY); setOpacity(1); }, 400);
+          } else if (action === 'hover' || action === 'spin' || action === 'cartwheel') {
+            // Stay in place for stationary physics
+          } else {
+            setPosX(newX);
+            setPosY(newY);
+          }
         }
 
-        // Reset movement back to float after 4 seconds
+        // Reset movement back to float after execution
         setTimeout(() => {
           setMovementStyle('float');
-        }, 4000);
+        }, action === 'crawl' || action === 'sneak' ? 4000 : 2000);
       }
     };
     window.addEventListener('jarvis-action', handleJarvisAction);
