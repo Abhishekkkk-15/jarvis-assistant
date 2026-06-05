@@ -377,7 +377,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       const angle = Math.random() * Math.PI * 2;
       const distance = 200 + Math.random() * 400;
       
-      const newX = Math.max(0, Math.min(maxX, posX + Math.cos(angle) * distance));
+      let newX = Math.max(0, Math.min(maxX, posX + Math.cos(angle) * distance));
       let newY = Math.max(0, Math.min(maxY, posY + Math.sin(angle) * distance));
       
       // 20% chance to occasionally drop to the taskbar/bottom of screen to hang out
