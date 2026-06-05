@@ -368,13 +368,14 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
     const moveTimer = setInterval(() => {
       if (isTrackingCursor) return;
+      if (baseAnimation !== 'idle' && baseAnimation !== 'sleep') return;
 
       const maxX = window.innerWidth - 120;
       const maxY = window.innerHeight - 120;
       
-      // Calculate a local roaming destination (150px to 500px away)
+      // Calculate a local roaming destination (200px to 600px away for bigger movements)
       const angle = Math.random() * Math.PI * 2;
-      const distance = 150 + Math.random() * 350;
+      const distance = 200 + Math.random() * 400;
       
       const newX = Math.max(0, Math.min(maxX, posX + Math.cos(angle) * distance));
       let newY = Math.max(0, Math.min(maxY, posY + Math.sin(angle) * distance));
@@ -387,6 +388,14 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       const styles: ('float' | 'dash' | 'jump' | 'teleport' | 'spin' | 'bounce' | 'zigzag' | 'crawl' | 'sneak' | 'cartwheel' | 'hover' | 'pace' | 'hide')[] = ['float', 'float', 'dash', 'jump', 'teleport', 'spin', 'bounce', 'zigzag', 'crawl', 'sneak', 'cartwheel', 'hover', 'pace', 'hide'];
       const nextStyle = styles[Math.floor(Math.random() * styles.length)];
       setMovementStyle(nextStyle);
+
+      if (nextStyle === 'sneak') {
+        const edge = Math.floor(Math.random() * 4);
+        if (edge === 0) { newX = -60; newY = Math.max(0, Math.min(maxY, Math.random() * maxY)); } // Left
+        else if (edge === 1) { newX = window.innerWidth - 60; newY = Math.max(0, Math.min(maxY, Math.random() * maxY)); } // Right
+        else if (edge === 2) { newY = -60; newX = Math.max(0, Math.min(maxX, Math.random() * maxX)); } // Top
+        else { newY = window.innerHeight - 60; newX = Math.max(0, Math.min(maxX, Math.random() * maxX)); } // Bottom
+      }
 
       setFlipped(newX < posX);
 
@@ -409,9 +418,9 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         setPosY(newY);
       }
 
-      const duration = nextStyle === 'dash' ? 800 : (nextStyle === 'jump' ? 1200 : 2000);
+      const duration = nextStyle === 'dash' ? 800 : (nextStyle === 'jump' ? 1200 : (nextStyle === 'sneak' || nextStyle === 'crawl' ? 4000 : 2000));
       setTimeout(() => setBaseAnimation('idle'), duration);
-    }, 3000 + Math.random() * 4000); // move every 3 to 7 seconds (much more hyperactive)
+    }, 1500 + Math.random() * 2000); // move every 1.5 to 3.5 seconds (SUPER HYPERACTIVE)
 
     return () => {
       clearTimeout(idleTimer);
