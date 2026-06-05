@@ -12,6 +12,7 @@ import { useTTS } from '@/hooks/useTTS';
 export const JarvisMain: React.FC = () => {
   const [isListening, setIsListening] = useLocalStorage('jarvisIsListening', false);
   const [isSpeaking, setIsSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
+  const [, setIsProcessing] = useLocalStorage('jarvisIsProcessing', false);
   const [, setLastReply] = useLocalStorage('jarvisLastReply', '');
   const [, setToolsUsed] = useLocalStorage<string[]>('jarvisToolsUsed', []);
   const [transcript, setTranscript] = useState('');
@@ -42,6 +43,11 @@ export const JarvisMain: React.FC = () => {
   const [activeConversationId, setActiveConversationId] = useLocalStorage<number | null>('activeConversationId', null);
 
   const { activeApproval, agentQuestion, resolveApproval, clearQuestion } = useWebSocket();
+
+  // Sync API pending state to local storage for the character overlay
+  useEffect(() => {
+    setIsProcessing(sendChat.isPending);
+  }, [sendChat.isPending, setIsProcessing]);
 
   // Watch for agent_question to start listening
   useEffect(() => {

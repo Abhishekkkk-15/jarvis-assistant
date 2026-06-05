@@ -77,6 +77,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   // JARVIS global state
   const [isListening] = useLocalStorage('jarvisIsListening', false);
   const [isSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
+  const [isProcessing] = useLocalStorage('jarvisIsProcessing', false);
   const [lastReply] = useLocalStorage('jarvisLastReply', '');
   const [toolsUsed, setToolsUsed] = useLocalStorage<string[]>('jarvisToolsUsed', []);
   const [customCharacters] = useLocalStorage<CustomCharacter[]>('jarvisCustomCharacters', []);
@@ -233,38 +234,62 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = '#3b82f6'; // beautiful blue pencil
-        ctx.lineWidth = 6;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.shadowColor = '#60a5fa';
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
+        // Calculate scale and centering offsets
+        const bbox = pathNode.getBBox();
+        const targetSize = Math.min(window.innerWidth, window.innerHeight) * 0.6; // 60% of screen size
+        const scale = bbox.width > 0 ? Math.min(targetSize / bbox.width, targetSize / bbox.height) : 1;
+        const offsetX = (window.innerWidth - bbox.width * scale) / 2 - bbox.x * scale;
+        const offsetY = (window.innerHeight - bbox.height * scale) / 2 - bbox.y * scale;
+
+        const colors = [
+          { stroke: '#3b82f6', shadow: '#60a5fa' }, // blue
+          { stroke: '#ef4444', shadow: '#f87171' }, // red
+          { stroke: '#10b981', shadow: '#34d399' }, // green
+          { stroke: '#8b5cf6', shadow: '#a78bfa' }, // purple
+          { stroke: '#f59e0b', shadow: '#fbbf24' }, // orange
+          { stroke: '#ec4899', shadow: '#f472b6' }, // pink
+        ];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        const originalPath = new Path2D(path);
 
         const duration = Math.max(3000, length * 5); // 5ms per pixel, min 3s
         const startTime = performance.now();
-        let firstPoint = true;
 
         const animateDraw = (time: number) => {
           const elapsed = time - startTime;
           const progress = Math.min(elapsed / duration, 1);
-          const point = pathNode.getPointAtLength(progress * length);
+          const currentLength = progress * length;
+
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          ctx.save();
+          ctx.translate(offsetX, offsetY);
+          ctx.scale(scale, scale);
+
+          ctx.strokeStyle = color.stroke;
+          ctx.lineWidth = 6 / scale; // Keep relative line width consistent
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.shadowColor = color.shadow;
+          ctx.shadowBlur = 8 / scale;
+
+          ctx.setLineDash([length]);
+          ctx.lineDashOffset = length - currentLength;
+
+          ctx.stroke(originalPath);
+          ctx.restore();
+
+          const rawPoint = pathNode.getPointAtLength(currentLength);
+          const drawX = rawPoint.x * scale + offsetX;
+          const drawY = rawPoint.y * scale + offsetY;
 
           // Update character position to match the drawing point
           // The pencil is on the right side of the character (about +60x, +60y from top-left)
-          const newX = point.x - 120; // 120 is the character width, pencil is on right
-          const newY = point.y - 60;
+          const newX = drawX - 120; // 120 is the character width, pencil is on right
+          const newY = drawY - 60;
           setPosX(newX);
           setPosY(newY);
-
-          if (firstPoint) {
-            ctx.moveTo(point.x, point.y);
-            firstPoint = false;
-          } else {
-            ctx.lineTo(point.x, point.y);
-            ctx.stroke();
-          }
 
           if (progress < 1) {
             requestAnimationFrame(animateDraw);
@@ -312,19 +337,19 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
     const handleMouseMove = (e: MouseEvent) => {
       cursorRef.current = { x: e.clientX, y: e.clientY };
-      if (isTrackingCursor && !isDragging && !isPhysicsActive && !isDancingToMusic) {
+      if (isTrackingCursor && !isDragging && !isPhysicsActive && !isDancingToMusic && !isProcessing) {
         setFlipped(e.clientX < posX);
       }
 
       // Wake up from sleep if mouse moves globally
-      if (baseAnimation === 'sleep') {
+      if (baseAnimation === 'sleep' && !isProcessing) {
         setBaseAnimation('idle');
       }
 
       // Reset global idle timer
       clearTimeout(idleTimeout);
       idleTimeout = setTimeout(() => {
-        if (!isDragging && !isListening && !isSpeaking && !isPhysicsActive && !isDancingToMusic) {
+        if (!isDragging && !isListening && !isSpeaking && !isPhysicsActive && !isDancingToMusic && !isProcessing) {
           setBaseAnimation('sleep');
         }
       }, 5 * 60 * 1000); // 5 minutes
@@ -333,7 +358,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     window.addEventListener('mousemove', handleMouseMove);
 
     idleTimeout = setTimeout(() => {
-      if (!isDragging && !isListening && !isSpeaking && !isPhysicsActive && !isDancingToMusic) {
+      if (!isDragging && !isListening && !isSpeaking && !isPhysicsActive && !isDancingToMusic && !isProcessing) {
         setBaseAnimation('sleep');
       }
     }, 1 * 60 * 1000);
@@ -342,7 +367,16 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       clearTimeout(idleTimeout);
     };
-  }, [isTrackingCursor, isDragging, isPhysicsActive, isDancingToMusic, posX, baseAnimation, isListening, isSpeaking]);
+  }, [isTrackingCursor, isDragging, isPhysicsActive, isDancingToMusic, posX, baseAnimation, isListening, isSpeaking, isProcessing]);
+
+  // Handle thinking state
+  useEffect(() => {
+    if (isProcessing) {
+      setBaseAnimation('thinking');
+    } else if (baseAnimation === 'thinking') {
+      setBaseAnimation('idle');
+    }
+  }, [isProcessing]);
 
   // Randomize tracking state
   useEffect(() => {
@@ -372,14 +406,14 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
       const maxX = window.innerWidth - 120;
       const maxY = window.innerHeight - 120;
-      
+
       // Calculate a local roaming destination (200px to 600px away for bigger movements)
       const angle = Math.random() * Math.PI * 2;
       const distance = 200 + Math.random() * 400;
-      
+
       let newX = Math.max(0, Math.min(maxX, posX + Math.cos(angle) * distance));
       let newY = Math.max(0, Math.min(maxY, posY + Math.sin(angle) * distance));
-      
+
       // 20% chance to occasionally drop to the taskbar/bottom of screen to hang out
       if (Math.random() > 0.8) {
         newY = maxY;

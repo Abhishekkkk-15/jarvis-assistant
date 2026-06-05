@@ -43,6 +43,9 @@ export function useWebSocket() {
           else if (data.type === 'system_notification') {
             window.dispatchEvent(new CustomEvent('jarvis-system-notification', { detail: data }));
           }
+          else if (data.type === 'jarvis-action') {
+            window.dispatchEvent(new CustomEvent('jarvis-action', { detail: data.detail }));
+          }
         } catch (err) {
           console.error('[WebSocket] Error parsing message', err);
         }
