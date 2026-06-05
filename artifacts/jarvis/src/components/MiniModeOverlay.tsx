@@ -201,16 +201,16 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       }, Math.max(5000, say.length * 80));
     };
     window.addEventListener('jarvis-system-notification', handleSystemNotification);
-    
+
     // Autonomous Proactive Speech
     const handleAutonomousSpeech = (e: any) => {
       const { text } = e.detail;
       if (!text) return;
-      
+
       setReplyBubble(text);
       personality.triggerEmotion(text);
       window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text } }));
-      
+
       const readTime = Math.min(10000, Math.max(4000, text.length * 60));
       setTimeout(() => setReplyBubble(''), readTime);
     };
@@ -345,18 +345,18 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         // Also map some tags to movement styles if applicable
         if (['dash', 'jump', 'teleport', 'spin', 'bounce', 'zigzag', 'crawl', 'sneak', 'cartwheel', 'hover', 'pace'].includes(action)) {
           setMovementStyle(action as any);
-          
+
           // Apply physical transformations
           if (action === 'spin') { setRotation(720); setTimeout(() => setRotation(0), 1000); }
           else if (action === 'cartwheel') { setRotation(1080); setTimeout(() => setRotation(0), 1500); }
           else if (action === 'crawl') { setSquash({ x: 1.2, y: 0.6 }); setTimeout(() => setSquash({ x: 1, y: 1 }), 2000); }
-          
+
           // Calculate a random nearby destination for the movement
           const maxX = window.innerWidth - 100;
           const maxY = window.innerHeight - 100;
           const newX = Math.max(0, Math.min(maxX, posX + (Math.random() - 0.5) * 400));
           const newY = Math.max(0, Math.min(maxY, posY + (Math.random() - 0.5) * 400));
-          
+
           setFlipped(newX < posX);
 
           if (action === 'teleport') {
@@ -1042,7 +1042,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
           </div>
         </div>
 
-        {isMinimized && !showContextMenu && (
+        {/* {isMinimized && !showContextMenu && (
           <button
             className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary hover:bg-primary/90 transition-colors rounded-full flex items-center justify-center shadow-md cursor-pointer z-50"
             onClick={(e) => {
@@ -1053,7 +1053,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
           >
             <Maximize2 size={12} className="text-white" />
           </button>
-        )}
+        )} */}
 
         {showContextMenu && (
           <div
