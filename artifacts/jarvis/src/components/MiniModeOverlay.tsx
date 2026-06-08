@@ -135,6 +135,10 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const physicsRaf = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  // Wandering state
+  const isWanderingRef = useRef(false);
+  const [propHeld, setPropHeld] = useState<string | null>(null);
+
   // Initialize the Vision Engine
   useVisionEngine();
 
@@ -761,13 +765,82 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     };
   }, [isDragging, posX, posY]);
 
+  const triggerWander = () => {
+    if (isDragging || isListening || isSpeaking || !isMinimized || isWanderingRef.current) return;
+    
+    isWanderingRef.current = true;
+    setPropHeld(null);
+    setBaseAnimation('walk');
+    
+    // Choose a direction to walk off
+    const goRight = Math.random() > 0.5;
+    
+    // Give him horizontal velocity, no vertical velocity
+    velocity.current = { x: goRight ? 4 : -4, y: 0 };
+    setIsPhysicsActive(true);
+    if (!physicsRaf.current) {
+      startPhysicsLoop(posX, posY);
+    }
+    
+    // Check when he is fully offscreen
+    const checkOffscreen = setInterval(() => {
+      setPosX(current => {
+        if (current < -200 || current > window.innerWidth + 200) {
+          clearInterval(checkOffscreen);
+          setIsPhysicsActive(false);
+          if (physicsRaf.current) cancelAnimationFrame(physicsRaf.current);
+          physicsRaf.current = null;
+          
+          // Wait offscreen for 1-2 minutes (we will use 60 seconds)
+          setTimeout(() => {
+            // Come back with coffee or a wrench!
+            setPropHeld(Math.random() > 0.5 ? '☕' : '🔧');
+            setBaseAnimation('courier');
+            // Give him a huge jump back in
+            velocity.current = { x: goRight ? -8 : 8, y: -15 }; 
+            isWanderingRef.current = false; // Turn bounds back on!
+            setIsPhysicsActive(true);
+            const startX = goRight ? window.innerWidth + 100 : -100;
+            const startY = window.innerHeight - 300;
+            setPosX(startX);
+            setPosY(startY);
+            startPhysicsLoop(startX, startY);
+
+            // Clear the prop after 10 seconds
+            setTimeout(() => setPropHeld(null), 10000);
+
+          }, 60000);
+        }
+        return current;
+      });
+    }, 500);
+  };
+
+  // Wandering Idle Timer (Triggers every 5-10 minutes of inactivity)
+  useEffect(() => {
+    if (isDragging || isListening || isSpeaking || !isMinimized || !autonomousMode) return;
+    const wanderTimer = setInterval(() => {
+      // If we haven't interacted for 5 minutes, 30% chance to wander
+      if (Date.now() - lastInteractionTime.current > 5 * 60 * 1000) {
+        if (Math.random() < 0.3 && !isWanderingRef.current) {
+          triggerWander();
+        }
+      }
+    }, 60000); // check every minute
+    
+    // Expose for testing
+    (window as any).testWander = triggerWander;
+
+    return () => clearInterval(wanderTimer);
+  }, [isDragging, isListening, isSpeaking, isMinimized, autonomousMode]);
+
   const startPhysicsLoop = (startX: number, startY: number) => {
     let currentX = startX;
     let currentY = startY;
     const gravity = 1.2; // heavy gravity
     const bounce = 0.65; // High bounce for throwing!
     const friction = 0.99; // air resistance
-    const floorY = window.innerHeight - 120;
+    const floorY = window.innerHeight - 165; // Sit perfectly on top of Windows Taskbar
     const rightX = window.innerWidth - 120;
 
     const loop = () => {
@@ -792,16 +865,18 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         velocity.current.x *= 0.8; // ground friction
       }
 
-      // Wall collisions
+      // Wall collisions (only if not wandering)
       let hitWall = false;
-      if (currentX <= 0) {
-        currentX = 0;
-        velocity.current.x *= -bounce;
-        hitWall = true;
-      } else if (currentX >= rightX) {
-        currentX = rightX;
-        velocity.current.x *= -bounce;
-        hitWall = true;
+      if (!isWanderingRef.current) {
+        if (currentX <= 0) {
+          currentX = 0;
+          velocity.current.x *= -bounce;
+          hitWall = true;
+        } else if (currentX >= rightX) {
+          currentX = rightX;
+          velocity.current.x *= -bounce;
+          hitWall = true;
+        }
       }
 
       setPosX(currentX);
@@ -827,10 +902,18 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       }
 
       // Stop condition
-      if (currentY >= floorY && Math.abs(velocity.current.y) < 1 && Math.abs(velocity.current.x) < 1) {
+      if (!isWanderingRef.current && currentY >= floorY && Math.abs(velocity.current.y) < 1 && Math.abs(velocity.current.x) < 1) {
         setIsPhysicsActive(false);
-        setSquash({ x: 1, y: 1 });
+        physicsRaf.current = null;
+        setBaseAnimation('idle');
         return;
+      }
+
+      // If wandering offscreen, pause loop when fully out
+      if (isWanderingRef.current && (currentX < -200 || currentX > window.innerWidth + 200)) {
+        setIsPhysicsActive(false);
+        physicsRaf.current = null;
+        return; // wait offscreen!
       }
 
       physicsRaf.current = requestAnimationFrame(loop);
@@ -1099,6 +1182,13 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
             {toolsUsed.includes('read_file') && <span className="text-4xl">📄</span>}
             {toolsUsed.includes('open_app') && <span className="text-4xl">🚀</span>}
             {toolsUsed.includes('open_website') && <span className="text-4xl">🌐</span>}
+          </div>
+        )}
+
+        {/* Wandering Prop */}
+        {propHeld && !notificationMsg && (
+          <div className="absolute top-8 -right-8 z-10 drop-shadow-md animate-bounce">
+            <span className="text-5xl">{propHeld}</span>
           </div>
         )}
 
