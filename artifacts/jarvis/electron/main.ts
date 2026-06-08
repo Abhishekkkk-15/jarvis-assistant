@@ -220,20 +220,63 @@ ipcMain.handle('get-active-window', async () => {
   }
 });
 
-// Active Window Polling Loop
-let lastActiveWindowTitle = '';
-setInterval(async () => {
-  if (!mainWindow) return;
-  try {
-    const winInfo = await activeWindow();
-    if (winInfo && winInfo.title !== lastActiveWindowTitle) {
-      // Don't trigger if JARVIS itself is focused
-      if (winInfo.title.includes('JARVIS')) return;
+// Active Window Polling Loop using Native PowerShell (Robust Fallback)
+import { spawn } from 'child_process';
 
-      lastActiveWindowTitle = winInfo.title;
-      mainWindow.webContents.send('active-window-changed', winInfo);
-    }
-  } catch (err) {
-    // ignore
+let lastActiveWindowTitle = '';
+
+const psScript = `
+Add-Type @"
+  using System;
+  using System.Runtime.InteropServices;
+  using System.Text;
+  public class Win32 {
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")]
+    public static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
   }
-}, 3000);
+"@
+while ($true) {
+  $hwnd = [Win32]::GetForegroundWindow()
+  $sb = New-Object System.Text.StringBuilder(256)
+  [Win32]::GetWindowText($hwnd, $sb, $sb.Capacity) | Out-Null
+  $title = $sb.ToString()
+  
+  [UInt32]$procId = 0
+  [Win32]::GetWindowThreadProcessId($hwnd, [ref]$procId) | Out-Null
+  $process = Get-Process -Id $procId -ErrorAction SilentlyContinue
+  $name = if ($process) { $process.ProcessName } else { "" }
+  
+  Write-Output "$title|JARVIS_SPLIT|$name"
+  Start-Sleep -Milliseconds 2000
+}
+`;
+
+const psProcess = spawn('powershell', ['-NoProfile', '-Command', psScript]);
+
+psProcess.stdout.on('data', (data) => {
+  if (!mainWindow) return;
+  const lines = data.toString().trim().split('\\n');
+  for (const line of lines) {
+    const parts = line.trim().split('|JARVIS_SPLIT|');
+    if (parts.length === 2) {
+      const winInfo = { title: parts[0], owner: { name: parts[1] } };
+
+      if (winInfo.title !== lastActiveWindowTitle) {
+        lastActiveWindowTitle = winInfo.title;
+
+        // Still don't send the event for JARVIS itself, but we DID update lastActiveWindowTitle
+        if (winInfo.title.includes('JARVIS')) continue;
+
+        mainWindow.webContents.send('active-window-changed', winInfo);
+      }
+    }
+  }
+});
+
+psProcess.stderr.on('data', (data) => {
+  console.error('PowerShell Error:', data.toString());
+});
