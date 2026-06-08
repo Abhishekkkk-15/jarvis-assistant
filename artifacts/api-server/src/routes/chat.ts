@@ -123,10 +123,12 @@ const tools = [
       const target = aliasMap[normalized] || app_name;
 
       return new Promise((resolve) => {
-        child_process.exec(`start "" "${target}"`, (err) => {
-          if (err) resolve(`Failed to open app: ${err.message}`);
-          else resolve(`App ${target} opened successfully.`);
+        const child = child_process.spawn("cmd.exe", ["/c", "start", "", target], {
+          detached: true,
+          stdio: "ignore",
         });
+        child.unref();
+        resolve(`App ${target} open command issued successfully.`);
       });
     },
   }),
@@ -140,10 +142,12 @@ const tools = [
         finalUrl = "https://" + finalUrl;
       }
       return new Promise((resolve) => {
-        child_process.exec(`start "" "${finalUrl}"`, (err) => {
-          if (err) resolve(`Failed to open website: ${err.message}`);
-          else resolve(`Website ${finalUrl} opened successfully.`);
+        const child = child_process.spawn("cmd.exe", ["/c", "start", "", finalUrl], {
+          detached: true,
+          stdio: "ignore",
         });
+        child.unref();
+        resolve(`Website ${finalUrl} open command issued successfully.`);
       });
     },
   }),
@@ -378,7 +382,7 @@ router.post("/chat", async (req, res) => {
     try {
       const agentResult = await agent.invoke(
         { messages: finalMessages, next: "Orchestrator" },
-        { recursionLimit: 25 },
+        { recursionLimit: 50 },
       );
       const lastMessage = agentResult.messages[agentResult.messages.length - 1];
       agentResponse = String(lastMessage.content);
