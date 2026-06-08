@@ -17,9 +17,17 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
+import { setupDb } from "@workspace/db";
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: "/ws" });
 setupWsManager(wss);
+
+try {
+  setupDb();
+  logger.info("Database setup complete. Tables initialized.");
+} catch (e) {
+  logger.error(e, "Failed to setup database tables");
+}
 
 export const getWss = () => wss;
 

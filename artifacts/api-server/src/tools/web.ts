@@ -1,6 +1,10 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
-import puppeteer from "puppeteer";
+
+async function getPuppeteer() {
+  const mod = await new Function('return import("puppeteer")')();
+  return mod.default || mod;
+}
 
 import fs from "fs/promises";
 import { YoutubeTranscript } from "youtube-transcript";
@@ -13,6 +17,7 @@ export const webTools = [
     schema: z.object({ url: z.string() }),
     func: async ({ url }) => {
       try {
+        const puppeteer = await getPuppeteer();
         const browser = await puppeteer.launch({ headless: true });
         const page = await browser.newPage();
         await page.goto(url, { waitUntil: 'domcontentloaded' });
@@ -29,6 +34,7 @@ export const webTools = [
     schema: z.object({ url: z.string(), path: z.string().optional() }),
     func: async ({ url, path }) => {
       try {
+        const puppeteer = await getPuppeteer();
         const browser = await puppeteer.launch({ headless: true });
         const page = await browser.newPage();
         await page.goto(url, { waitUntil: 'networkidle2' });

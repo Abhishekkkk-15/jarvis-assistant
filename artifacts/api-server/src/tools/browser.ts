@@ -1,12 +1,18 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
-import puppeteer, { Browser, Page } from "puppeteer";
+import type { Browser, Page } from "puppeteer";
+
+async function getPuppeteer() {
+  const mod = await new Function('return import("puppeteer")')();
+  return mod.default || mod;
+}
 
 let globalBrowser: Browser | null = null;
 let globalPage: Page | null = null;
 
 async function getBrowser() {
   if (!globalBrowser) {
+    const puppeteer = await getPuppeteer();
     globalBrowser = await puppeteer.launch({
       headless: false,
       defaultViewport: null,

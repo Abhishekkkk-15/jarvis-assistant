@@ -13,9 +13,10 @@ export function useWebSocket() {
   useEffect(() => {
     // Attempt to connect to the backend WebSocket
     const connect = () => {
+      const isElectron = !!(window as any).electronAPI;
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      const url = `${protocol}//${host}/ws`;
+      const host = window.location.host || 'localhost:3000';
+      const url = isElectron ? 'ws://localhost:4000/ws' : `${protocol}//${host}/ws`;
       const ws = new WebSocket(url);
 
       ws.onopen = () => {
@@ -70,7 +71,9 @@ export function useWebSocket() {
 
   const resolveApproval = async (requestId: string, decision: 'approved' | 'denied') => {
     try {
-      await fetch('/api/commands/approval', {
+      const isElectron = !!(window as any).electronAPI;
+      const baseUrl = isElectron ? 'http://localhost:4000' : '';
+      await fetch(`${baseUrl}/api/commands/approval`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requestId, decision })

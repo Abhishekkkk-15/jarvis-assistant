@@ -1,16 +1,26 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["electron/**/*"],
-  "exclude": ["node_modules"],
+  "include": [
+    "electron/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ],
   "compilerOptions": {
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "esModuleInterop": true,
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": [
+      "ES2022"
+    ],
     "outDir": "dist/electron",
     "noEmit": false,
     "emitDeclarationOnly": false,
     "composite": false,
-    "types": ["node", "electron"]
+    "types": [
+      "node",
+      "electron"
+    ]
   }
 }

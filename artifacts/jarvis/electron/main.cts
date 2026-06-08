@@ -1,10 +1,5 @@
-import { app, BrowserWindow, shell, ipcMain, desktopCapturer, globalShortcut, powerMonitor } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, desktopCapturer, globalShortcut, powerMonitor, utilityProcess } from 'electron';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { activeWindow } from 'active-win';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 const isDev = process.env.NODE_ENV === 'development';
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:3000';
 
@@ -23,7 +18,7 @@ function createWindow() {
     hasShadow: false,
     backgroundColor: '#00000000',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -68,7 +63,7 @@ function createQuickInputWindow() {
     skipTaskbar: true,
     backgroundColor: '#00000000',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -142,10 +137,68 @@ app.whenReady().then(() => {
       win = quickInputWindow;
       if (win) {
         win.show();
-        win.focus();
       }
     }
   });
+
+  globalShortcut.register('CommandOrControl+Shift+I', () => {
+    if (mainWindow) {
+      mainWindow.webContents.toggleDevTools();
+    }
+  });
+
+  let backendProcess: Electron.UtilityProcess | null = null;
+  if (!isDev) {
+    const backendPath = path.join(__dirname, '..', 'backend', 'dist', 'index.cjs');
+    const envFile = path.join(__dirname, '..', 'backend', '.env');
+    const dbPath = path.join(app.getPath('userData'), 'sqlite.db');
+    
+    console.log("Starting backend utility process at", backendPath);
+        const logFs = require('fs');
+        const logFsPath = path.join(app.getPath('userData'), 'backend-crash.log');
+        logFs.writeFileSync(logFsPath, 'Backend starting...\n');
+        
+        const bootScript = path.join(app.getPath('userData'), 'boot.cjs');
+        logFs.writeFileSync(bootScript, `
+const fs = require('fs');
+try {
+  require(process.env.REAL_BACKEND_PATH);
+} catch(e) {
+  fs.appendFileSync(process.env.CRASH_LOG_PATH, 'SYNC CATCH ERR: ' + (e.stack || e.message) + '\\n');
+  process.exit(1);
+}
+        `);
+
+        backendProcess = utilityProcess.fork(bootScript, [], {
+            stdio: 'pipe',
+            env: {
+                ...process.env,
+                DB_PATH: dbPath,
+                ENV_FILE: envFile,
+                REAL_BACKEND_PATH: backendPath,
+                CRASH_LOG_PATH: logFsPath
+            }
+        });
+    if (backendProcess.stdout) {
+        backendProcess.stdout.on('data', (d) => logFs.appendFileSync(logFsPath, d.toString()));
+    }
+    if (backendProcess.stderr) {
+        backendProcess.stderr.on('data', (d) => logFs.appendFileSync(logFsPath, 'ERR: ' + d.toString()));
+    }
+
+    backendProcess.on('message', (msg) => {
+        console.log('Backend says:', msg);
+    });
+    backendProcess.on('exit', (code) => {
+        logFs.appendFileSync(logFsPath, `\nBackend exited with code ${code}\n`);
+    });
+
+    app.on('will-quit', () => {
+      if (backendProcess) {
+        backendProcess.kill();
+      }
+    });
+  }
 });
 
 app.on('window-all-closed', () => {
@@ -154,9 +207,9 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('will-quit', () => {
-  globalShortcut.unregisterAll();
-});
+  app.on('will-quit', () => {
+    globalShortcut.unregisterAll();
+  });
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
@@ -224,13 +277,7 @@ ipcMain.on('send-to-main', (event, msg) => {
 });
 
 ipcMain.handle('get-active-window', async () => {
-  try {
-    const win = await activeWindow();
-    return win;
-  } catch (err) {
-    console.error('Failed to get active window:', err);
-    return null;
-  }
+  return null;
 });
 
 // Active Window Polling Loop using Native PowerShell (Robust Fallback)
