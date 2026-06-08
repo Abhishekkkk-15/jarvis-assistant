@@ -206,6 +206,9 @@ importers:
 
   artifacts/jarvis:
     dependencies:
+      active-win:
+        specifier: ^9.0.0
+        version: 9.0.0(encoding@0.1.13)
       get-windows:
         specifier: ^9.3.0
         version: 9.3.0(encoding@0.1.13)
@@ -2793,6 +2796,11 @@ packages:
     resolution: {integrity: sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
+
+  active-win@9.0.0:
+    resolution: {integrity: sha512-aiDwWcottgi/DO1/XWnXPHpuTh9qtMxzLUzD9nZj66Fub8SPNGvBLnEdaQsx44O9p8TEZG9d5NNAXGxzbes8CA==}
+    engines: {node: '>=18.18'}
+    deprecated: 'Renamed to get-windows: https://www.npmjs.com/package/get-windows'
 
   agent-base@6.0.2:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
@@ -7787,6 +7795,15 @@ snapshots:
       negotiator: 1.0.0
 
   acorn@8.16.0: {}
+
+  active-win@9.0.0(encoding@0.1.13):
+    optionalDependencies:
+      '@mapbox/node-pre-gyp': 1.0.11(encoding@0.1.13)
+      node-addon-api: 8.8.0
+      node-gyp: 10.3.1
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
 
   agent-base@6.0.2:
     dependencies:

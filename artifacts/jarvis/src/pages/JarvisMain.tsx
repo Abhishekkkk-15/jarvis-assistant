@@ -6,12 +6,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import ReactMarkdown from 'react-markdown';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useRelationshipEngine } from '@/hooks/useRelationshipEngine';
 import { AgentInteractiveOverlay } from '@/components/ui/AgentInteractiveOverlay';
 import { useTTS } from '@/hooks/useTTS';
 
 export const JarvisMain: React.FC = () => {
   const [isListening, setIsListening] = useLocalStorage('jarvisIsListening', false);
   const [isSpeaking, setIsSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
+  const { affectionScore, mood } = useRelationshipEngine();
   const [, setIsProcessing] = useLocalStorage('jarvisIsProcessing', false);
   const [, setLastReply] = useLocalStorage('jarvisLastReply', '');
   const [, setToolsUsed] = useLocalStorage<string[]>('jarvisToolsUsed', []);
@@ -220,7 +222,7 @@ export const JarvisMain: React.FC = () => {
     setToolsUsed([]); // Clear tools when starting a new message
     sendChat.mutate({
       data: { 
-        message: text, 
+        message: `[System Note - Your Relationship with User: ${mood} (Affection Score: ${Math.round(affectionScore)}/100)]\n\n${text}`, 
         conversationId: activeConversationId || undefined, 
         model: settings?.selectedModel, 
         provider: settings?.selectedProvider,

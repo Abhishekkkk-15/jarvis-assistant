@@ -2,13 +2,10 @@ import { Router } from "express";
 import { z } from "zod";
 import { ChatOpenAI } from "@langchain/openai";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
+import { db, settingsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const router = Router();
-
-const llm = new ChatOpenAI({
-  modelName: "llama-3.1-70b-versatile",
-  temperature: 0.8, // higher temperature for more spontaneous behavior
-});
 
 router.post("/", async (req, res) => {
   try {
@@ -17,6 +14,20 @@ router.post("/", async (req, res) => {
     if (!context) {
       return res.status(400).json({ error: "Context is required" });
     }
+
+    const settingsArr = await db.select().from(settingsTable).limit(1);
+    const settings = settingsArr[0];
+    
+    if (!settings || !settings.nvidiaApiKey) {
+      return res.status(400).json({ error: "API Key not configured in Settings" });
+    }
+
+    const llm = new ChatOpenAI({
+      modelName: "minimaxai/minimax-m2.7", // Using the same default as chat.ts
+      apiKey: settings.nvidiaApiKey,
+      configuration: { baseURL: "https://integrate.api.nvidia.com/v1" },
+      temperature: 0.8, 
+    });
 
     const systemPrompt = `You are the autonomous physical brain of a desktop AI character.
 You are currently idle. 

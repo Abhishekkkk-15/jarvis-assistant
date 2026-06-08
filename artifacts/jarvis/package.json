@@ -107,6 +107,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "active-win": "^9.0.0",
     "get-windows": "^9.3.0",
     "node-window-manager": "^2.2.4",
     "react-markdown": "^9.0.1",

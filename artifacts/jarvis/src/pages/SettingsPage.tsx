@@ -171,8 +171,8 @@ export const SettingsPage: React.FC = () => {
 
                 <div className="flex items-center justify-between rounded-lg border border-border p-4">
                   <div>
-                    <p className="text-sm font-medium text-foreground">Autonomous AI Mode</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Allow AI to completely control idle physical behaviors</p>
+                    <p className="text-sm font-medium text-foreground">Contextual Awareness Mode</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Character actively watches your active windows and reacts to your tasks</p>
                   </div>
                   <Switch checked={autonomousMode} onCheckedChange={setAutonomousMode} />
                 </div>
@@ -192,7 +192,7 @@ export const SettingsPage: React.FC = () => {
                         <SelectItem value="Chaotic">Chaotic & Random</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">How the character behaves when idle in autonomous mode.</p>
+                    <p className="text-xs text-muted-foreground">How the character reacts to what you are doing.</p>
                   </div>
                 )}
               </div>

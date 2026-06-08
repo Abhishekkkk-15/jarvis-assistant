@@ -1,6 +1,7 @@
 import { app, BrowserWindow, shell, ipcMain, desktopCapturer, globalShortcut } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { activeWindow } from 'active-win';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -210,5 +211,29 @@ ipcMain.on('send-to-main', (event, msg) => {
 });
 
 ipcMain.handle('get-active-window', async () => {
-  return null;
+  try {
+    const win = await activeWindow();
+    return win;
+  } catch (err) {
+    console.error('Failed to get active window:', err);
+    return null;
+  }
 });
+
+// Active Window Polling Loop
+let lastActiveWindowTitle = '';
+setInterval(async () => {
+  if (!mainWindow) return;
+  try {
+    const winInfo = await activeWindow();
+    if (winInfo && winInfo.title !== lastActiveWindowTitle) {
+      // Don't trigger if JARVIS itself is focused
+      if (winInfo.title.includes('JARVIS')) return;
+
+      lastActiveWindowTitle = winInfo.title;
+      mainWindow.webContents.send('active-window-changed', winInfo);
+    }
+  } catch (err) {
+    // ignore
+  }
+}, 3000);

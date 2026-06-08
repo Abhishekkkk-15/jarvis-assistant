@@ -21,3 +21,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 ipcRenderer.on('message-from-quick-input', (event, message) => {
   (window as any).dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message } }));
 });
+
+ipcRenderer.on('active-window-changed', (event, winInfo) => {
+  (window as any).dispatchEvent(new CustomEvent('active-window-changed', { detail: { winInfo } }));
+});

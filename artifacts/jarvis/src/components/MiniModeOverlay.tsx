@@ -8,7 +8,8 @@ import { useAudioReactivity } from '@/hooks/useAudioReactivity';
 import ReactMarkdown from 'react-markdown';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useCharacterPersonality } from '@/hooks/useCharacterPersonality';
-import { useAutonomousAgent } from '@/hooks/useAutonomousAgent';
+import { useVisionEngine } from '@/hooks/useVisionEngine';
+import { useRelationshipEngine } from '@/hooks/useRelationshipEngine';
 
 const TypewriterBubble: React.FC<{ text: string }> = ({ text }) => {
   const [displayedText, setDisplayedText] = useState('');
@@ -133,8 +134,11 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const physicsRaf = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Initialize the autonomous brain background loop
-  useAutonomousAgent();
+  // Initialize the Vision Engine
+  useVisionEngine();
+
+  // Initialize Relationship Engine
+  const { mood, interact, setNeglectedForTesting } = useRelationshipEngine();
 
   // Audio Reactivity
   const isDancingToMusic = useAudioReactivity(40);
@@ -231,6 +235,39 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     }
     return undefined;
   }, [isMinimized]);
+
+  // Initial Boot Greeting based on Mood
+  useEffect(() => {
+    if (!enabled) return;
+    
+    // Slight delay so the character has time to render
+    const t = setTimeout(() => {
+      let greeting = '';
+      let anim = 'happy';
+
+      if (mood === 'Neglected') {
+        greeting = "Oh... you finally remembered I exist.";
+        anim = 'sad';
+      } else if (mood === 'Best Friends') {
+        greeting = "Welcome back! I missed you so much!";
+        anim = 'excited';
+      } else if (mood === 'Friendly') {
+        greeting = "Hey there! Ready to get to work?";
+        anim = 'happy';
+      } else {
+        greeting = "Hello.";
+        anim = 'idle';
+      }
+
+      setBaseAnimation(anim as any);
+      window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text: greeting } }));
+      
+      // Expose test function to window for the user to try
+      (window as any).testNeglect = setNeglectedForTesting;
+    }, 1500);
+
+    return () => clearTimeout(t);
+  }, [enabled, mood]);
 
   // Handle custom LLM action tags
   useEffect(() => {
@@ -651,8 +688,11 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       lastPetTime.current = now;
       lastPetMouseX.current = e.clientX;
 
-      if (petMotionCount.current > 12) { // vigorously petted 12 times quickly
+      if (petMotionCount.current > 35) { // vigorously petted 35 times quickly
+        setBaseAnimation('happy');
+        window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text: "Ahhh, that hits the spot! Purrr..." } }));
         personality.triggerDirectEmotion('love', 3000);
+        interact(5); // Big relationship boost for petting
         petMotionCount.current = 0; // reset count
       }
     }
@@ -708,8 +748,8 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     let currentX = startX;
     let currentY = startY;
     const gravity = 1.2; // heavy gravity
-    const bounce = 0.2; // sandbag bounce
-    const friction = 0.98; // air resistance
+    const bounce = 0.65; // High bounce for throwing!
+    const friction = 0.99; // air resistance
     const floorY = window.innerHeight - 120;
     const rightX = window.innerWidth - 120;
 
@@ -823,9 +863,26 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       return;
     }
 
-    if (file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/')) {
+    if (file.type.startsWith('image/')) {
+      setBaseAnimation('jump');
+      window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text: "Ooh, yummy data! Thank you!" } }));
+      interact(2); // Small boost for feeding
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const imageBase64 = event.target?.result as string;
+        if (imageBase64) {
+          const message = `I just dropped an image named \`${file.name}\`. Take a look at it!`;
+          window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message, imageBase64 } }));
+        }
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
       setBaseAnimation('confused');
-      setReplyBubble("I can't read media files yet! Try dropping a text or code file on me.");
+      setReplyBubble("I can't eat video or audio files yet! Try dropping an image or text file on me.");
       const timer = setTimeout(() => setReplyBubble(''), 4000);
       return;
     }
