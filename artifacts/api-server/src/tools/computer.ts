@@ -4,7 +4,7 @@ import * as child_process from "child_process";
 import * as os from "os";
 import * as path from "path";
 import * as fs from "fs/promises";
-import robot from "robotjs";
+import robot from "@hurdlegroup/robotjs";
 import { windowManager } from "node-window-manager";
 
 // ─────────────────────────────────────────────────────────────────
