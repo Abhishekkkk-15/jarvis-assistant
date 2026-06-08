@@ -4,6 +4,8 @@ import * as child_process from "child_process";
 import * as os from "os";
 import * as path from "path";
 import * as fs from "fs/promises";
+import robot from "robotjs";
+import { windowManager } from "node-window-manager";
 
 // ─────────────────────────────────────────────────────────────────
 // Helper: run a python one-liner via pyautogui
@@ -40,7 +42,7 @@ function runPS(script: string, timeout = 10000): Promise<string> {
 
 export const computerTools = [
   // ──────────────────────────────────────────────────────────────
-  // MOUSE CONTROL — real pyautogui implementation
+  // MOUSE CONTROL — real robotjs implementation
   // ──────────────────────────────────────────────────────────────
   new DynamicStructuredTool({
     name: "mouse_control",
@@ -57,46 +59,43 @@ export const computerTools = [
       x2: z.number().optional().describe("End X for drag"),
       y2: z.number().optional().describe("End Y for drag"),
       amount: z.number().optional().describe("Scroll amount (positive = down, negative = up)"),
-      duration: z.number().optional().describe("Movement duration in seconds (default 0.3)"),
+      duration: z.number().optional().describe("Movement duration in seconds (ignored by robotjs)"),
     }),
-    func: async ({ action, x, y, x2, y2, amount, duration }) => {
-      const dur = duration ?? 0.3;
-
-      let code = "import pyautogui; pyautogui.FAILSAFE = False; ";
-      switch (action) {
-        case "move":
-          if (x !== undefined && y !== undefined)
-            code += `pyautogui.moveTo(${x}, ${y}, duration=${dur})`;
-          else return "Error: x and y are required for move.";
-          break;
-        case "click":
-          code += x !== undefined && y !== undefined
-            ? `pyautogui.click(${x}, ${y})`
-            : `pyautogui.click()`;
-          break;
-        case "double_click":
-          code += x !== undefined && y !== undefined
-            ? `pyautogui.doubleClick(${x}, ${y})`
-            : `pyautogui.doubleClick()`;
-          break;
-        case "right_click":
-          code += x !== undefined && y !== undefined
-            ? `pyautogui.rightClick(${x}, ${y})`
-            : `pyautogui.rightClick()`;
-          break;
-        case "scroll":
-          code += `pyautogui.scroll(${amount ?? -3}${x !== undefined ? `, x=${x}, y=${y}` : ""})`;
-          break;
-        case "drag":
-          if (x !== undefined && y !== undefined && x2 !== undefined && y2 !== undefined)
-            code += `pyautogui.moveTo(${x}, ${y}); pyautogui.dragTo(${x2}, ${y2}, duration=${dur})`;
-          else return "Error: x, y, x2, y2 all required for drag.";
-          break;
+    func: async ({ action, x, y, x2, y2, amount }) => {
+      try {
+        if (action === "move") {
+          if (x !== undefined && y !== undefined) {
+             robot.moveMouseSmooth(x, y);
+          } else {
+            return "Error: x and y are required for move.";
+          }
+        } else if (action === "click") {
+          if (x !== undefined && y !== undefined) robot.moveMouse(x, y);
+          robot.mouseClick();
+        } else if (action === "double_click") {
+          if (x !== undefined && y !== undefined) robot.moveMouse(x, y);
+          robot.mouseClick("left", true);
+        } else if (action === "right_click") {
+          if (x !== undefined && y !== undefined) robot.moveMouse(x, y);
+          robot.mouseClick("right");
+        } else if (action === "scroll") {
+           // robotjs scroll is horizontal, vertical
+           if (x !== undefined && y !== undefined) robot.moveMouse(x, y);
+           robot.scrollMouse(0, amount || -3);
+        } else if (action === "drag") {
+          if (x !== undefined && y !== undefined && x2 !== undefined && y2 !== undefined) {
+             robot.moveMouse(x, y);
+             robot.mouseToggle("down");
+             robot.dragMouse(x2, y2);
+             robot.mouseToggle("up");
+          } else {
+            return "Error: x, y, x2, y2 all required for drag.";
+          }
+        }
+        return `Mouse ${action} executed successfully${x !== undefined ? ` at (${x}, ${y})` : ""}.`;
+      } catch (err: any) {
+        return `Error executing mouse_control: ${err.message}`;
       }
-
-      const result = await runPython(code);
-      if (result.startsWith("Error")) return result;
-      return `Mouse ${action} executed successfully${x !== undefined ? ` at (${x}, ${y})` : ""}.`;
     },
   }),
 
@@ -108,12 +107,12 @@ export const computerTools = [
     description: "Returns the current mouse cursor position (x, y) on screen. Use this before mouse_control to know where to click or move.",
     schema: z.object({}),
     func: async () => {
-      const result = await runPython(
-        "import pyautogui; x, y = pyautogui.position(); print(f'{x},{y}')"
-      );
-      if (result.startsWith("Error")) return result;
-      const [x, y] = result.split(",");
-      return `Current cursor position: x=${x}, y=${y}`;
+      try {
+        const pos = robot.getMousePos();
+        return `Current cursor position: x=${pos.x}, y=${pos.y}`;
+      } catch (err: any) {
+        return `Error getting cursor position: ${err.message}`;
+      }
     },
   }),
 
@@ -179,17 +178,17 @@ export const computerTools = [
     description: "Returns the screen resolution (width x height). Use this to calculate where to click on the screen.",
     schema: z.object({}),
     func: async () => {
-      const result = await runPython(
-        "import pyautogui; w, h = pyautogui.size(); print(f'{w},{h}')"
-      );
-      if (result.startsWith("Error")) return result;
-      const [w, h] = result.split(",");
-      return `Screen size: ${w} x ${h} pixels`;
+      try {
+        const size = robot.getScreenSize();
+        return `Screen size: ${size.width} x ${size.height} pixels`;
+      } catch(err: any) {
+         return `Error getting screen size: ${err.message}`;
+      }
     },
   }),
 
   // ──────────────────────────────────────────────────────────────
-  // KEYBOARD CONTROL — real pyautogui implementation
+  // KEYBOARD CONTROL — real robotjs implementation
   // ──────────────────────────────────────────────────────────────
   new DynamicStructuredTool({
     name: "keyboard_control",
@@ -201,31 +200,28 @@ export const computerTools = [
     schema: z.object({
       action: z.enum(["type", "hotkey", "press"]),
       text: z.string().optional().describe("Text to type (for action='type')"),
-      keys: z.string().optional().describe("Key name or comma-separated key combo (e.g. 'ctrl,c' or 'enter')"),
-      interval: z.number().optional().describe("Interval between keystrokes in seconds (default 0.05)"),
+      keys: z.string().optional().describe("Key name or comma-separated key combo (e.g. 'control,c' or 'enter'). Note: robotjs uses 'control' not 'ctrl'."),
+      interval: z.number().optional().describe("Interval between keystrokes in seconds (ignored by robotjs)"),
     }),
-    func: async ({ action, text, keys, interval }) => {
-      let code = "import pyautogui; import time; pyautogui.FAILSAFE = False; ";
-      switch (action) {
-        case "type":
+    func: async ({ action, text, keys }) => {
+      try {
+        if (action === "type") {
           if (!text) return "Error: text is required for type action.";
-          // Escape single quotes
-          const safeText = text.replace(/'/g, "\\'");
-          code += `pyautogui.write('${safeText}', interval=${interval ?? 0.05})`;
-          break;
-        case "hotkey":
+          // To send characters fast without delay:
+          robot.typeString(text);
+        } else if (action === "hotkey") {
           if (!keys) return "Error: keys is required for hotkey action.";
-          const keyList = keys.split(",").map(k => `'${k.trim()}'`).join(", ");
-          code += `pyautogui.hotkey(${keyList})`;
-          break;
-        case "press":
+          const parts = keys.split(",").map(k => k.trim().toLowerCase());
+          const key = parts.pop() as string;
+          robot.keyTap(key, parts as any);
+        } else if (action === "press") {
           if (!keys) return "Error: keys is required for press action.";
-          code += `pyautogui.press('${keys.trim()}')`;
-          break;
+          robot.keyTap(keys.trim().toLowerCase());
+        }
+        return `Keyboard ${action} executed successfully: ${text || keys}`;
+      } catch (err: any) {
+        return `Error executing keyboard_control: ${err.message}`;
       }
-      const result = await runPython(code);
-      if (result.startsWith("Error")) return result;
-      return `Keyboard ${action} executed successfully: ${text || keys}`;
     },
   }),
 
@@ -249,12 +245,12 @@ export const computerTools = [
   }),
 
   // ──────────────────────────────────────────────────────────────
-  // WINDOW MANAGEMENT — real PowerShell implementation
+  // WINDOW MANAGEMENT — node-window-manager implementation
   // ──────────────────────────────────────────────────────────────
   new DynamicStructuredTool({
     name: "window_management",
     description:
-      "Manage windows on Windows. " +
+      "Manage windows on Windows natively using node-window-manager. " +
       "Actions: minimize, maximize, restore, close, focus, list_windows. " +
       "window_title is a partial match (case-insensitive). " +
       "For list_windows, window_title is ignored.",
@@ -263,36 +259,45 @@ export const computerTools = [
       window_title: z.string().optional().describe("Partial window title to match"),
     }),
     func: async ({ action, window_title }) => {
-      if (action === "list_windows") {
-        const result = await runPS(
-          `Get-Process | Where-Object {$_.MainWindowTitle -ne ''} | Select-Object -ExpandProperty MainWindowTitle | Sort-Object -Unique`
-        );
-        return `Open windows:\n${result}`;
+      try {
+        if (action === "list_windows") {
+          windowManager.requestAccessibility();
+          const windows = windowManager.getWindows();
+          const list = windows
+              .filter(w => w.isVisible() && w.getTitle())
+              .map(w => w.getTitle());
+          const uniqueList = Array.from(new Set(list));
+          return `Open windows:\n${uniqueList.join("\n")}`;
+        }
+
+        if (!window_title) return "Error: window_title is required for this action.";
+
+        const targetTitle = window_title.toLowerCase();
+        windowManager.requestAccessibility();
+        const windows = windowManager.getWindows();
+        const matchedWindows = windows.filter(w => w.isVisible() && w.getTitle().toLowerCase().includes(targetTitle));
+
+        if (matchedWindows.length === 0) {
+            return `No open windows found matching "${window_title}"`;
+        }
+
+        for (const win of matchedWindows) {
+            if (action === "minimize") win.minimize();
+            else if (action === "maximize") win.maximize();
+            else if (action === "restore") win.restore();
+            else if (action === "focus") win.bringToTop();
+            else if (action === "close") {
+                // node-window-manager does not have a direct close() method, we can kill its process or send a close key
+                // A reliable way is sending alt+f4 using robotjs to the focused window.
+                win.bringToTop();
+                robot.keyTap("f4", "alt");
+            }
+        }
+        
+        return `${action} applied successfully to ${matchedWindows.length} window(s) matching "${window_title}".`;
+      } catch (err: any) {
+        return `Error in window_management: ${err.message}`;
       }
-
-      if (!window_title) return "Error: window_title is required for this action.";
-
-      const psAction = {
-        minimize: "SW_MINIMIZE",
-        maximize: "SW_MAXIMIZE",
-        restore: "SW_RESTORE",
-        close: "close()",
-        focus: "SW_RESTORE",
-      }[action];
-
-      if (action === "close") {
-        const result = await runPS(
-          `$procs = Get-Process | Where-Object {$_.MainWindowTitle -match '${window_title}'}; $procs | ForEach-Object { $_.CloseMainWindow() } | Out-Null; "Closed $($procs.Count) window(s)"`
-        );
-        return result;
-      }
-
-      // Use pygetwindow for maximize/minimize/restore/focus
-      const gwAction = { minimize: "minimize", maximize: "maximize", restore: "restore", focus: "activate" }[action];
-      const code = `import pygetwindow as gw; wins = gw.getWindowsWithTitle('${window_title}'); [w.${gwAction}() for w in wins]; print(f'${action} applied to {len(wins)} window(s)')`;
-      const result = await runPython(code);
-      if (result.startsWith("Error")) return result;
-      return result;
     },
   }),
 

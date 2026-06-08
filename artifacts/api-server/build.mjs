@@ -101,7 +101,8 @@ async function buildAll() {
       "playwright",
       "puppeteer",
       "puppeteer-core",
-      "electron",
+      "robotjs",
+      "node-window-manager",
     ],
     sourcemap: "linked",
     plugins: [
