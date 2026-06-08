@@ -3,9 +3,12 @@ import { useLocalStorage } from './use-local-storage';
 import { toast } from '@/hooks/use-toast';
 
 export function useVisionEngine() {
+  const [autonomousMode] = useLocalStorage('jarvisAutonomousMode', false);
   const lastTitleRef = useRef('');
 
   useEffect(() => {
+    if (!autonomousMode) return;
+
     const handleWindowChanged = (e: any) => {
       const { winInfo } = e.detail;
       if (!winInfo || !winInfo.title) return;
@@ -52,8 +55,8 @@ export function useVisionEngine() {
 
       if (reactionText) {
         // Dispatch instant speech!
-        window.dispatchEvent(new CustomEvent('jarvis-autonomous-speech', { 
-          detail: { text: `${reactionText} [anim: ${reactionAnim}]` } 
+        window.dispatchEvent(new CustomEvent('jarvis-autonomous-speech', {
+          detail: { text: `${reactionText} [anim: ${reactionAnim}]` }
         }));
       }
     };
@@ -63,5 +66,5 @@ export function useVisionEngine() {
     return () => {
       window.removeEventListener('active-window-changed', handleWindowChanged);
     };
-  }, []);
+  }, [autonomousMode]);
 }
