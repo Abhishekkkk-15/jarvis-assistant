@@ -1,6 +1,26 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { saveMemory, searchMemory, listAllMemories, forgetMemory } from "../lib/memory.js";
+import * as fs from "fs/promises";
+import * as path from "path";
+
+async function walkDir(dir: string, extensions: string[]): Promise<string[]> {
+  const files: string[] = [];
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await walkDir(fullPath, extensions)));
+    } else {
+      const ext = path.extname(entry.name);
+      if (extensions.includes(ext)) {
+        files.push(fullPath);
+      }
+    }
+  }
+  return files;
+}
 
 export const memoryTools = [
   new DynamicStructuredTool({
@@ -79,6 +99,66 @@ export const memoryTools = [
         return `✅ Memory ID ${memory_id} has been deleted.`;
       } catch (err: any) {
         return `Failed to forget memory: ${err.message}`;
+      }
+    },
+  }),
+
+  new DynamicStructuredTool({
+    name: "index_local_directory",
+    description: "Recursively walks a local directory and indexes all text/code files into the vector database (Second Brain). Use this to 'learn' a codebase or project.",
+    schema: z.object({
+      directory_path: z.string().describe("Absolute path to the directory to index."),
+      extensions: z.array(z.string()).describe("List of file extensions to include (e.g. ['.ts', '.js', '.md', '.txt']).")
+    }),
+    func: async ({ directory_path, extensions }) => {
+      try {
+        const files = await walkDir(directory_path, extensions);
+        if (files.length === 0) return "No matching files found in directory.";
+        
+        let indexedCount = 0;
+        // Limit to 50 files per call to prevent timeout/rate limits
+        const targetFiles = files.slice(0, 50);
+        
+        for (const file of targetFiles) {
+          const content = await fs.readFile(file, "utf-8");
+          // Chunking (naive 4000 char chunks)
+          const chunkSize = 4000;
+          for (let i = 0; i < content.length; i += chunkSize) {
+            const chunk = content.slice(i, i + chunkSize);
+            await saveMemory(chunk, `file_path: ${file}`);
+            indexedCount++;
+          }
+        }
+        
+        const warning = files.length > 50 ? ` (Capped at 50 files. Call again or use smaller subdirectories)` : "";
+        return `✅ Successfully indexed ${targetFiles.length} files into ${indexedCount} chunks${warning}.`;
+      } catch (err: any) {
+        return `Failed to index directory: ${err.message}`;
+      }
+    },
+  }),
+
+  new DynamicStructuredTool({
+    name: "search_local_files",
+    description: "Semantic search across all previously indexed local files in your 'Second Brain'. Use this to quickly find code snippets or documents.",
+    schema: z.object({
+      query: z.string().describe("Search query (e.g. 'function that saves memory to database', 'login component')")
+    }),
+    func: async ({ query }) => {
+      try {
+        const results = await searchMemory(query, 5);
+        if (results.length === 0) {
+          return `No relevant files found for: "${query}". You may need to index the directory first using 'index_local_directory'.`;
+        }
+
+        let output = `Found ${results.length} relevant file chunks:\n`;
+        for (const res of results) {
+          const similarity = ((1 - res.distance) * 100).toFixed(1);
+          output += `\n--- [${similarity}% match | ${res.metadata}] ---\n${res.text_content}\n`;
+        }
+        return output;
+      } catch (err: any) {
+        return `Failed to search local files: ${err.message}`;
       }
     },
   }),

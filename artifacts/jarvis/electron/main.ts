@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain, desktopCapturer, globalShortcut } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, desktopCapturer, globalShortcut, powerMonitor } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { activeWindow } from 'active-win';
@@ -96,6 +96,19 @@ function createQuickInputWindow() {
 app.whenReady().then(() => {
   createWindow();
   createQuickInputWindow();
+
+  const sendSystemEvent = (eventName: string) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('system-event', eventName);
+    }
+  };
+
+  powerMonitor.on('suspend', () => sendSystemEvent('suspend'));
+  powerMonitor.on('resume', () => sendSystemEvent('resume'));
+  powerMonitor.on('lock-screen', () => sendSystemEvent('lock-screen'));
+  powerMonitor.on('unlock-screen', () => sendSystemEvent('unlock-screen'));
+  powerMonitor.on('on-ac', () => sendSystemEvent('on-ac'));
+  powerMonitor.on('on-battery', () => sendSystemEvent('on-battery'));
 
   globalShortcut.register('CommandOrControl+Shift+Space', () => {
     if (mainWindow) {

@@ -25,3 +25,7 @@ ipcRenderer.on('message-from-quick-input', (event, message) => {
 ipcRenderer.on('active-window-changed', (event, winInfo) => {
   (window as any).dispatchEvent(new CustomEvent('active-window-changed', { detail: { winInfo } }));
 });
+
+ipcRenderer.on('system-event', (event, eventName) => {
+  (window as any).dispatchEvent(new CustomEvent('system-event', { detail: { eventName } }));
+});

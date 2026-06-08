@@ -304,8 +304,20 @@ export const JarvisMain: React.FC = () => {
         handleMessageWithScreenshot(message, imageBase64);
       }
     };
+    const handleSystemEvent = (e: any) => {
+      const { eventName } = e.detail;
+      const systemMessage = `[System Event]: The user just triggered OS event: ${eventName}. React proactively!`;
+      // Call handleSendMessage directly to avoid capturing a screenshot unnecessarily for every system event,
+      // or use handleMessageWithScreenshot if we want context. Let's provide context.
+      handleMessageWithScreenshot(systemMessage);
+    };
+
     window.addEventListener('jarvis-send-message', handleGlobalMessage);
-    return () => window.removeEventListener('jarvis-send-message', handleGlobalMessage);
+    window.addEventListener('system-event', handleSystemEvent);
+    return () => {
+      window.removeEventListener('jarvis-send-message', handleGlobalMessage);
+      window.removeEventListener('system-event', handleSystemEvent);
+    };
   }, [activeConversationId, settings]);
 
   // Sync isSpeaking from TTS hook to local storage so MiniMode can read it
