@@ -279,11 +279,29 @@ export const JarvisMain: React.FC = () => {
     });
   };
 
+  const handleMessageWithScreenshot = async (message: string, imageBase64?: string) => {
+    let finalImageBase64 = imageBase64;
+    
+    // If no image was explicitly passed, automatically capture the screen for True Visual AI context!
+    if (!finalImageBase64 && window.electronAPI?.captureScreen) {
+      try {
+        const screenshot = await window.electronAPI.captureScreen();
+        if (screenshot) {
+          finalImageBase64 = screenshot;
+        }
+      } catch (err) {
+        console.error("Failed to capture screen:", err);
+      }
+    }
+    
+    handleSendMessage(message, finalImageBase64);
+  };
+
   useEffect(() => {
     const handleGlobalMessage = (e: any) => {
       const { message, imageBase64 } = e.detail;
       if (message) {
-        handleSendMessage(message, imageBase64);
+        handleMessageWithScreenshot(message, imageBase64);
       }
     };
     window.addEventListener('jarvis-send-message', handleGlobalMessage);
@@ -303,7 +321,7 @@ export const JarvisMain: React.FC = () => {
         agentQuestion={agentQuestion} 
         resolveApproval={resolveApproval} 
         clearQuestion={clearQuestion} 
-        onSubmitAnswer={handleSendMessage}
+        onSubmitAnswer={handleMessageWithScreenshot}
       />
 
       {/* Header */}
