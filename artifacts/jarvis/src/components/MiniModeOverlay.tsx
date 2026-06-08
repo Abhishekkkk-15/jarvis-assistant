@@ -10,6 +10,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { useCharacterPersonality } from '@/hooks/useCharacterPersonality';
 import { useVisionEngine } from '@/hooks/useVisionEngine';
 import { useRelationshipEngine } from '@/hooks/useRelationshipEngine';
+import { useRoutineEngine } from '@/hooks/useRoutineEngine';
 
 const TypewriterBubble: React.FC<{ text: string }> = ({ text }) => {
   const [displayedText, setDisplayedText] = useState('');
@@ -140,6 +141,9 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   // Initialize Relationship Engine
   const { mood, interact, setNeglectedForTesting } = useRelationshipEngine();
 
+  // Initialize Routine Engine
+  const { phase } = useRoutineEngine();
+
   // Audio Reactivity
   const isDancingToMusic = useAudioReactivity(40);
 
@@ -239,7 +243,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   // Initial Boot Greeting based on Mood
   useEffect(() => {
     if (!enabled) return;
-    
+
     // Slight delay so the character has time to render
     const t = setTimeout(() => {
       let greeting = '';
@@ -259,9 +263,9 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         anim = 'idle';
       }
 
-      setBaseAnimation(anim as any);
+      personality.triggerDirectEmotion(anim as any, 5000);
       window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text: greeting } }));
-      
+
       // Expose test function to window for the user to try
       (window as any).testNeglect = setNeglectedForTesting;
     }, 1500);
@@ -429,31 +433,44 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
       // Wake up from sleep if mouse moves globally
       if (baseAnimation === 'sleep' && !isProcessing) {
-        setBaseAnimation('idle');
+        if (phase === 'Night') {
+          // Groggy wake up
+          setBaseAnimation('sad');
+          window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text: "Ugh... let me sleep... it's the middle of the night..." } }));
+        } else {
+          setBaseAnimation('idle');
+        }
       }
 
       // Reset global idle timer
       clearTimeout(idleTimeout);
+      const sleepDelay = phase === 'Night' ? 10 * 1000 : 5 * 60 * 1000;
       idleTimeout = setTimeout(() => {
         if (!isDragging && !isListening && !isSpeaking && !isPhysicsActive && !isDancingToMusic && !isProcessing) {
           setBaseAnimation('sleep');
         }
-      }, 5 * 60 * 1000); // 5 minutes
+      }, sleepDelay);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
 
+    const initialSleepDelay = phase === 'Night' ? 10 * 1000 : 1 * 60 * 1000;
     idleTimeout = setTimeout(() => {
       if (!isDragging && !isListening && !isSpeaking && !isPhysicsActive && !isDancingToMusic && !isProcessing) {
         setBaseAnimation('sleep');
       }
-    }, 1 * 60 * 1000);
+    }, initialSleepDelay);
+
+    // If it's night, force sleep immediately if we are idle
+    if (phase === 'Night' && baseAnimation === 'idle') {
+      setBaseAnimation('sleep');
+    }
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       clearTimeout(idleTimeout);
     };
-  }, [isTrackingCursor, isDragging, isPhysicsActive, isDancingToMusic, posX, baseAnimation, isListening, isSpeaking, isProcessing]);
+  }, [isTrackingCursor, isDragging, isPhysicsActive, isDancingToMusic, posX, baseAnimation, isListening, isSpeaking, isProcessing, phase]);
 
   // Handle thinking state
   useEffect(() => {
@@ -867,7 +884,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       setBaseAnimation('jump');
       window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text: "Ooh, yummy data! Thank you!" } }));
       interact(2); // Small boost for feeding
-      
+
       const reader = new FileReader();
       reader.onload = (event) => {
         const imageBase64 = event.target?.result as string;
