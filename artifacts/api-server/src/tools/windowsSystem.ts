@@ -70,6 +70,21 @@ export const windowsSystemTools = [
     },
   }),
   new DynamicStructuredTool({
+    name: "display_brightness",
+    description: "Adjust the screen brightness on Windows displays. Note: this only works for built-in displays (like laptops) that support WMI brightness control.",
+    schema: z.object({
+      level: z.number().min(0).max(100).describe("The brightness percentage level (0 to 100)."),
+    }),
+    func: async ({ level }) => {
+      const script = `(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, ${level})`;
+      const result = await runPS(script);
+      if (result.includes("PS Error")) {
+        return "Failed to set brightness. This computer might be a desktop or its display doesn't support WMI brightness control.";
+      }
+      return `Screen brightness set to ${level}%.`;
+    },
+  }),
+  new DynamicStructuredTool({
     name: "registry_control",
     description: "Query or modify the Windows Registry. Modifying requires calling requestApproval first.",
     schema: z.object({

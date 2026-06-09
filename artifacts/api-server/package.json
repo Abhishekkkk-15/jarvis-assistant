@@ -28,6 +28,7 @@
     "express": "^5.2.1",
     "node-cron": "^4.2.1",
     "node-window-manager": "^2.2.4",
+    "octokit": "^5.0.5",
     "openai": "^6.41.0",
     "pino": "^9.14.0",
     "pino-http": "^10.5.0",

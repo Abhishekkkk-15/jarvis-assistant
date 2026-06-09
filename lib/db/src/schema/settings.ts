@@ -17,6 +17,7 @@ export const settingsTable = sqliteTable("settings", {
   notionApiKey: text("notion_api_key"),
   spotifyClientId: text("spotify_client_id"),
   spotifyClientSecret: text("spotify_client_secret"),
+  githubPat: text("github_pat"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()).$onUpdate(() => new Date()),
 });

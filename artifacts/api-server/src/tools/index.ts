@@ -14,6 +14,7 @@ import { uiaTools } from "./uiautomation.js";
 import { windowsSystemTools } from "./windowsSystem.js";
 import { everythingTools } from "./everything.js";
 import { cdpBrowserTools } from "./cdpBrowser.js";
+import { githubTools } from "./github.js";
 
 export const allTools = [
   ...browserTools,
@@ -32,4 +33,5 @@ export const allTools = [
   ...windowsSystemTools,
   ...everythingTools,
   ...cdpBrowserTools,
+  ...githubTools,
 ];

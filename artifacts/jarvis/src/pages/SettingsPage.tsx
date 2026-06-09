@@ -41,6 +41,7 @@ export const SettingsPage: React.FC = () => {
         notionApiKey: '',
         spotifyClientId: '',
         spotifyClientSecret: '',
+        githubPat: '',
         wakeWord: settings.wakeWord || 'jarvis',
         voiceEnabled: settings.voiceEnabled ?? true,
 
@@ -55,6 +56,7 @@ export const SettingsPage: React.FC = () => {
     if (!payload.notionApiKey) delete payload.notionApiKey;
     if (!payload.spotifyClientId) delete payload.spotifyClientId;
     if (!payload.spotifyClientSecret) delete payload.spotifyClientSecret;
+    if (!payload.githubPat) delete payload.githubPat;
     updateSettings.mutate({ data: payload }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
@@ -123,6 +125,25 @@ export const SettingsPage: React.FC = () => {
                       />
                     </FormControl>
                     <FormDescription className="text-xs">Used for ultra-fast inference (LPU)</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="githubPat"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">GitHub Personal Access Token</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder={settings?.githubPatSet ? "Already set — enter new key to update" : "Enter your GitHub PAT"}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">Required for reading repos, issues, and opening PRs</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
