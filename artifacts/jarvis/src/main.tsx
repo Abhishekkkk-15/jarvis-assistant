@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
-import "./index.css";
+import "./output.css";
 import { setBaseUrl } from "@workspace/api-client-react";
 
 if ((window as any).electronAPI) {

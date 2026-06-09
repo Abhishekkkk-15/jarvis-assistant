@@ -237,6 +237,7 @@ router.post("/chat", async (req, res) => {
 
     let provider = parsed.data.provider || settings.selectedProvider || "groq";
     let isFallback = false;
+    let modelName = hasImage ? "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" : "openai/gpt-oss-120b";
 
     // Fallback if the selected provider lacks a key but the other one has it
     if (provider === "groq" && !settings.groqApiKey && settings.nvidiaApiKey) {
@@ -255,7 +256,6 @@ router.post("/chat", async (req, res) => {
     //   parsed.data.model ||
     //   (!isFallback && settings.selectedModel) ||
     //   (provider === "nvidia" ? "z-ai/glm-5.1" : "llama-3.3-70b-versatile");
-    const modelName = "minimaxai/minimax-m2.7";
     // const apiKey =
     //   provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
     const apiKey = settings.nvidiaApiKey;
@@ -275,7 +275,7 @@ router.post("/chat", async (req, res) => {
     const endpoint = "https://integrate.api.nvidia.com/v1";
     // Setup LangChain Model
     const llm = new ChatOpenAI({
-      modelName: "openai/gpt-oss-120b",
+      modelName,
       apiKey,
       configuration: { baseURL: endpoint },
       temperature: 0.7,
