@@ -84,6 +84,11 @@ export const GraphState = Annotation.Root({
     default: () => 0,
   }),
 
+  synthesized: Annotation<boolean>({
+    value: (x, y) => y,
+    default: () => false,
+  }),
+
   next: Annotation<string>({
     value: (x, y) => y,
     default: () => "",
@@ -112,7 +117,7 @@ export function createJarvisGraph(
 
   const availableTools = [...allTools, listToolsTool];
   const toolsByName = Object.fromEntries(availableTools.map((t) => [t.name, t]));
-  const toolDescriptions = availableTools.map(t => `- ${t.name}: ${t.description}`).join('\n');
+  const toolDescriptions = availableTools.map(t => `- ${t.name}`).join('\n');
   console.log("Tool Descriptions: ", toolDescriptions);
   // --- Nodes ---
 
@@ -133,7 +138,11 @@ export function createJarvisGraph(
     } else if (state.plan === null || state.plan === undefined) {
       next = "Planner";
     } else if (state.currentStep >= state.plan.length) {
-      next = "FINISH";
+      if (state.plan.length > 0 && !state.synthesized) {
+        next = "Synthesizer";
+      } else {
+        next = "FINISH";
+      }
     } else if (state.retryCount >= 2) {
       next = "Replanner";
     } else if (!state.lastResult) {
@@ -417,6 +426,29 @@ export function createJarvisGraph(
     };
   };
 
+  const synthesizerNode = async (state: typeof GraphState.State) => {
+    const synthesizerPrompt = `You are JARVIS. You have just completed a multi-step plan to answer the user's objective.
+  Objective: ${state.objective}
+  Execution History: ${JSON.stringify(state.executionHistory)}
+
+  Review the execution history and provide a final, conversational response to the user's original objective. 
+  Answer naturally. Do not explicitly mention "execution history", "tools", or "internal steps" unless necessary.
+  
+  **CHARACTER ANIMATIONS**: You can include \`[anim: <action>]\` to animate the character!
+  Available actions: happy, sad, angry, confused, surprised, thinking, excited, love, scared, dizzy, cool, shy, dash, jump, teleport, spin, bounce, zigzag, crawl, sneak, cartwheel, hover, pace, hide.`;
+
+    const result = await llm.invoke([
+      new SystemMessage(synthesizerPrompt),
+      ...state.messages
+    ]);
+
+    return {
+      messages: [new AIMessage({ content: result.content, name: "Synthesizer" })],
+      synthesized: true,
+      next: "Supervisor"
+    };
+  };
+
   // --- Build Graph ---
   const workflow = new StateGraph(GraphState)
     .addNode("Init", initNode)
@@ -426,6 +458,7 @@ export function createJarvisGraph(
     .addNode("Observer", observerNode)
     .addNode("Verifier", verifierNode)
     .addNode("Replanner", replannerNode)
+    .addNode("Synthesizer", synthesizerNode)
     .addNode("NextStep", nextStepNode)
 
     .addEdge(START, "Init")
@@ -437,6 +470,7 @@ export function createJarvisGraph(
       Observer: "Observer",
       Verifier: "Verifier",
       Replanner: "Replanner",
+      Synthesizer: "Synthesizer",
       NextStep: "NextStep",
       FINISH: END,
     })
@@ -446,6 +480,7 @@ export function createJarvisGraph(
     .addEdge("Observer", "Supervisor")
     .addEdge("Verifier", "Supervisor")
     .addEdge("Replanner", "Supervisor")
+    .addEdge("Synthesizer", "Supervisor")
     .addEdge("NextStep", "Supervisor");
 
   return workflow.compile();

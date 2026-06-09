@@ -341,7 +341,7 @@ export async function processChatRequest(parsedData: any) {
   try {
     const agentResult = await agent.invoke(
       { messages: finalMessages, next: "Orchestrator" },
-      { recursionLimit: 50 },
+      { recursionLimit: 200 },
     );
     const lastMessage = agentResult.messages[agentResult.messages.length - 1];
     agentResponse = String(lastMessage.content);

@@ -10,6 +10,10 @@ import { drawingTools } from "./drawing.js";
 import { notifyTools } from "./notify.js";
 import { notionTools } from "./notion.js";
 import { spotifyTools } from "./spotify.js";
+import { uiaTools } from "./uiautomation.js";
+import { windowsSystemTools } from "./windowsSystem.js";
+import { everythingTools } from "./everything.js";
+import { cdpBrowserTools } from "./cdpBrowser.js";
 
 export const allTools = [
   ...browserTools,
@@ -24,4 +28,8 @@ export const allTools = [
   ...notifyTools,
   ...notionTools,
   ...spotifyTools,
+  ...uiaTools,
+  ...windowsSystemTools,
+  ...everythingTools,
+  ...cdpBrowserTools,
 ];

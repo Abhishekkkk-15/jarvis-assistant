@@ -32,6 +32,7 @@
     "pino": "^9.14.0",
     "pino-http": "^10.5.0",
     "puppeteer": "^25.1.0",
+    "puppeteer-core": "^25.1.0",
     "rss-parser": "^3.13.0",
     "sharp": "0.32.6",
     "spotify-web-api-node": "^5.0.2",
