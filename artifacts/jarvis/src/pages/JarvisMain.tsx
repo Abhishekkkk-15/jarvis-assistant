@@ -443,7 +443,7 @@ export const JarvisMain: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-3 border-t border-border bg-slate-50 shrink-0">
+            <div className="p-4 border-t border-border bg-white/50 backdrop-blur-xl shrink-0">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -454,23 +454,32 @@ export const JarvisMain: React.FC = () => {
                     input.value = '';
                   }
                 }}
-                className="flex gap-2"
+                className="relative flex items-center shadow-sm rounded-2xl group"
               >
+                <div className="absolute left-4 text-muted-foreground group-focus-within:text-primary transition-colors">
+                  <Zap size={18} />
+                </div>
                 <input
                   name="manualInput"
                   type="text"
-                  placeholder="Type a message…"
-                  className="flex-1 bg-white border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  placeholder="Ask JARVIS or type a command..."
+                  className="w-full bg-slate-50/80 hover:bg-slate-100/80 border border-slate-200 rounded-2xl pl-12 pr-28 py-4 text-[15px] text-foreground focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary/50 transition-all placeholder:text-muted-foreground/70 shadow-inner"
                   data-testid="input-manual-chat"
                 />
-                <button
-                  type="submit"
-                  disabled={sendChat.isPending}
-                  className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-1.5"
-                  data-testid="button-send-chat"
-                >
-                  <Send size={15} /> Send
-                </button>
+                <div className="absolute right-2 flex items-center gap-2">
+                  <kbd className="hidden sm:inline-flex h-6 items-center gap-1 rounded border bg-muted px-2 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                    <span className="text-xs">↵</span> Enter
+                  </kbd>
+                  <button
+                    type="submit"
+                    disabled={sendChat.isPending}
+                    className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-md shadow-primary/20"
+                    data-testid="button-send-chat"
+                    title="Send message"
+                  >
+                    <Send size={16} className="ml-0.5" />
+                  </button>
+                </div>
               </form>
             </div>
           </div>
