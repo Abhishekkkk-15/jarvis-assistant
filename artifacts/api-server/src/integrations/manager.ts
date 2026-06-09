@@ -1,6 +1,6 @@
 import { db, settingsTable } from '@workspace/db';
 import { TelegramIntegration } from './telegram.js';
-import { broadcast } from '../wsManager.js';
+import { broadcast } from "../lib/wsManager.js";
 
 class IntegrationsManager {
   private telegram: TelegramIntegration | null = null;

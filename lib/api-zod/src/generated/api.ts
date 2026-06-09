@@ -66,7 +66,10 @@ export const GetSettingsResponse = zod.object({
   "miniModeEnabled": zod.boolean(),
   "telegramBotToken": zod.string().nullish(),
   "discordBotToken": zod.string().nullish(),
-  "systemPrompt": zod.string().nullish()
+  "systemPrompt": zod.string().nullish(),
+  "notionApiKey": zod.string().nullish(),
+  "spotifyClientId": zod.string().nullish(),
+  "spotifyClientSecret": zod.string().nullish()
 })
 
 
@@ -84,7 +87,10 @@ export const UpdateSettingsBody = zod.object({
   "miniModeEnabled": zod.boolean().nullish(),
   "telegramBotToken": zod.string().nullish(),
   "discordBotToken": zod.string().nullish(),
-  "systemPrompt": zod.string().nullish()
+  "systemPrompt": zod.string().nullish(),
+  "notionApiKey": zod.string().nullish(),
+  "spotifyClientId": zod.string().nullish(),
+  "spotifyClientSecret": zod.string().nullish()
 })
 
 export const UpdateSettingsResponse = zod.object({
@@ -99,7 +105,10 @@ export const UpdateSettingsResponse = zod.object({
   "miniModeEnabled": zod.boolean(),
   "telegramBotToken": zod.string().nullish(),
   "discordBotToken": zod.string().nullish(),
-  "systemPrompt": zod.string().nullish()
+  "systemPrompt": zod.string().nullish(),
+  "notionApiKey": zod.string().nullish(),
+  "spotifyClientId": zod.string().nullish(),
+  "spotifyClientSecret": zod.string().nullish()
 })
 
 

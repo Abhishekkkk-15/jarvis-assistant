@@ -38,6 +38,9 @@ export const SettingsPage: React.FC = () => {
       form.reset({
         nvidiaApiKey: '',
         groqApiKey: '',
+        notionApiKey: '',
+        spotifyClientId: '',
+        spotifyClientSecret: '',
         wakeWord: settings.wakeWord || 'jarvis',
         voiceEnabled: settings.voiceEnabled ?? true,
 
@@ -49,6 +52,9 @@ export const SettingsPage: React.FC = () => {
     const payload = { ...values };
     if (!payload.nvidiaApiKey) delete payload.nvidiaApiKey;
     if (!payload.groqApiKey) delete payload.groqApiKey;
+    if (!payload.notionApiKey) delete payload.notionApiKey;
+    if (!payload.spotifyClientId) delete payload.spotifyClientId;
+    if (!payload.spotifyClientSecret) delete payload.spotifyClientSecret;
     updateSettings.mutate({ data: payload }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
@@ -207,33 +213,79 @@ export const SettingsPage: React.FC = () => {
               <Cpu size={15} className="text-primary" /> Official Integrations
             </h3>
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Telegram Bot Token</label>
-                <div className="flex gap-2">
-                  <Input 
-                    type="password" 
-                    value={form.telegramBotToken || ''} 
-                    onChange={e => setForm(f => ({ ...f, telegramBotToken: e.target.value }))}
-                    placeholder="Enter Telegram Bot Token from BotFather" 
-                    className="flex-1 bg-background" 
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">JARVIS will connect to this bot to receive notifications and messages.</p>
-              </div>
+              <FormField
+                control={form.control}
+                name="telegramBotToken"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Telegram Bot Token</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter Telegram Bot Token from BotFather" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormDescription className="text-xs">JARVIS will connect to this bot to receive notifications and messages.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Discord Bot Token</label>
-                <div className="flex gap-2">
-                  <Input 
-                    type="password" 
-                    value={form.discordBotToken || ''} 
-                    onChange={e => setForm(f => ({ ...f, discordBotToken: e.target.value }))}
-                    placeholder="Enter Discord Bot Token" 
-                    className="flex-1 bg-background" 
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">Connect JARVIS to your Discord servers to receive notifications.</p>
-              </div>
+              <FormField
+                control={form.control}
+                name="discordBotToken"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Discord Bot Token</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter Discord Bot Token" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormDescription className="text-xs">Connect JARVIS to your Discord servers to receive notifications.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="notionApiKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Notion API Key</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter Notion API Key" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormDescription className="text-xs">Used by JARVIS to search and read your Notion workspace.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="spotifyClientId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Spotify Client ID</FormLabel>
+                    <FormControl>
+                      <Input type="text" placeholder="Enter Spotify Client ID" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="spotifyClientSecret"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Spotify Client Secret</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter Spotify Client Secret" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormDescription className="text-xs">Used by JARVIS to search and control your Spotify playback.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
           </section>
 

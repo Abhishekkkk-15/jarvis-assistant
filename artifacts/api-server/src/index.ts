@@ -1,14 +1,14 @@
 import http from "http";
 import { WebSocketServer } from "ws";
 import app from "./app";
-import { logger } from "./lib/logger";
+import { logger } from "./config/logger";
 import { setupWsManager } from "./lib/wsManager";
 import { initializeScheduler } from "./lib/scheduler.js";
-import { integrationsManager } from "./lib/integrations/manager.js";
+import { integrationsManager } from "./integrations/manager.js";
 let rawPort = process.env["PORT"];
 
 if (!rawPort) {
-  rawPort = "4000"
+  rawPort = "4444"
 }
 
 const port = Number(rawPort);

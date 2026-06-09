@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db, settingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { UpdateSettingsBody } from "@workspace/api-zod";
-import { integrationsManager } from "../lib/integrations/manager.js";
+import { integrationsManager } from "../integrations/manager.js";
 
 const router = Router();
 
@@ -28,6 +28,9 @@ function toResponse(s: typeof settingsTable.$inferSelect) {
     miniModeEnabled: s.miniModeEnabled,
     telegramBotToken: s.telegramBotToken,
     discordBotToken: s.discordBotToken,
+    notionApiKey: s.notionApiKey,
+    spotifyClientId: s.spotifyClientId,
+    spotifyClientSecret: s.spotifyClientSecret,
   };
 }
 
@@ -63,6 +66,9 @@ router.put("/settings", async (req, res) => {
     if (d.miniModeEnabled != null) updates.miniModeEnabled = d.miniModeEnabled;
     if (d.telegramBotToken !== undefined) updates.telegramBotToken = d.telegramBotToken;
     if (d.discordBotToken !== undefined) updates.discordBotToken = d.discordBotToken;
+    if (d.notionApiKey !== undefined) updates.notionApiKey = d.notionApiKey;
+    if (d.spotifyClientId !== undefined) updates.spotifyClientId = d.spotifyClientId;
+    if (d.spotifyClientSecret !== undefined) updates.spotifyClientSecret = d.spotifyClientSecret;
 
 
     const [updated] = await db

@@ -5,13 +5,8 @@ import * as schema from "./schema";
 import { config } from "dotenv"
 config()
 
-if (!process.env.DB_PATH && !process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL or DB_PATH must be set. Did you forget to provision a database?",
-  );
-}
-
-const dbPath = process.env.DB_PATH || process.env.DATABASE_URL?.replace("file:", "") || "sqlite.db";
+import path from "path";
+const dbPath = process.env.DB_PATH || process.env.DATABASE_URL?.replace("file:", "") || path.resolve(process.cwd(), "../../sqlite.db");
 export const sqlite = new Database(dbPath);
 let vecPath = "";
 try {

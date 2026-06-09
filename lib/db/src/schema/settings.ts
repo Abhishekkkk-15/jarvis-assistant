@@ -14,6 +14,9 @@ export const settingsTable = sqliteTable("settings", {
   miniModeEnabled: integer("mini_mode_enabled", { mode: "boolean" }).notNull().default(false),
   telegramBotToken: text("telegram_bot_token"),
   discordBotToken: text("discord_bot_token"),
+  notionApiKey: text("notion_api_key"),
+  spotifyClientId: text("spotify_client_id"),
+  spotifyClientSecret: text("spotify_client_secret"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()).$onUpdate(() => new Date()),
 });

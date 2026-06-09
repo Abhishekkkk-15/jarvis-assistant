@@ -4,7 +4,7 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 const rawPort = process.env.PORT;
-const port = rawPort ? Number(rawPort) : 3000;
+const port = rawPort ? Number(rawPort) : 3333;
 
 if (rawPort && (Number.isNaN(port) || port <= 0)) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
@@ -53,12 +53,12 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: "http://localhost:4000",
+        target: "http://localhost:4444",
         changeOrigin: true,
         secure: false,
       },
       "/ws": {
-        target: "ws://localhost:4000",
+        target: "ws://localhost:4444",
         ws: true,
       },
     },

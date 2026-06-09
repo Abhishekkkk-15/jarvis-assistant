@@ -337,6 +337,12 @@ components:
           type: ["string", "null"]
         systemPrompt:
           type: ["string", "null"]
+        notionApiKey:
+          type: ["string", "null"]
+        spotifyClientId:
+          type: ["string", "null"]
+        spotifyClientSecret:
+          type: ["string", "null"]
 
     SettingsInput:
       type: object
@@ -362,6 +368,12 @@ components:
         discordBotToken:
           type: ["string", "null"]
         systemPrompt:
+          type: ["string", "null"]
+        notionApiKey:
+          type: ["string", "null"]
+        spotifyClientId:
+          type: ["string", "null"]
+        spotifyClientSecret:
           type: ["string", "null"]
 
     Message:

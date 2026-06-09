@@ -10,9 +10,9 @@
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "electron:compile": "tsc -p tsconfig.electron.json",
-    "electron:dev": "cross-env NODE_ENV=development tsc -p tsconfig.electron.json && concurrently -n TSC,TAILWIND,VITE,ELECTRON -c blue,yellow,cyan,magenta \"tsc -p tsconfig.electron.json --watch --preserveWatchOutput\" \"npx @tailwindcss/cli -i src/index.css -o src/output.css --watch\" \"cross-env PORT=3000 BASE_PATH=/ vite --config vite.config.ts --host 0.0.0.0\" \"wait-on http://localhost:3000 && cross-env VITE_DEV_SERVER_URL=http://localhost:3000 NODE_ENV=development electron .\"",
+    "electron:dev": "cross-env NODE_ENV=development tsc -p tsconfig.electron.json && concurrently -n TSC,TAILWIND,VITE,ELECTRON -c blue,yellow,cyan,magenta \"tsc -p tsconfig.electron.json --watch --preserveWatchOutput\" \"npx @tailwindcss/cli -i src/index.css -o src/output.css --watch\" \"cross-env PORT=3333 BASE_PATH=/ vite --config vite.config.ts --host 0.0.0.0\" \"wait-on http://localhost:3333 && cross-env VITE_DEV_SERVER_URL=http://localhost:3333 NODE_ENV=development electron .\"",
     "build:copy-backend": "node scripts/copy-backend.js",
-    "electron:build": "pnpm --filter @workspace/api-server run build && cross-env PORT=3000 BASE_PATH=./ vite build --config vite.config.ts && tsc -p tsconfig.electron.json && pnpm run build:copy-backend && electron-builder",
+    "electron:build": "pnpm --filter @workspace/api-server run build && cross-env PORT=3333 BASE_PATH=./ vite build --config vite.config.ts && tsc -p tsconfig.electron.json && pnpm run build:copy-backend && electron-builder",
     "electron:preview": "electron ."
   },
   "build": {

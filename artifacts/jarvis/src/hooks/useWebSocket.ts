@@ -15,8 +15,8 @@ export function useWebSocket() {
     const connect = () => {
       const isElectron = !!(window as any).electronAPI;
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host || 'localhost:3000';
-      const url = isElectron ? 'ws://localhost:4000/ws' : `${protocol}//${host}/ws`;
+      const host = window.location.host || 'localhost:3333';
+      const url = isElectron ? 'ws://localhost:4444/ws' : `${protocol}//${host}/ws`;
       const ws = new WebSocket(url);
 
       ws.onopen = () => {
@@ -26,7 +26,7 @@ export function useWebSocket() {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          
+
           if (data.type === 'approval_needed') {
             setActiveApproval({
               requestId: data.requestId,
@@ -72,7 +72,7 @@ export function useWebSocket() {
   const resolveApproval = async (requestId: string, decision: 'approved' | 'denied') => {
     try {
       const isElectron = !!(window as any).electronAPI;
-      const baseUrl = isElectron ? 'http://localhost:4000' : '';
+      const baseUrl = isElectron ? 'http://localhost:4444' : '';
       await fetch(`${baseUrl}/api/commands/approval`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
