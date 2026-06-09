@@ -117,7 +117,7 @@ export function createJarvisGraph(
 
   const availableTools = [...allTools, listToolsTool];
   const toolsByName = Object.fromEntries(availableTools.map((t) => [t.name, t]));
-  const toolDescriptions = availableTools.map(t => `- ${t.name}`).join('\n');
+  const toolDescriptions = availableTools.map(t => `- ${t.name}: ${t.description}`).join('\n');
   console.log("Tool Descriptions: ", toolDescriptions);
   // --- Nodes ---
 

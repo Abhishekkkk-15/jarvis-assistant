@@ -225,7 +225,7 @@ export async function processChatRequest(parsedData: any) {
 
   let provider = parsedData.provider || settings.selectedProvider || "groq";
   let isFallback = false;
-  let modelName = hasImage ? "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" : "openai/gpt-oss-120b";
+  let modelName = hasImage ? "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" : "nvidia/nemotron-3-ultra-550b-a55b";
 
   if (provider === "groq" && !settings.groqApiKey && settings.nvidiaApiKey) {
     provider = "nvidia";
