@@ -190,6 +190,12 @@ export function createJarvisGraph(
 
     const prompt = `You are the JARVIS Planner Agent. 
   Objective: ${state.objective}.
+  
+  System Context:
+  - User's Username: ${require("os").userInfo().username}
+  - User's Home Directory: ${require("os").homedir()}
+  - Desktop Directory: ${require("path").join(require("os").homedir(), "Desktop")}
+  - OS Platform: ${process.platform}
 
   Available Tools:
   ${toolDescriptions}

@@ -312,9 +312,13 @@ export async function processChatRequest(parsedData: any) {
   } catch { }
 
   const finalMessages: any[] = [];
-  if (memoryContext || transcript) {
+  
+  const osContext = `\n\n=== SYSTEM CONTEXT ===\nUser's Username: ${require("os").userInfo().username}\nUser's Home Directory: ${require("os").homedir()}\nDesktop Directory: ${require("path").join(require("os").homedir(), "Desktop")}\nOS Platform: ${process.platform}\n======================\n`;
+  const customPrompt = settings.systemPrompt ? `\n\n=== SYSTEM DIRECTIVE ===\n${settings.systemPrompt}\n========================\n` : "";
+  
+  if (osContext || customPrompt || memoryContext || transcript) {
     finalMessages.push(
-      new HumanMessage((memoryContext || "") + (transcript || "")),
+      new HumanMessage(osContext + customPrompt + (memoryContext || "") + (transcript || "")),
     );
   }
 
