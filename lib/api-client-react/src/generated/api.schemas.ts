@@ -13,10 +13,6 @@ export interface ApiError {
   error: string;
 }
 
-export interface StopChatBody {
-  conversationId: number;
-}
-
 export interface AudioInput {
   /** Base64-encoded audio data */
   audioBase64: string;
@@ -181,5 +177,10 @@ export interface Stats {
   totalMessages: number;
   todayMessages: number;
   topCommands: StatsTopCommandsItem[];
+}
+
+export interface StopChatInput {
+  /** The ID of the conversation to stop. */
+  conversationId: number;
 }
 

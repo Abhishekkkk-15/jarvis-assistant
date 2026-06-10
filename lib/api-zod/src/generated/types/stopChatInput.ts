@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface StopChatBody {
+export interface StopChatInput {
+  /** The ID of the conversation to stop. */
   conversationId: number;
 }

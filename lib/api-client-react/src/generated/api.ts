@@ -34,7 +34,7 @@ import type {
   Settings,
   SettingsInput,
   Stats,
-  StopChatBody,
+  StopChatInput,
   TranscribeResponse
 } from './api.schemas';
 
@@ -943,14 +943,14 @@ export const getStopChatUrl = () => {
 /**
  * @summary Abort an ongoing chat execution
  */
-export const stopChat = async (stopChatBody: StopChatBody, options?: RequestInit): Promise<void> => {
+export const stopChat = async (stopChatInput: StopChatInput, options?: RequestInit): Promise<void> => {
 
   return customFetch<void>(getStopChatUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(stopChatBody)
+    body: JSON.stringify(stopChatInput)
   }
 );}
 
@@ -958,8 +958,8 @@ export const stopChat = async (stopChatBody: StopChatBody, options?: RequestInit
 
 
 export const getStopChatMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopChat>>, TError,{data: BodyType<StopChatBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof stopChat>>, TError,{data: BodyType<StopChatBody>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopChat>>, TError,{data: BodyType<StopChatInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof stopChat>>, TError,{data: BodyType<StopChatInput>}, TContext> => {
 
 const mutationKey = ['stopChat'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -971,7 +971,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stopChat>>, {data: BodyType<StopChatBody>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stopChat>>, {data: BodyType<StopChatInput>}> = (props) => {
           const {data} = props ?? {};
 
           return  stopChat(data,requestOptions)
@@ -985,18 +985,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type StopChatMutationResult = NonNullable<Awaited<ReturnType<typeof stopChat>>>
-    export type StopChatMutationBody = BodyType<StopChatBody>
+    export type StopChatMutationBody = BodyType<StopChatInput>
     export type StopChatMutationError = ErrorType<unknown>
 
     /**
  * @summary Abort an ongoing chat execution
  */
 export const useStopChat = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopChat>>, TError,{data: BodyType<StopChatBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopChat>>, TError,{data: BodyType<StopChatInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof stopChat>>,
         TError,
-        {data: BodyType<StopChatBody>},
+        {data: BodyType<StopChatInput>},
         TContext
       > => {
       return useMutation(getStopChatMutationOptions(options));

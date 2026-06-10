@@ -208,7 +208,7 @@ export const GetStatsResponse = zod.object({
  * @summary Abort an ongoing chat execution
  */
 export const StopChatBody = zod.object({
-  "conversationId": zod.number()
+  "conversationId": zod.number().describe('The ID of the conversation to stop.')
 })
 
 

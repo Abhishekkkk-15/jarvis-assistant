@@ -247,7 +247,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/StopChatBody"
+              $ref: "#/components/schemas/StopChatInput"
       responses:
         "200":
           description: Execution stopped successfully
@@ -267,13 +267,6 @@ components:
       properties:
         error:
           type: string
-
-    StopChatBody:
-      type: object
-      required: [conversationId]
-      properties:
-        conversationId:
-          type: integer
 
     AudioInput:
       type: object
@@ -515,3 +508,11 @@ components:
                 type: string
               count:
                 type: integer
+
+    StopChatInput:
+      type: object
+      required: [conversationId]
+      properties:
+        conversationId:
+          type: integer
+          description: The ID of the conversation to stop.
