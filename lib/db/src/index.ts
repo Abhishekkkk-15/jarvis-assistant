@@ -78,10 +78,31 @@ export function setupDb() {
       mini_mode_enabled INTEGER NOT NULL DEFAULT 0,
       telegram_bot_token TEXT,
       discord_bot_token TEXT,
+      notion_api_key TEXT,
+      spotify_client_id TEXT,
+      spotify_client_secret TEXT,
+      github_pat TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     );
   `);
+
+  const migrations = [
+    "ALTER TABLE settings ADD COLUMN notion_api_key TEXT;",
+    "ALTER TABLE settings ADD COLUMN spotify_client_id TEXT;",
+    "ALTER TABLE settings ADD COLUMN spotify_client_secret TEXT;",
+    "ALTER TABLE settings ADD COLUMN github_pat TEXT;",
+  ];
+
+  for (const query of migrations) {
+    try {
+      sqlite.exec(query);
+    } catch (e) {
+      if (!e.message.includes("duplicate column name")) {
+        console.error("Migration error:", e.message);
+      }
+    }
+  }
 }
 
 export * from "./schema";

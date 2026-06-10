@@ -1,14 +1,21 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
-import puppeteer from "puppeteer-core";
-
 let browserInstance: any = null;
+let puppeteerCore: any;
+
+async function getPuppeteerCore() {
+  if (puppeteerCore) return puppeteerCore;
+  const mod = await new Function('return import("puppeteer-core")')();
+  puppeteerCore = mod.default;
+  return puppeteerCore;
+}
 
 async function getBrowser(): Promise<any> {
   if (browserInstance && browserInstance.isConnected()) {
     return browserInstance;
   }
   try {
+    const puppeteer = await getPuppeteerCore();
     browserInstance = await puppeteer.connect({
       browserURL: "http://localhost:9222",
       defaultViewport: null,
