@@ -114,6 +114,29 @@ async function buildAll() {
 }
 
 buildAll().then(() => {
+  // ── Post-build: patch pino's hardcoded build-machine path ──────────────────
+  // esbuild-plugin-pino embeds an absolute `outputDir` string at build-time
+  // inside `pinoBundlerAbsolutePath`. On any other machine this path won't
+  // exist, so we replace it with a dynamic `__dirname` expression that always
+  // resolves relative to the actual location of the running file.
+  const distDir = path.resolve(artifactDir, "dist");
+  const cjsFiles = fs.readdirSync(distDir).filter(f => f.endsWith(".cjs"));
+  for (const file of cjsFiles) {
+    const filePath = path.join(distDir, file);
+    let content = fs.readFileSync(filePath, "utf8");
+    // Match the hardcoded outputDir assignment that esbuild-plugin-pino generates:
+    // const outputDir = "C:\\some\\absolute\\path\\to\\api-server\\dist";
+    const patched = content.replace(
+      /const outputDir\s*=\s*["'][^"']+["'];/g,
+      "const outputDir = __dirname;"
+    );
+    if (patched !== content) {
+      fs.writeFileSync(filePath, patched, "utf8");
+      console.log(`Patched pino outputDir in ${file}`);
+    }
+  }
+  // ────────────────────────────────────────────────────────────────────────────
+
   try {
     const os = process.platform === "win32" ? "windows" : process.platform;
     const ext = process.platform === "win32" ? "dll" : process.platform === "darwin" ? "dylib" : "so";
