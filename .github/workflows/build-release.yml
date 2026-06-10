@@ -1,0 +1,54 @@
+name: Build and Release Windows EXE
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger automatically when a tag starting with 'v' is pushed (e.g., v1.0.0)
+  workflow_dispatch: # Allow manual triggering from the Actions tab
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    permissions:
+      contents: write # Required for creating releases
+      
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Generate API Schemas & Typings
+        run: pnpm --filter @workspace/api-spec run codegen
+
+      - name: Build Electron App (Windows)
+        run: pnpm --filter @workspace/jarvis run electron:build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-Windows-Executable
+          path: artifacts/jarvis/dist/release/*.exe
+          
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/jarvis/dist/release/*.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
