@@ -225,7 +225,8 @@ export async function processChatRequest(parsedData: any) {
 
   let provider = parsedData.provider || settings.selectedProvider || "groq";
   let isFallback = false;
-  let modelName = hasImage ? "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" : "nvidia/nemotron-3-ultra-550b-a55b";
+  // let modelName = hasImage ? "meta/llama-3.2-90b-vision-instruct" : "nvidia/nemotron-3-ultra-550b-a55b";
+  let modelName = hasImage ? "meta/llama-3.2-90b-vision-instruct" : "openai/gpt-oss-120b";
 
   if (provider === "groq" && !settings.groqApiKey && settings.nvidiaApiKey) {
     provider = "nvidia";
@@ -250,7 +251,7 @@ export async function processChatRequest(parsedData: any) {
     modelName,
     apiKey,
     configuration: { baseURL: endpoint },
-    temperature: 0.7,
+    temperature: 0,
     maxTokens: 4096,
   });
 
@@ -354,7 +355,7 @@ export async function processChatRequest(parsedData: any) {
     );
     const lastMessage = agentResult.messages[agentResult.messages.length - 1];
     agentResponse = String(lastMessage.content);
-    
+
     for (const msg of agentResult.messages) {
       extractTokens(msg);
       if (msg._getType() === "ai" && (msg as AIMessage).tool_calls?.length) {
