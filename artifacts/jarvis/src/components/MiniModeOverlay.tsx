@@ -837,9 +837,19 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const startPhysicsLoop = (startX: number, startY: number) => {
     let currentX = startX;
     let currentY = startY;
-    const gravity = 1.2; // heavy gravity
-    const bounce = 0.65; // High bounce for throwing!
-    const friction = 0.99; // air resistance
+    let gravity = 1.2; // heavy gravity
+    let bounce = 0.65; // High bounce for throwing!
+    let friction = 0.99; // air resistance
+
+    // Mood-driven physics modification
+    if (mood === 'Best Friends') {
+      bounce = 0.85; // Extra bouncy
+      gravity = 1.0; // Lighter and energetic
+    } else if (mood === 'Neglected') {
+      bounce = 0.3; // Barely bounces
+      gravity = 1.6; // Heavy and sluggish
+      friction = 0.92; // Slows down quickly
+    }
     const floorY = window.innerHeight - 165; // Sit perfectly on top of Windows Taskbar
     const rightX = window.innerWidth - 120;
 
@@ -1175,13 +1185,16 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         {/* Accessories / Props */}
         {toolsUsed && toolsUsed.length > 0 && !notificationMsg && (
           <div className="absolute -top-4 -right-4 z-10 drop-shadow-md animate-bounce">
-            {toolsUsed.includes('get_weather') && <span className="text-4xl">☂️</span>}
-            {toolsUsed.includes('search_web') && <span className="text-4xl">🔍</span>}
-            {toolsUsed.includes('calculate') && <span className="text-4xl">🧮</span>}
-            {toolsUsed.includes('run_command') && <span className="text-4xl">💻</span>}
-            {toolsUsed.includes('read_file') && <span className="text-4xl">📄</span>}
-            {toolsUsed.includes('open_app') && <span className="text-4xl">🚀</span>}
-            {toolsUsed.includes('open_website') && <span className="text-4xl">🌐</span>}
+            {toolsUsed.some(t => t.includes('weather')) && <span className="text-4xl">☂️</span>}
+            {toolsUsed.some(t => t.includes('search') || t.includes('browser') || t.includes('website') || t.includes('youtube') || t.includes('pdf')) && <span className="text-4xl">🔍</span>}
+            {toolsUsed.some(t => t.includes('calc') || t.includes('math')) && <span className="text-4xl">🧮</span>}
+            {toolsUsed.some(t => t.includes('execute') || t.includes('cmd') || t.includes('powershell') || t.includes('bash') || t.includes('shell')) && <span className="text-4xl">💻</span>}
+            {toolsUsed.some(t => t.includes('file') || t.includes('fs_') || t.includes('read_')) && <span className="text-4xl">📄</span>}
+            {toolsUsed.some(t => t.includes('app') || t.includes('process') || t.includes('uia_') || t.includes('control')) && <span className="text-4xl">🚀</span>}
+            {toolsUsed.some(t => t.includes('notion')) && <span className="text-4xl">📝</span>}
+            {toolsUsed.some(t => t.includes('spotify') || t.includes('media_')) && <span className="text-4xl">🎵</span>}
+            {toolsUsed.some(t => t.includes('github')) && <span className="text-4xl">🐙</span>}
+            {toolsUsed.some(t => t.includes('mouse') || t.includes('keyboard')) && <span className="text-4xl">🖱️</span>}
           </div>
         )}
 
