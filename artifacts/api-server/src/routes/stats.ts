@@ -6,7 +6,7 @@ const router = Router();
 
 router.get("/stats", async (req, res) => {
   try {
-    const [[{ total: totalConversations }], [{ total: totalMessages }], todayMsgs, topCmds] =
+    const [[{ total: totalConversations }], [{ total: totalMessages }], todayMsgs, topCmds, [{ totalTokens }]] =
       await Promise.all([
         db.select({ total: count() }).from(conversationsTable),
         db.select({ total: count() }).from(messagesTable),
@@ -28,12 +28,14 @@ router.get("/stats", async (req, res) => {
           .groupBy(commandLogsTable.commandType)
           .orderBy(desc(count()))
           .limit(5),
+        db.select({ totalTokens: sql<number>`COALESCE(SUM(${messagesTable.tokensUsed}), 0)`.mapWith(Number) }).from(messagesTable),
       ]);
 
     res.json({
       totalConversations: Number(totalConversations),
       totalMessages: Number(totalMessages),
       todayMessages: Number(todayMsgs[0]?.total ?? 0),
+      totalTokens: Number(totalTokens),
       topCommands: topCmds.map((c) => ({
         command: c.command,
         count: Number(c.count),

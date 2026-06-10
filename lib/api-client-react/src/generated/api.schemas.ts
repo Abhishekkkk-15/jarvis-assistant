@@ -164,6 +164,7 @@ export interface Stats {
   totalConversations: number;
   totalMessages: number;
   todayMessages: number;
+  totalTokens: number;
   topCommands: StatsTopCommandsItem[];
 }
 

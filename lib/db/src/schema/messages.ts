@@ -9,6 +9,7 @@ export const messagesTable = sqliteTable("messages", {
   role: text("role").notNull(), // "user" | "assistant"
   content: text("content").notNull(),
   model: text("model"),
+  tokensUsed: integer("tokens_used").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 

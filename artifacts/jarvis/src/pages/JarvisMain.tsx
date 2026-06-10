@@ -497,8 +497,8 @@ export const JarvisMain: React.FC = () => {
                 <p className="text-[11px] text-muted-foreground mt-1">Today</p>
               </div>
               <div className="p-3 bg-slate-50 rounded-lg text-center">
-                <p className="text-2xl font-bold text-primary">{stats?.totalConversations || 0}</p>
-                <p className="text-[11px] text-muted-foreground mt-1">Total</p>
+                <p className="text-2xl font-bold text-primary">{stats?.totalTokens || 0}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Tokens</p>
               </div>
             </div>
             {stats?.topCommands && stats.topCommands.length > 0 && (

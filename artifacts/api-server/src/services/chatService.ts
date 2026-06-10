@@ -338,6 +338,15 @@ export async function processChatRequest(parsedData: any) {
 
   let agentResponse = "";
   const toolsUsed: string[] = [];
+  let totalTokensUsed = 0;
+  const extractTokens = (msg: any) => {
+    if (msg?.usage_metadata?.total_tokens) {
+      totalTokensUsed += msg.usage_metadata.total_tokens;
+    } else if (msg?.response_metadata?.tokenUsage?.totalTokens) {
+      totalTokensUsed += msg.response_metadata.tokenUsage.totalTokens;
+    }
+  };
+
   try {
     const agentResult = await agent.invoke(
       { messages: finalMessages, next: "Orchestrator" },
@@ -345,8 +354,9 @@ export async function processChatRequest(parsedData: any) {
     );
     const lastMessage = agentResult.messages[agentResult.messages.length - 1];
     agentResponse = String(lastMessage.content);
-
+    
     for (const msg of agentResult.messages) {
+      extractTokens(msg);
       if (msg._getType() === "ai" && (msg as AIMessage).tool_calls?.length) {
         (msg as AIMessage).tool_calls?.forEach((tc: any) => {
           if (tc.name && !toolsUsed.includes(tc.name)) {
@@ -403,6 +413,7 @@ export async function processChatRequest(parsedData: any) {
                 ),
               );
               const finalResult = await llm.invoke(finalMessages);
+              extractTokens(finalResult);
               agentResponse = String(finalResult.content);
             }
           }
@@ -435,6 +446,7 @@ export async function processChatRequest(parsedData: any) {
               ),
             );
             const finalResult = await llm.invoke(finalMessages);
+            extractTokens(finalResult);
             agentResponse = String(finalResult.content);
           }
         } catch (e) { }
@@ -485,6 +497,7 @@ export async function processChatRequest(parsedData: any) {
           );
 
           const finalResult = await llm.invoke(finalMessages);
+          extractTokens(finalResult);
           agentResponse = String(finalResult.content);
           handledTool = true;
         }
@@ -492,6 +505,7 @@ export async function processChatRequest(parsedData: any) {
 
       if (!handledTool) {
         const fallbackResult = await llm.invoke(finalMessages);
+        extractTokens(fallbackResult);
         agentResponse = String(fallbackResult.content);
       }
     } catch (fallbackErr) {
@@ -507,6 +521,7 @@ export async function processChatRequest(parsedData: any) {
       role: "assistant",
       content: agentResponse,
       model: modelName,
+      tokensUsed: totalTokensUsed,
     })
     .returning();
 
@@ -520,7 +535,7 @@ export async function processChatRequest(parsedData: any) {
     conversationId,
     messageId: assistantMsg.id,
     model: modelName,
-    tokensUsed: 0,
+    tokensUsed: totalTokensUsed,
     toolsUsed,
   };
 }

@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+import Database, { type Database as IDatabase } from "better-sqlite3";
 import * as sqliteVec from "sqlite-vec";
 import * as schema from "./schema";
 import { config } from "dotenv"
@@ -7,7 +7,7 @@ config()
 
 import path from "path";
 const dbPath = process.env.DB_PATH || process.env.DATABASE_URL?.replace("file:", "") || path.resolve(process.cwd(), "../../sqlite.db");
-export const sqlite = new Database(dbPath);
+export const sqlite: IDatabase = new Database(dbPath);
 let vecPath = "";
 try {
   vecPath = sqliteVec.getLoadablePath();
@@ -58,6 +58,7 @@ export function setupDb() {
       role TEXT NOT NULL,
       content TEXT NOT NULL,
       model TEXT,
+      tokens_used INTEGER NOT NULL DEFAULT 0,
       created_at INTEGER NOT NULL
     );
     CREATE TABLE IF NOT EXISTS scheduled_tasks (
@@ -92,12 +93,13 @@ export function setupDb() {
     "ALTER TABLE settings ADD COLUMN spotify_client_id TEXT;",
     "ALTER TABLE settings ADD COLUMN spotify_client_secret TEXT;",
     "ALTER TABLE settings ADD COLUMN github_pat TEXT;",
+    "ALTER TABLE messages ADD COLUMN tokens_used INTEGER NOT NULL DEFAULT 0;",
   ];
 
   for (const query of migrations) {
     try {
       sqlite.exec(query);
-    } catch (e) {
+    } catch (e: any) {
       if (!e.message.includes("duplicate column name")) {
         console.error("Migration error:", e.message);
       }
