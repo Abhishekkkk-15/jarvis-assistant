@@ -24,4 +24,5 @@ export * from './settings';
 export * from './settingsInput';
 export * from './stats';
 export * from './statsTopCommandsItem';
+export * from './stopChatBody';
 export * from './transcribeResponse';

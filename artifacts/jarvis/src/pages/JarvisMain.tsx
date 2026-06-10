@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSendChat, useGetSettings, getGetSettingsQueryKey, useGetStats, getGetStatsQueryKey, useGetCommandSuggestions, getGetCommandSuggestionsQueryKey, useTranscribeAudio } from '@workspace/api-client-react';
-import { Mic, MicOff, Volume2, VolumeX, Send, Activity, Zap } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Send, Activity, Zap, Square } from 'lucide-react';
 import { AudioVisualizer } from '../components/AudioVisualizer';
 import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -279,6 +279,21 @@ export const JarvisMain: React.FC = () => {
     });
   };
 
+  const handleStop = async () => {
+    if (activeConversationId) {
+      try {
+        await fetch('http://localhost:4444/api/chat/stop', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversationId: activeConversationId })
+        });
+        toast({ title: "Stopped", description: "Execution aborted by user." });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
   const handleMessageWithScreenshot = async (message: string, imageBase64?: string) => {
     let finalImageBase64 = imageBase64;
     
@@ -470,15 +485,26 @@ export const JarvisMain: React.FC = () => {
                   <kbd className="hidden sm:inline-flex h-6 items-center gap-1 rounded border bg-muted px-2 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
                     <span className="text-xs">↵</span> Enter
                   </kbd>
-                  <button
-                    type="submit"
-                    disabled={sendChat.isPending}
-                    className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-md shadow-primary/20"
-                    data-testid="button-send-chat"
-                    title="Send message"
-                  >
-                    <Send size={16} className="ml-0.5" />
-                  </button>
+                  {sendChat.isPending ? (
+                    <button
+                      type="button"
+                      onClick={handleStop}
+                      className="w-10 h-10 flex items-center justify-center bg-destructive text-white rounded-xl hover:bg-destructive/90 hover:scale-105 active:scale-95 transition-all shadow-md shadow-destructive/20 animate-pulse"
+                      title="Stop execution"
+                    >
+                      <Square size={14} fill="currentColor" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={sendChat.isPending}
+                      className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-md shadow-primary/20"
+                      data-testid="button-send-chat"
+                      title="Send message"
+                    >
+                      <Send size={16} className="ml-0.5" />
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

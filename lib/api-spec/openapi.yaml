@@ -237,6 +237,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/Stats"
 
+  /chat/stop:
+    post:
+      operationId: stopChat
+      tags: [chat]
+      summary: Abort an ongoing chat execution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StopChatBody"
+      responses:
+        "200":
+          description: Execution stopped successfully
+
 components:
   schemas:
     HealthStatus:
@@ -252,6 +267,13 @@ components:
       properties:
         error:
           type: string
+
+    StopChatBody:
+      type: object
+      required: [conversationId]
+      properties:
+        conversationId:
+          type: integer
 
     AudioInput:
       type: object

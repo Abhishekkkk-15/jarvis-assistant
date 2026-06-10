@@ -23,6 +23,21 @@ import { createJarvisGraph } from "../lib/multiagent.js";
 import { logger } from "../config/logger.js";
 
 // ─────────────────────────────────────────────
+// Execution Tracking
+// ─────────────────────────────────────────────
+const activeExecutions = new Map<number, AbortController>();
+
+export function abortChatRequest(conversationId: number) {
+  const controller = activeExecutions.get(conversationId);
+  if (controller) {
+    controller.abort("Stopped by user");
+    activeExecutions.delete(conversationId);
+    return true;
+  }
+  return false;
+}
+
+// ─────────────────────────────────────────────
 // Custom OS & Community Tools via LangChain
 // ─────────────────────────────────────────────
 
@@ -279,6 +294,9 @@ export async function processChatRequest(parsedData: any) {
     conversationId = newConv.id;
   }
 
+  const controller = new AbortController();
+  activeExecutions.set(conversationId, controller);
+
   const history = await db
     .select()
     .from(messagesTable)
@@ -355,7 +373,7 @@ export async function processChatRequest(parsedData: any) {
   try {
     const agentResult = await agent.invoke(
       { messages: finalMessages, next: "Orchestrator" },
-      { recursionLimit: 200 },
+      { recursionLimit: 200, signal: controller.signal },
     );
     const lastMessage = agentResult.messages[agentResult.messages.length - 1];
     agentResponse = String(lastMessage.content);

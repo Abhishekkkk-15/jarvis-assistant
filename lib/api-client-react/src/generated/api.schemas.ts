@@ -13,6 +13,10 @@ export interface ApiError {
   error: string;
 }
 
+export interface StopChatBody {
+  conversationId: number;
+}
+
 export interface AudioInput {
   /** Base64-encoded audio data */
   audioBase64: string;
@@ -72,6 +76,12 @@ export interface Settings {
   discordBotToken?: string | null;
   /** @nullable */
   systemPrompt?: string | null;
+  /** @nullable */
+  notionApiKey?: string | null;
+  /** @nullable */
+  spotifyClientId?: string | null;
+  /** @nullable */
+  spotifyClientSecret?: string | null;
 }
 
 export interface SettingsInput {
@@ -97,6 +107,12 @@ export interface SettingsInput {
   discordBotToken?: string | null;
   /** @nullable */
   systemPrompt?: string | null;
+  /** @nullable */
+  notionApiKey?: string | null;
+  /** @nullable */
+  spotifyClientId?: string | null;
+  /** @nullable */
+  spotifyClientSecret?: string | null;
 }
 
 export interface Message {
@@ -164,7 +180,6 @@ export interface Stats {
   totalConversations: number;
   totalMessages: number;
   todayMessages: number;
-  totalTokens: number;
   topCommands: StatsTopCommandsItem[];
 }
 

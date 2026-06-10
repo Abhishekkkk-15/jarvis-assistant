@@ -22,4 +22,10 @@ export interface Settings {
   discordBotToken?: string | null;
   /** @nullable */
   systemPrompt?: string | null;
+  /** @nullable */
+  notionApiKey?: string | null;
+  /** @nullable */
+  spotifyClientId?: string | null;
+  /** @nullable */
+  spotifyClientSecret?: string | null;
 }

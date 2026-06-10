@@ -21,4 +21,24 @@ router.post("/chat", async (req, res) => {
   }
 });
 
+router.post("/chat/stop", async (req, res) => {
+  try {
+    const { conversationId } = req.body;
+    if (typeof conversationId !== "number") {
+      res.status(400).json({ error: "Invalid conversationId" });
+      return;
+    }
+    const { abortChatRequest } = await import("../services/chatService.js");
+    const stopped = abortChatRequest(conversationId);
+    if (stopped) {
+      res.json({ message: "Execution stopped successfully" });
+    } else {
+      res.status(404).json({ error: "No active execution found for this conversation" });
+    }
+  } catch (err: any) {
+    req.log.error({ err }, "Stop chat request failed");
+    res.status(500).json({ error: "Unknown error" });
+  }
+});
+
 export default router;
