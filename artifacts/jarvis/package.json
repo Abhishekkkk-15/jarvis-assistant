@@ -2,6 +2,7 @@
   "name": "@workspace/jarvis",
   "version": "0.0.0",
   "private": true,
+  "repository": "https://github.com/Abhishekkkk-15/jarvis-assistant",
   "type": "module",
   "main": "dist/electron/main.cjs",
   "scripts": {

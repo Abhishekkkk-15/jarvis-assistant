@@ -1,6 +1,7 @@
 {
   "name": "workspace",
   "version": "0.0.0",
+  "repository": "https://github.com/Abhishekkkk-15/jarvis-assistant",
   "license": "MIT",
   "packageManager": "pnpm@10.29.2",
   "scripts": {
