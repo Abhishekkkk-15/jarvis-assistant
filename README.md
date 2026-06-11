@@ -1,4 +1,4 @@
-# 🤖 JARVIS Assistant Companion
+# <img src="artifacts/jarvis-website/public/favicon.png" width="36" height="36" align="top" /> JARVIS Assistant Companion
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/Version-v1.0.0-emerald.svg)](https://github.com/Abhishekkkk-15/jarvis-assistant/releases/latest)
