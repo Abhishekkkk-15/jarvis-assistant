@@ -173,7 +173,7 @@ export const DocsPage = () => {
                 <div>
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold mb-4 border border-primary/20">v1.0 Stable</div>
                   <H1>JARVIS Documentation</H1>
-                  <P>JARVIS is an open-source AI desktop companion. It runs 100% locally on your machine, lives on your screen as an animated character, hears your voice, sees your screen, and executes autonomous tasks via a LangGraph multi-agent system.</P>
+                  <P>JARVIS is an open-source AI desktop companion. It runs as a local desktop application on your machine, lives on your screen as an animated character, hears your voice, sees your screen, and executes autonomous tasks via a LangGraph multi-agent system powered by remote LLM APIs.</P>
                   <Callout type="tip">New here? Start with <strong>Installation</strong> and the <strong>Quick Start</strong> guide, then explore features from there.</Callout>
                 </div>
                 <div className="flex-shrink-0 hidden md:block">
@@ -188,10 +188,10 @@ export const DocsPage = () => {
                   ['🎙️', 'Wake word voice control', '"Hey JARVIS" — hands-free speech-to-text and text-to-speech'],
                   ['👁️', 'Screen vision', 'Reads your screen contents to understand what you\'re working on'],
                   ['✏️', 'Screen drawing', 'Annotates your display live with arrows and text'],
-                  ['🤖', 'Autonomous agents', 'LangGraph-powered agents that browse, code, and execute tasks'],
-                  ['📱', 'Telegram sync', 'Control your desktop agent remotely via Telegram'],
+                  ['🤖', 'Autonomous agents', 'LangGraph-powered agents that browse, edit files, and execute tasks'],
+                  ['📱', 'Telegram sync', 'Send notification alerts directly to your desktop assistant remotely'],
                   ['🖥️', 'MiniMode physics', 'Characters with gravity that roam your real desktop'],
-                  ['🔒', '100% local', 'No cloud, no accounts, no subscriptions ever'],
+                  ['🔒', 'Native Desktop App', 'No user registration or companion subscriptions required'],
                 ].map(([icon, title, desc]) => (
                   <div key={title as string} className="flex gap-3 p-3 rounded-xl bg-secondary/50 border border-border">
                     <span className="text-xl flex-shrink-0">{icon}</span>
