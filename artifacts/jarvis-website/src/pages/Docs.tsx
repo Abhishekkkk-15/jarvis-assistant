@@ -69,10 +69,13 @@ const NAV = [
   { id: 'characters', label: 'Characters', icon: Cpu },
   { id: 'emotions', label: 'Emotions & Moods', icon: Zap },
   { id: 'minimode', label: 'MiniMode', icon: Monitor },
+  { id: 'relationship', label: 'Relationship Engine', icon: Zap },
+  { id: 'contextual', label: 'Contextual Awareness', icon: Eye },
+  { id: 'dragdrop', label: 'Drag & Drop Files', icon: Download },
   { id: 'voice', label: 'Voice Control', icon: Mic },
   { id: 'vision', label: 'Screen Vision', icon: Eye },
   { id: 'drawing', label: 'Screen Drawing', icon: PenTool },
-  { id: 'agents', label: 'AI Agents', icon: Network },
+  { id: 'agents', label: 'AI Agents & Tools', icon: Network },
   { id: 'integrations', label: 'Integrations', icon: MessageSquare },
   { id: 'config', label: 'Configuration', icon: Settings },
 ];
@@ -369,21 +372,22 @@ F11               — Toggle application fullscreen mode`}</Code>
               <H1>Characters</H1>
               <P>Every JARVIS companion is a fully hand-crafted SVG character with responsive limb animations, emotion expressions, eye-tracking, and lip-sync. Characters are not AI-generated images — they are deterministic code.</P>
 
-              <H2>Built-in characters</H2>
+              <H2>Built-in characters (22 total)</H2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 my-4">
                 {[
-                  { Component: JarvisBot, name: 'JARVIS Bot', tag: 'Classic', colors: '#1a1a2e' },
-                  { Component: PixelFox, name: 'Pixel Fox', tag: 'Trickster', colors: '#ff7e00' },
-                  { Component: SpaceCat, name: 'Space Cat', tag: 'Explorer', colors: '#ffb347' },
-                  { Component: FireDrake, name: 'Fire Drake', tag: 'Fierce', colors: '#27ae60' },
-                  { Component: Ninja, name: 'Ninja', tag: 'Silent', colors: '#2c3e50' },
-                  { Component: Wizard, name: 'Wizard', tag: 'Wise', colors: '#8e44ad' },
-                  { Component: CyberPunk, name: 'Cyberpunk', tag: 'Rebel', colors: '#1abc9c' },
-                  { Component: MinionBob, name: 'Minion Bob', tag: 'Goofball', colors: '#f1c40f' },
-                  { Component: AlienDude, name: 'Alien Dude', tag: 'Oddball', colors: '#2ecc71' },
-                  { Component: Astronaut, name: 'Astronaut', tag: 'Drifter', colors: '#bdc3c7' },
+                  { Component: JarvisBot, name: 'JARVIS Bot', tag: 'The Classic', colors: '#1a1a2e' },
+                  { Component: PixelFox, name: 'Pixel Fox', tag: 'The Trickster', colors: '#ff7e00' },
+                  { Component: SpaceCat, name: 'Astro Feline', tag: 'The Explorer', colors: '#ffb347' },
+                  { Component: FireDrake, name: 'Ignis Drake', tag: 'The Fierce', colors: '#27ae60' },
+                  { Component: Ninja, name: 'Shinobi', tag: 'The Silent', colors: '#2c3e50' },
+                  { Component: Wizard, name: 'Archmage', tag: 'The Wise', colors: '#8e44ad' },
+                  { Component: CyberPunk, name: 'Cyber Dweller', tag: 'The Rebel', colors: '#1abc9c' },
+                  { Component: MinionBob, name: 'Minion Blob', tag: 'The Goofball', colors: '#f1c40f' },
+                  { Component: AlienDude, name: 'Alien Dude', tag: 'The Oddball', colors: '#2ecc71' },
+                  { Component: Astronaut, name: 'Astronaut', tag: 'The Drifter', colors: '#bdc3c7' },
                 ].map(c => <CharPreview key={c.name} {...c} />)}
               </div>
+              <P>Plus 12 more built-in companions available in the Characters tab: <strong>Spider-Man</strong>, <strong>Iron Hero</strong>, <strong>Electric Mouse</strong>, <strong>Dark Knight</strong>, <strong>Ninja Turtle</strong>, <strong>Pirate Captain</strong>, <strong>Zombie Guy</strong>, <strong>Cyber Bot</strong>, <strong>Vampire Lord</strong>, <strong>Ghost Boo</strong>, <strong>Samurai</strong>, and <strong>Space Bean</strong>.</P>
 
               <H2>Character props</H2>
               <P>All character components share the same interface:</P>
@@ -403,7 +407,7 @@ F11               — Toggle application fullscreen mode`}</Code>
 }`}</Code>
 
               <H2>Custom characters</H2>
-              <P>Open <strong>Characters → Custom Studio</strong> to upload your own sprite. You can provide one image per animation state or a single idle sprite that gets reused for all states.</P>
+              <P>Open <strong>Characters → Custom Studio</strong> to upload your own sprite. You can provide one image per animation state (PNG, JPEG, GIF, WebP — max 5 MB) or a single idle sprite that gets reused for all states.</P>
               <Code lang="typescript">{`interface CustomCharacter {
   id: string;
   name: string;
@@ -598,6 +602,108 @@ Ctrl+Shift+M  (Windows 10/11)
 }`}</Code>
             </Section>
 
+            {/* Relationship Engine */}
+            <Section id="relationship">
+              <H1>Relationship Engine</H1>
+              <P>JARVIS maintains a persistent <strong>affection score</strong> (0–100) stored locally across sessions. The score grows as you interact and degrades if you neglect JARVIS for more than 48 hours. This score is injected into every LLM message so the AI genuinely adjusts its tone based on your relationship.</P>
+
+              <H2>Mood levels</H2>
+              <div className="grid grid-cols-2 gap-3 my-4">
+                {[
+                  ['Neglected', '0–39 after 24h+ absence', 'bg-slate-50 border-slate-200 text-slate-700'],
+                  ['Neutral', '0–39 score', 'bg-blue-50 border-blue-200 text-blue-700'],
+                  ['Friendly', '40–74 score', 'bg-green-50 border-green-200 text-green-700'],
+                  ['Best Friends', '75–100 score', 'bg-purple-50 border-purple-200 text-purple-700'],
+                ].map(([mood, cond, cls]) => (
+                  <div key={mood as string} className={`p-3 rounded-xl border text-sm ${cls}`}>
+                    <div className="font-bold mb-1">{mood}</div>
+                    <div className="text-xs opacity-75">{cond}</div>
+                  </div>
+                ))}
+              </div>
+
+              <H2>How affection grows</H2>
+              <div className="space-y-2 my-4">
+                {[
+                  ['💬 Short reply (< 20 words)', '+1 affection per message'],
+                  ['💬 Medium reply (20–50 words)', '+2 affection per message'],
+                  ['💬 Long detailed reply (50+ words)', '+3 affection per message'],
+                  ['🐾 Petting the character in MiniMode', '+5 affection (vigorous mouse-over)'],
+                  ['📁 Dropping a file onto the character', '+2 affection'],
+                  ['⏰ 48+ hours without interaction', '−5 affection (passive decay)'],
+                ].map(([action, effect]) => (
+                  <div key={action as string} className="flex justify-between text-sm p-2 rounded-lg bg-secondary/50 border border-border">
+                    <span>{action}</span>
+                    <span className="font-mono text-primary font-semibold">{effect}</span>
+                  </div>
+                ))}
+              </div>
+              <Callout type="info">The mood and affection score are sent to the LLM with every message as a system note. JARVIS will genuinely speak differently when you are <strong>Best Friends</strong> versus when you have been <strong>Neglected</strong> for two days.</Callout>
+            </Section>
+
+            {/* Contextual Awareness */}
+            <Section id="contextual">
+              <H1>Contextual Awareness Mode</H1>
+              <P>When enabled, JARVIS actively watches your active windows and system events and <strong>reacts proactively</strong> — commenting on what you are doing, offering help, or cracking jokes — without you having to say a word.</P>
+
+              <H2>Enabling it</H2>
+              <P>Go to <strong>Settings → Voice & Behavior → Contextual Awareness Mode</strong> and toggle the switch on.</P>
+
+              <H2>Persona selector</H2>
+              <P>When Contextual Awareness Mode is on, you can also pick how JARVIS behaves:</P>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-4">
+                {[
+                  ['Friendly & Helpful', 'Warm, supportive, focused on getting things done.'],
+                  ['Funny & Playful', 'Makes jokes, uses memes, keeps things light.'],
+                  ['Sarcastic & Witty', 'Dry humour, playful jabs, still gets the job done.'],
+                  ['Professional Assistant', 'Concise, formal, no fluff.'],
+                  ['Chaotic & Random', 'Unpredictable, wild, chaotic energy.'],
+                ].map(([name, desc]) => (
+                  <div key={name as string} className="p-3 rounded-xl border border-border bg-white text-sm">
+                    <div className="font-semibold mb-0.5">{name}</div>
+                    <div className="text-muted-foreground text-xs">{desc}</div>
+                  </div>
+                ))}
+              </div>
+
+              <H2>Attention seeker</H2>
+              <P>If JARVIS is in MiniMode and you have not interacted for <strong>15 minutes</strong>, it will grab your attention using one of three behaviours (chosen randomly):</P>
+              <div className="space-y-2 my-4 text-sm">
+                {[
+                  ['🌀 Physics tumble', 'Throws itself across the screen with a dizzy animation.'],
+                  ['❓ Canvas drawing', 'Draws a giant animated question mark on your screen.'],
+                  ['👀 Jealous screen capture', 'Captures your screen and sends a sassy one-liner reacting to what it sees.'],
+                ].map(([icon, desc]) => (
+                  <div key={icon as string} className="flex gap-3 p-3 rounded-xl border border-border bg-white">
+                    <span className="text-xl">{icon}</span>
+                    <span className="text-muted-foreground">{desc}</span>
+                  </div>
+                ))}
+              </div>
+            </Section>
+
+            {/* Drag & Drop */}
+            <Section id="dragdrop">
+              <H1>Drag & Drop Files</H1>
+              <P>You can drag files directly onto the floating MiniMode character — it will read the file and automatically send its contents to the AI for analysis or action.</P>
+
+              <H2>Supported file types</H2>
+              <div className="space-y-3 my-4">
+                {[
+                  ['🖼️ Images (PNG, JPG, GIF, WebP)', 'Character jumps excitedly, says "Ooh, yummy data!", then sends the image to the vision model for analysis. You get a full description and can ask follow-up questions about it.'],
+                  ['📄 Text & Code files (.txt, .ts, .py, .md, ...)', 'File contents are read as UTF-8 text and sent to the AI. Useful for asking JARVIS to review, explain, or edit a file instantly.'],
+                  ['🚫 Video / Audio files', 'Not supported yet. JARVIS will show a "can\'t eat this" message.'],
+                  ['🚫 Files over 2 MB', 'Rejected with a "too big" message to avoid overloading context.'],
+                ].map(([type, desc]) => (
+                  <div key={type as string} className="p-3 rounded-xl border border-border bg-white">
+                    <div className="font-semibold text-sm mb-1">{type}</div>
+                    <div className="text-xs text-muted-foreground">{desc}</div>
+                  </div>
+                ))}
+              </div>
+              <Callout type="tip">Dropping a file also gives JARVIS a <strong>+2 affection boost</strong> — it treats it as you sharing something with it.</Callout>
+            </Section>
+
             {/* Agents */}
             <Section id="agents">
               <H1>AI Agents</H1>
@@ -622,23 +728,81 @@ Ctrl+Shift+M  (Windows 10/11)
                 ))}
               </div>
 
-              <H2>Tool use</H2>
-              <Code lang="typescript">{`// Agents have access to these tool namespaces and modules:
-const tools = [
-  // Web & Browsing
-  "search_web", "open_website", "browser" (Playwright), "cdpBrowser", "web",
-  // System & Automation
-  "run_command" (Shell), "open_app", "everything" (Voidtools Search), "uiautomation", "windowsSystem",
-  // Files
-  "read_file", "write_file", "fs",
-  // UI & Canvas
-  "drawing", "notify",
-  // Integrations
-  "spotify", "notion", "github",
-  // Utilities
-  "calculate", "get_weather", "get_current_datetime", "cron", "memory"
-]`}</Code>
-              <Callout type="warn">Shell and file-write operations always require explicit user approval. JARVIS will show a confirmation prompt before executing destructive actions.</Callout>
+              <H2>Tools & automation capabilities</H2>
+              <P>Agents have access to 18 tool modules across 6 categories. Each tool call is displayed as an emoji accessory badge on the character overlay in real time.</P>
+              <div className="space-y-4 my-4">
+                {[
+                  {
+                    category: '🌐 Web & Browsing',
+                    badge: '🔍',
+                    tools: [
+                      ['search_web', 'Full-text web search with result summaries'],
+                      ['open_website', 'Open a URL in the system browser'],
+                      ['browser (Playwright)', 'Headless browser — fill forms, click buttons, scrape dynamic pages'],
+                      ['cdpBrowser', 'Chrome DevTools Protocol — low-level browser automation'],
+                      ['web', 'Fetch and parse raw HTML or JSON from any URL'],
+                    ]
+                  },
+                  {
+                    category: '🖥️ System & Automation',
+                    badge: '💻 / 🚀',
+                    tools: [
+                      ['shell / run_command', 'Execute PowerShell, CMD, or Bash commands (requires user approval)'],
+                      ['computer', 'Mouse clicks, keyboard input, and screenshot capture via RobotJS'],
+                      ['uiautomation', 'Windows UI Automation — interact with any native Win32 UI element'],
+                      ['windowsSystem', 'Window management, focus control, taskbar, and system queries'],
+                      ['everything', 'Instant file search across the entire disk via Voidtools Everything'],
+                    ]
+                  },
+                  {
+                    category: '📁 File System',
+                    badge: '📄',
+                    tools: [
+                      ['fs (read_file)', 'Read any file from disk as text or binary'],
+                      ['fs (write_file)', 'Create or overwrite files (requires approval)'],
+                      ['fs (list_dir)', 'List directory contents with metadata'],
+                    ]
+                  },
+                  {
+                    category: '🧠 Memory & Scheduling',
+                    badge: '',
+                    tools: [
+                      ['memory', 'Persistent vector memory — store and recall facts about you across sessions'],
+                      ['cron', 'Schedule tasks to run at a specific time or on a recurring interval'],
+                    ]
+                  },
+                  {
+                    category: '🎨 UI & Notifications',
+                    badge: '',
+                    tools: [
+                      ['drawing', 'Draw arrows, circles, text, and highlights on a screen overlay'],
+                      ['notify', 'Send a native OS desktop notification with title and body'],
+                    ]
+                  },
+                  {
+                    category: '🔗 Integrations',
+                    badge: '📝 🎵 🐙',
+                    tools: [
+                      ['notion', 'Search, read, and query your Notion workspace pages'],
+                      ['spotify', 'Play, pause, skip, search tracks, and control Spotify playback'],
+                      ['github', 'Read repos, list issues/PRs, view files, and check commits'],
+                    ]
+                  },
+                ].map(({ category, tools }) => (
+                  <div key={category} className="rounded-xl border border-border bg-white overflow-hidden">
+                    <div className="px-4 py-2.5 bg-secondary/50 border-b border-border font-semibold text-sm">{category}</div>
+                    <div className="divide-y divide-border/50">
+                      {tools.map(([name, desc]) => (
+                        <div key={name} className="flex gap-3 px-4 py-2.5 text-sm">
+                          <code className="text-primary font-mono text-xs font-bold shrink-0 mt-0.5 min-w-[140px]">{name}</code>
+                          <span className="text-muted-foreground">{desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Callout type="warn">Shell, file-write, and computer-control operations always require explicit user approval via an in-app confirmation prompt before executing.</Callout>
             </Section>
 
             {/* Integrations */}
