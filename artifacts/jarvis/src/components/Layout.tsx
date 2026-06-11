@@ -15,6 +15,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [location, setLocation] = useLocation();
   const [miniModeEnabled] = useLocalStorage('miniModeEnabled', true);
   const [minimized, setMinimized] = useLocalStorage('appMinimized', false);
+  const [isAppFullscreen, setIsAppFullscreen] = React.useState(false);
   
   // Initialize background wake word listener
   const { data: settings } = useGetSettings({ query: { queryKey: getGetSettingsQueryKey() } });
@@ -26,26 +27,45 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F11') {
+        e.preventDefault();
+        setIsAppFullscreen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  React.useEffect(() => {
     if (window.electronAPI) {
       if (minimized) {
-        window.electronAPI.setFullscreen(true);
+        window.electronAPI.setFullscreen(true, true);
         window.electronAPI.setIgnoreMouseEvents(true);
         document.body.style.backgroundColor = 'transparent';
         document.documentElement.style.backgroundColor = 'transparent';
       } else {
-        window.electronAPI.setFullscreen(false);
+        window.electronAPI.setFullscreen(isAppFullscreen, false);
         window.electronAPI.setIgnoreMouseEvents(false);
         document.body.style.backgroundColor = '';
         document.documentElement.style.backgroundColor = '';
       }
     }
-  }, [minimized]);
+  }, [minimized, isAppFullscreen]);
 
   return (
     <>
       {/* Main app — hidden when minimized */}
       <div className={`h-[100dvh] w-full flex overflow-hidden bg-background text-foreground relative transition-opacity duration-300 ${minimized ? 'opacity-0 pointer-events-none select-none' : 'opacity-100'}`}>
-        <Navigation onMinimize={() => setMinimized(true)} />
+        <Navigation
+          onMinimize={() => {
+            if (miniModeEnabled) {
+              setMinimized(true);
+            } else if (window.electronAPI && typeof window.electronAPI.minimizeWindow === 'function') {
+              window.electronAPI.minimizeWindow();
+            }
+          }}
+        />
 
         <main className="flex-1 relative overflow-hidden flex flex-col">
           <AnimatePresence mode="wait">
@@ -63,8 +83,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </main>
       </div>
 
-      {/* Character overlay — always rendered when mini mode is on OR when minimized */}
-      {(miniModeEnabled || minimized) && (
+      {/* Character overlay — only rendered when mini mode is enabled */}
+      {miniModeEnabled && (
         <MiniModeOverlay
           isMinimized={minimized}
           onOpen={handleRestore}

@@ -227,11 +227,21 @@ ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
   }
 });
 
-ipcMain.on('set-fullscreen', (event, isFullscreen) => {
+ipcMain.on('set-fullscreen', (event, isFullscreen, alwaysOnTop = false) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return;
   win.setFullScreen(isFullscreen);
-  win.setAlwaysOnTop(isFullscreen, 'pop-up-menu');
+  if (alwaysOnTop) {
+    win.setAlwaysOnTop(isFullscreen, 'pop-up-menu');
+  } else {
+    win.setAlwaysOnTop(false);
+  }
+});
+
+ipcMain.on('minimize-window', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+  win.minimize();
 });
 
 ipcMain.handle('capture-screen', async () => {

@@ -1014,7 +1014,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     reader.readAsText(file);
   };
 
-  if (!enabled && !isMinimized) return null;
+  if (!enabled) return null;
 
   const transitionStyle = isDragging || isPhysicsActive || movementStyle === 'teleport'
     ? 'none'
