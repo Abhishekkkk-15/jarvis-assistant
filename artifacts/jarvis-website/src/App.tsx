@@ -8,6 +8,8 @@ import {
 } from "framer-motion";
 import { Bot, Book, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { triggerDownload } from "./lib/utils";
+
 
 import {
   JarvisBot,
@@ -191,7 +193,7 @@ const Navbar: React.FC<{ isDocsPage: boolean }> = ({ isDocsPage }) => {
             <Book className="w-3.5 h-3.5" /> Docs
           </Link>
         </div>
-        <Button size="sm" className="shadow-sm shadow-primary/20 hidden sm:flex">
+        <Button onClick={triggerDownload} size="sm" className="shadow-sm shadow-primary/20 hidden sm:flex">
           <Download className="w-4 h-4 mr-2" /> Download
         </Button>
       </div>

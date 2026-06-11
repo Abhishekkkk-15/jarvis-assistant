@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+import { triggerDownload } from "../lib/utils";
 import {
   Download, Github, Mic, PenTool, Monitor, Network,
   MessageSquare, ChevronRight, Bot, Star, Eye, ArrowRight, Book
@@ -138,7 +139,7 @@ export const HeroSection = () => {
           transition={{ duration: 0.5, delay: 0.35 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4"
         >
-          <Button size="lg" className="h-14 px-10 text-base shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all">
+          <Button onClick={triggerDownload} size="lg" className="h-14 px-10 text-base shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all">
             <Download className="mr-2 h-5 w-5" /> Download Free
           </Button>
           <Button size="lg" variant="outline" className="h-14 px-10 text-base" asChild>
@@ -602,7 +603,7 @@ export const CTASection = () => (
       <h2 className="text-4xl md:text-6xl font-extrabold text-white mb-6 tracking-tight">Wake up your desktop.</h2>
       <p className="text-xl text-white/75 mb-10 max-w-xl mx-auto">Free. Open-source. 100% local. No accounts, subscriptions, or cloud required.</p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <Button size="lg" className="h-14 px-10 text-base bg-white text-primary hover:bg-white/95 shadow-2xl w-full sm:w-auto font-bold">
+        <Button onClick={triggerDownload} size="lg" className="h-14 px-10 text-base bg-white text-primary hover:bg-white/95 shadow-2xl w-full sm:w-auto font-bold">
           <Download className="mr-2 h-5 w-5" /> Get JARVIS Free
         </Button>
         <Link href="/docs" passHref>
