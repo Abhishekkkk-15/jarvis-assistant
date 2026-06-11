@@ -20,6 +20,15 @@ export interface AudioInput {
   mimeType: string;
 }
 
+export interface TTSInput {
+  /** The text to synthesize into speech */
+  text: string;
+  /** Voice ID (e.g. autumn, diana, austin, etc.) */
+  voice?: string;
+  /** TTS model to use */
+  model?: string;
+}
+
 export interface ChatInput {
   message: string;
   /** @nullable */

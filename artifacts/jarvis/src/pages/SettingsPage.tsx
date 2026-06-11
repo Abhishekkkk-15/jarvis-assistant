@@ -10,14 +10,14 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { useTTS } from '@/hooks/useTTS';
+import { useTTS, ORPHEUS_VOICES } from '@/hooks/useTTS';
 
 export const SettingsPage: React.FC = () => {
   const { data: settings, isLoading } = useGetSettings({ query: { queryKey: getGetSettingsQueryKey() } });
   const updateSettings = useUpdateSettings();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const tts = useTTS((settings as any)?.groqApiKey ?? null);
+  const tts = useTTS();
 
   const [miniModeEnabled, setMiniModeEnabled] = useLocalStorage('miniModeEnabled', true);
   const [autonomousMode, setAutonomousMode] = useLocalStorage('jarvisAutonomousMode', false);
@@ -419,9 +419,9 @@ export const SettingsPage: React.FC = () => {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {(["tara","leah","jess","leo","dan","mia","zac","zoe"] as const).map(id => (
-                              <SelectItem key={id} value={id}>
-                                {id.charAt(0).toUpperCase() + id.slice(1)}
+                            {ORPHEUS_VOICES.map(voice => (
+                              <SelectItem key={voice.id} value={voice.id}>
+                                {voice.label}
                               </SelectItem>
                             ))}
                           </SelectContent>

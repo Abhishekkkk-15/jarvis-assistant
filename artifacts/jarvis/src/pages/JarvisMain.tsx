@@ -25,8 +25,8 @@ export const JarvisMain: React.FC = () => {
   const { data: stats } = useGetStats({ query: { queryKey: getGetStatsQueryKey() } });
   const { data: commandSuggestions } = useGetCommandSuggestions({ query: { queryKey: getGetCommandSuggestionsQueryKey() } });
 
-  // TTS via Web Speech API / Orpheus hook — pass Groq key so Orpheus engine works
-  const tts = useTTS((settings as any)?.groqApiKey ?? null);
+  // TTS hook — Groq key is handled server-side via /tts endpoint
+  const tts = useTTS();
   const muted = !tts.isEnabled;
 
   const sendChat = useSendChat();

@@ -52,6 +52,19 @@ export const TranscribeAudioResponse = zod.object({
 
 
 /**
+ * @summary Synthesize speech via Groq TTS (Orpheus). Returns audio/wav binary.
+ */
+export const synthesizeSpeechBodyVoiceDefault = `autumn`;
+export const synthesizeSpeechBodyModelDefault = `canopylabs/orpheus-v1-english`;
+
+export const SynthesizeSpeechBody = zod.object({
+  "text": zod.string().describe('The text to synthesize into speech'),
+  "voice": zod.string().default(synthesizeSpeechBodyVoiceDefault).describe('Voice ID (e.g. autumn, diana, austin, etc.)'),
+  "model": zod.string().default(synthesizeSpeechBodyModelDefault).describe('TTS model to use')
+})
+
+
+/**
  * @summary Get current user settings (API keys masked)
  */
 export const GetSettingsResponse = zod.object({

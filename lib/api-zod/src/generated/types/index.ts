@@ -26,3 +26,4 @@ export * from './stats';
 export * from './statsTopCommandsItem';
 export * from './stopChatInput';
 export * from './transcribeResponse';
+export * from './tTSInput';

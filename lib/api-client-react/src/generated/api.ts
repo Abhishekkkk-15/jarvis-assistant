@@ -35,6 +35,7 @@ import type {
   SettingsInput,
   Stats,
   StopChatInput,
+  TTSInput,
   TranscribeResponse
 } from './api.schemas';
 
@@ -265,6 +266,76 @@ export const useTranscribeAudio = <TError = ErrorType<ApiError>,
         TContext
       > => {
       return useMutation(getTranscribeAudioMutationOptions(options));
+    }
+
+export const getSynthesizeSpeechUrl = () => {
+
+
+
+
+  return `/api/tts`
+}
+
+/**
+ * @summary Synthesize speech via Groq TTS (Orpheus). Returns audio/wav binary.
+ */
+export const synthesizeSpeech = async (tTSInput: TTSInput, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getSynthesizeSpeechUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tTSInput)
+  }
+);}
+
+
+
+
+export const getSynthesizeSpeechMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof synthesizeSpeech>>, TError,{data: BodyType<TTSInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof synthesizeSpeech>>, TError,{data: BodyType<TTSInput>}, TContext> => {
+
+const mutationKey = ['synthesizeSpeech'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof synthesizeSpeech>>, {data: BodyType<TTSInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  synthesizeSpeech(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SynthesizeSpeechMutationResult = NonNullable<Awaited<ReturnType<typeof synthesizeSpeech>>>
+    export type SynthesizeSpeechMutationBody = BodyType<TTSInput>
+    export type SynthesizeSpeechMutationError = ErrorType<ApiError>
+
+    /**
+ * @summary Synthesize speech via Groq TTS (Orpheus). Returns audio/wav binary.
+ */
+export const useSynthesizeSpeech = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof synthesizeSpeech>>, TError,{data: BodyType<TTSInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof synthesizeSpeech>>,
+        TError,
+        {data: BodyType<TTSInput>},
+        TContext
+      > => {
+      return useMutation(getSynthesizeSpeechMutationOptions(options));
     }
 
 export const getGetSettingsUrl = () => {

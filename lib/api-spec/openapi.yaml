@@ -90,7 +90,40 @@ paths:
               schema:
                 $ref: "#/components/schemas/ApiError"
 
+  /tts:
+    post:
+      operationId: synthesizeSpeech
+      tags: [tts]
+      summary: Synthesize speech via Groq TTS (Orpheus). Returns audio/wav binary.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TTSInput"
+      responses:
+        "200":
+          description: Audio data as WAV
+          content:
+            audio/wav:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: TTS error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /settings:
+
     get:
       operationId: getSettings
       tags: [settings]
@@ -278,6 +311,22 @@ components:
         mimeType:
           type: string
           description: "audio/webm, audio/wav, audio/mp4, etc."
+
+    TTSInput:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          description: The text to synthesize into speech
+        voice:
+          type: string
+          description: "Voice ID (e.g. autumn, diana, austin, etc.)"
+          default: "autumn"
+        model:
+          type: string
+          description: "TTS model to use"
+          default: "canopylabs/orpheus-v1-english"
 
     ChatInput:
       type: object
