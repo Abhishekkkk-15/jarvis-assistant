@@ -308,6 +308,22 @@ F11               — Toggle application fullscreen mode`}</Code>
 
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
                   <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2.5 py-1 text-xs font-bold text-orange-700 bg-orange-50 rounded-full">Speech-To-Text (STT)</span>
+                    <code className="text-sm font-semibold font-mono text-foreground">groq/whisper-large-v3</code>
+                  </div>
+                  <P>Transcribes your spoken voice inputs. Once you stop speaking, your audio is captured using local Voice Activity Detection (VAD) and transcribed instantly via Groq's Whisper endpoint.</P>
+                </div>
+
+                <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2.5 py-1 text-xs font-bold text-blue-700 bg-blue-50 rounded-full">Wake Word / Offline Listener</span>
+                    <code className="text-sm font-semibold font-mono text-foreground">vosk-browser (local model)</code>
+                  </div>
+                  <P>Performs 100% local, offline wake word detection. Runs client-side in the Electron process to recognize wake commands without uploading continuous microphone streams to the cloud.</P>
+                </div>
+
+                <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
                     <span className="px-2.5 py-1 text-xs font-bold text-purple-700 bg-purple-50 rounded-full">Text-To-Speech (TTS)</span>
                     <code className="text-sm font-semibold font-mono text-foreground">canopylabs/orpheus-v1-english</code>
                   </div>
@@ -508,10 +524,10 @@ Ctrl+Shift+M  (Windows 10/11)
               <P>JARVIS features full voice integration with background wake word listener, hands-free voice activity detection (VAD), and multi-engine voice output.</P>
 
               <H2>Wake word</H2>
-              <P>The default wake word is <strong>"hey jarvis"</strong>. You can change this setting in settings to personalize how your companion wakes up.</P>
+              <P>The default wake word is <strong>"hey jarvis"</strong>. This is processed 100% locally and offline on the client side using the <strong>Vosk</strong> engine (loaded from a local <code>vosk-model.zip</code>) to protect your privacy.</P>
 
               <H2>Speech-to-text (STT)</H2>
-              <P>Voice inputs are transcribed on the backend using Groq's high-speed Whisper-large-v3 model. Once you stop speaking (VAD threshold), the audio is compiled and transcribed instantly.</P>
+              <P>Once the wake word is detected and you stop speaking, the recorded audio segment is sent to the backend and transcribed using Groq's high-speed <strong>Whisper-large-v3</strong> model.</P>
 
               <H2>Text-to-speech (TTS)</H2>
               <P>JARVIS supports three distinct voice output engines:</P>
