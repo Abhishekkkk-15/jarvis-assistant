@@ -628,22 +628,16 @@ const tools = [
               <P>JARVIS features native integrations with popular apps and platforms, enabling remote control, productivity syncing, and media playback control.</P>
 
               <H2>1. Telegram Sync</H2>
-              <P>Control your desktop remotely from your mobile device via Telegram bot commands.</P>
+              <P>Send notification messages to your desktop companion remotely via a Telegram bot.</P>
               <Code lang="bash">{`# 1. Create a Telegram bot via @BotFather
 #    Send: /newbot  →  follow prompts  →  copy the API token
 
 # 2. Add the token to JARVIS settings
 #    Settings → Integrations → Telegram → Paste token
 
-# 3. Start the bot and authorize
-#    Open your Telegram bot, send: /start
-#    JARVIS will display a 6-digit confirmation code on desktop.`}</Code>
-              <div className="grid grid-cols-2 gap-2 my-2 font-mono text-xs">
-                <div className="bg-secondary/40 p-2 rounded"><strong>/screenshot</strong> — Get desktop screenshot</div>
-                <div className="bg-secondary/40 p-2 rounded"><strong>/ask &lt;text&gt;</strong> — Send chat prompt</div>
-                <div className="bg-secondary/40 p-2 rounded"><strong>/do &lt;task&gt;</strong> — Run autonomous agent</div>
-                <div className="bg-secondary/40 p-2 rounded"><strong>/stop</strong> — Terminate running task</div>
-              </div>
+# 3. Message the bot
+#    Open your Telegram bot and send any text message. It will be immediately 
+#    forwarded and broadcast as a system notification on your desktop assistant.`}</Code>
 
               <H2>2. Discord Integration</H2>
               <P>Control or receive notifications from your desktop assistant via a Discord bot client.</P>
