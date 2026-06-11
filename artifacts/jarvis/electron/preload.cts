@@ -30,3 +30,7 @@ ipcRenderer.on('active-window-changed', (event, winInfo) => {
 ipcRenderer.on('system-event', (event, eventName) => {
   (window as any).dispatchEvent(new CustomEvent('system-event', { detail: { eventName } }));
 });
+
+ipcRenderer.on('toggle-minimode', () => {
+  (window as any).dispatchEvent(new CustomEvent('toggle-minimode'));
+});

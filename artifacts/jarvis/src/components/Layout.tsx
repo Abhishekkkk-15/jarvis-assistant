@@ -27,6 +27,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   React.useEffect(() => {
+    const handleToggleMiniMode = () => {
+      setMinimized(prev => !prev);
+    };
+    window.addEventListener('toggle-minimode', handleToggleMiniMode);
+    return () => window.removeEventListener('toggle-minimode', handleToggleMiniMode);
+  }, [setMinimized]);
+
+  React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F11') {
         e.preventDefault();

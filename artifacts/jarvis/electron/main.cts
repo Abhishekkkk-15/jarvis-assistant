@@ -147,6 +147,12 @@ app.whenReady().then(() => {
     }
   });
 
+  globalShortcut.register('CommandOrControl+Shift+M', () => {
+    if (mainWindow) {
+      mainWindow.webContents.send('toggle-minimode');
+    }
+  });
+
   let backendProcess: Electron.UtilityProcess | null = null;
   if (!isDev) {
     const backendPath = path.join(__dirname, '..', 'backend', 'dist', 'index.cjs');
