@@ -70,7 +70,7 @@ const NAV = [
   { id: 'vision', label: 'Screen Vision', icon: Eye },
   { id: 'drawing', label: 'Screen Drawing', icon: PenTool },
   { id: 'agents', label: 'AI Agents', icon: Network },
-  { id: 'telegram', label: 'Telegram Sync', icon: MessageSquare },
+  { id: 'integrations', label: 'Integrations', icon: MessageSquare },
   { id: 'config', label: 'Configuration', icon: Settings },
 ];
 
@@ -305,9 +305,44 @@ F11               — Toggle application fullscreen mode`}</Code>
                   </div>
                   <P>Used exclusively when you ask JARVIS to see or analyze your screen. This model is fine-tuned for visual instruction-following and accurately identifies elements on your desktop.</P>
                 </div>
+
+                <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2.5 py-1 text-xs font-bold text-purple-700 bg-purple-50 rounded-full">Text-To-Speech (TTS)</span>
+                    <code className="text-sm font-semibold font-mono text-foreground">canopylabs/orpheus-v1-english</code>
+                  </div>
+                  <P>Powers natural, highly expressive speech synthesis for hands-free audio response delivery. Available voice types and profiles include:</P>
+                  <div className="grid grid-cols-2 gap-2 mt-2 font-mono text-xs">
+                    <div className="bg-secondary/40 p-2 rounded border border-border/60">
+                      <strong>autumn</strong>
+                      <div className="text-muted-foreground mt-0.5">Warm, narrative tone</div>
+                    </div>
+                    <div className="bg-secondary/40 p-2 rounded border border-border/60">
+                      <strong>diana</strong>
+                      <div className="text-muted-foreground mt-0.5">Expressive, conversational female</div>
+                    </div>
+                    <div className="bg-secondary/40 p-2 rounded border border-border/60">
+                      <strong>hannah</strong>
+                      <div className="text-muted-foreground mt-0.5">Bright, clear female</div>
+                    </div>
+                    <div className="bg-secondary/40 p-2 rounded border border-border/60">
+                      <strong>austin</strong>
+                      <div className="text-muted-foreground mt-0.5">Professional, clear male</div>
+                    </div>
+                    <div className="bg-secondary/40 p-2 rounded border border-border/60">
+                      <strong>daniel</strong>
+                      <div className="text-muted-foreground mt-0.5">Deep, calm male</div>
+                    </div>
+                    <div className="bg-secondary/40 p-2 rounded border border-border/60">
+                      <strong>troy</strong>
+                      <div className="text-muted-foreground mt-0.5">Snappy, friendly male</div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">Supports expressive speech tags like <code>[cheerful]</code>, <code>[whisper]</code>, <code>[excited]</code>, or <code>[thoughtful]</code> within output text for dynamic tone changes.</p>
+                </div>
               </div>
 
-              <Callout type="info">Both models are automatically selected by the system depending on the context of your prompt (text-only vs vision inputs) to optimize performance and token usage.</Callout>
+              <Callout type="info">Models are automatically selected by the system depending on the context of your prompt (text-only vs vision inputs) to optimize performance and token usage.</Callout>
             </Section>
 
             {/* Characters */}
@@ -587,42 +622,66 @@ const tools = [
               <Callout type="warn">Shell and file-write operations always require explicit user approval. JARVIS will show a confirmation prompt before executing destructive actions.</Callout>
             </Section>
 
-            {/* Telegram */}
-            <Section id="telegram">
-              <H1>Telegram Sync</H1>
-              <P>Connect JARVIS to Telegram and control your desktop agent from your phone, even when you're away from your desk.</P>
+            {/* Integrations */}
+            <Section id="integrations">
+              <H1>Integrations</H1>
+              <P>JARVIS features native integrations with popular apps and platforms, enabling remote control, productivity syncing, and media playback control.</P>
 
-              <H2>Setup</H2>
+              <H2>1. Telegram Sync</H2>
+              <P>Control your desktop remotely from your mobile device via Telegram bot commands.</P>
               <Code lang="bash">{`# 1. Create a Telegram bot via @BotFather
 #    Send: /newbot  →  follow prompts  →  copy the API token
 
 # 2. Add the token to JARVIS settings
 #    Settings → Integrations → Telegram → Paste token
 
-# 3. Start the bot
-#    Open your Telegram bot and send: /start
+# 3. Start the bot and authorize
+#    Open your Telegram bot, send: /start
+#    JARVIS will display a 6-digit confirmation code on desktop.`}</Code>
+              <div className="grid grid-cols-2 gap-2 my-2 font-mono text-xs">
+                <div className="bg-secondary/40 p-2 rounded"><strong>/screenshot</strong> — Get desktop screenshot</div>
+                <div className="bg-secondary/40 p-2 rounded"><strong>/ask &lt;text&gt;</strong> — Send chat prompt</div>
+                <div className="bg-secondary/40 p-2 rounded"><strong>/do &lt;task&gt;</strong> — Run autonomous agent</div>
+                <div className="bg-secondary/40 p-2 rounded"><strong>/stop</strong> — Terminate running task</div>
+              </div>
 
-# 4. Authorise your account
-#    JARVIS will send a 6-digit code to confirm it's you`}</Code>
+              <H2>2. Discord Integration</H2>
+              <P>Control or receive notifications from your desktop assistant via a Discord bot client.</P>
+              <Code lang="bash">{`# 1. Create a Discord Application
+#    Go to discord.com/developers/applications, create an App and add a Bot.
 
-              <H2>Available commands</H2>
-              <Code lang="text">{`/start       — authorise and connect
-/status      — check if desktop agent is online
-/screenshot  — capture and send current screen
-/ask <text>  — send a message to JARVIS
-/do <task>   — run an autonomous task
-/stop        — stop the current task`}</Code>
+# 2. Save the Bot Token in JARVIS Settings
+#    Settings → Integrations → Discord Bot Token`}</Code>
 
-              <H2>Configuration</H2>
-              <Code lang="json">{`{
-  "telegram": {
-    "botToken": "123456:ABC-...",
-    "authorisedUsers": ["your_telegram_user_id"],
-    "allowRemoteTasks": true,
-    "screenshotOnRequest": true,
-    "notifyOnTaskComplete": true
-  }
-}`}</Code>
+              <H2>3. Notion Workspace</H2>
+              <P>Allow JARVIS to query pages, search documents, or save notes directly to your Notion databases.</P>
+              <Code lang="bash">{`# 1. Create a Notion Integration
+#    Go to developers.notion.com, select "My Integrations", create a token.
+
+# 2. Copy the Internal Integration Token
+#    Add the key to Settings → Integrations → notionApiKey
+
+# 3. Share Pages/Databases
+#    Open the Notion page, click Options (...), select "Add connections", and select your integration.`}</Code>
+
+              <H2>4. Spotify Player</H2>
+              <P>Command JARVIS to query playlists, play/pause music tracks, skip songs, or fetch playback states.</P>
+              <Code lang="bash">{`# 1. Create a Spotify Developer App
+#    Go to developer.spotify.com, create an app, and copy Client ID & Client Secret.
+
+# 2. Save client keys in JARVIS Settings
+#    Settings → Integrations → spotifyClientId & spotifyClientSecret
+
+# 3. Set Redirect URI
+#    Add redirect URL pointing to the local api-server authentication route.`}</Code>
+
+              <H2>5. GitHub Developer Access</H2>
+              <P>Query repository status, list issues/PRs, view files, or check commit details.</P>
+              <Code lang="bash">{`# 1. Generate GitHub Personal Access Token (PAT)
+#    Go to GitHub → Settings → Developer Settings → Personal Access Tokens → Generate token (classic or fine-grained).
+
+# 2. Save token in JARVIS Settings
+#    Settings → Integrations → githubPat`}</Code>
             </Section>
 
             {/* Config */}
