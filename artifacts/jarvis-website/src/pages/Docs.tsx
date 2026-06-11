@@ -877,8 +877,6 @@ E:\\Jarvis-Assistant-Companionzip\\sqlite.db`}</Code>
   "id": 1,
   "groqApiKey": "gsk_...",              // Groq API Key (Required, masked on frontend)
   "nvidiaApiKey": "nvapi-...",          // Nvidia API Key (Required, masked on frontend)
-  "selectedModel": "llama-3.3-70b-versatile", // Pre-selected by default
-  "selectedProvider": "groq",           // Pre-selected by default
   "wakeWord": "hey jarvis",
   "voiceEnabled": true,
   "selectedCharacterId": "jarvis-bot",
