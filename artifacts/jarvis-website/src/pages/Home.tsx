@@ -638,7 +638,7 @@ export const Footer = () => (
       <div className="flex items-center gap-2 font-bold text-foreground"><Bot className="w-5 h-5 text-primary" /> JARVIS Project</div>
       <p>© {new Date().getFullYear()} JARVIS. Open source — MIT License.</p>
       <div className="flex gap-6">
-        {['Twitter', 'GitHub', 'Discord'].map(l => <a key={l} href="#" className="hover:text-primary transition-colors">{l}</a>)}
+        {['GitHub'].map(l => <a key={l} href="https://github.com/abhishekkkk-15/jarvis-assistant" className="hover:text-primary transition-colors">{l}</a>)}
       </div>
     </div>
   </footer>

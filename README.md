@@ -12,7 +12,7 @@ JARVIS (Just A Rather Very Intelligent System) is a sentient-like, multi-modal A
 
 For full guides, setup instructions, model details, integrations, and architectural schemas, please visit our documentation website:
 
-👉 **[JARVIS Documentation Portal](https://abhishekkkk-15.github.io/jarvis-assistant)**
+👉 **[JARVIS Documentation Portal](https://jarvis.abhishekkkk.in)**
 
 *(To run the documentation portal locally, navigate to `artifacts/jarvis-website` and run `pnpm run dev` to serve on port `4000`)*
 
