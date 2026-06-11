@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, ChevronRight, Copy, Check, Menu, X, ExternalLink, Zap, Mic, Monitor, Network, PenTool, MessageSquare, Settings, Download, Eye, Cpu, Brain } from "lucide-react";
 import {
@@ -132,9 +133,9 @@ export const DocsPage = () => {
             <button onClick={() => setMobileOpen(o => !o)} className="md:hidden p-1.5 rounded-lg hover:bg-secondary">
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <a href="/jarvis-website/" className="flex items-center gap-2 font-bold text-foreground hover:text-primary transition-colors">
+            <Link href="/" className="flex items-center gap-2 font-bold text-foreground hover:text-primary transition-colors">
               <Bot className="w-5 h-5 text-primary" /> JARVIS
-            </a>
+            </Link>
             <span className="text-border text-lg hidden sm:block">|</span>
             <span className="text-muted-foreground text-sm hidden sm:block">Documentation</span>
           </div>

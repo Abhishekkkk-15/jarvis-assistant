@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation, Link } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -187,9 +187,9 @@ const Navbar: React.FC<{ isDocsPage: boolean }> = ({ isDocsPage }) => {
           <a href="#features" className="hover:text-primary transition-colors">Features</a>
           <a href="#emotions" className="hover:text-primary transition-colors">Try It</a>
           <a href="#cast" className="hover:text-primary transition-colors">Characters</a>
-          <a href="/jarvis-website/docs" className="hover:text-primary transition-colors flex items-center gap-1.5">
+          <Link href="/docs" className="hover:text-primary transition-colors flex items-center gap-1.5">
             <Book className="w-3.5 h-3.5" /> Docs
-          </a>
+          </Link>
         </div>
         <Button size="sm" className="shadow-sm shadow-primary/20 hidden sm:flex">
           <Download className="w-4 h-4 mr-2" /> Download

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 import {
   Download, Github, Mic, PenTool, Monitor, Network,
   MessageSquare, ChevronRight, Bot, Star, Eye, ArrowRight, Book
@@ -140,9 +141,13 @@ export const HeroSection = () => {
           <Button size="lg" className="h-14 px-10 text-base shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all">
             <Download className="mr-2 h-5 w-5" /> Download Free
           </Button>
-          <Button size="lg" variant="outline" className="h-14 px-10 text-base">
-            <Book className="mr-2 h-5 w-5" />
-            <a href="/jarvis-website/docs">Read the Docs</a>
+          <Button size="lg" variant="outline" className="h-14 px-10 text-base" asChild>
+            <Link href="/docs">
+              <span className="flex items-center">
+                <Book className="mr-2 h-5 w-5" />
+                Read the Docs
+              </span>
+            </Link>
           </Button>
           <Button size="lg" variant="ghost" className="h-14 px-8 text-base text-muted-foreground hover:text-foreground">
             <Github className="mr-2 h-5 w-5" />
@@ -600,11 +605,11 @@ export const CTASection = () => (
         <Button size="lg" className="h-14 px-10 text-base bg-white text-primary hover:bg-white/95 shadow-2xl w-full sm:w-auto font-bold">
           <Download className="mr-2 h-5 w-5" /> Get JARVIS Free
         </Button>
-        <a href="/jarvis-website/docs">
+        <Link href="/docs" passHref>
           <Button size="lg" variant="outline" className="h-14 px-10 text-base border-white/30 text-white hover:bg-white/10 w-full sm:w-auto">
             <Book className="mr-2 h-5 w-5" /> Read the Docs <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
-        </a>
+        </Link>
       </div>
     </div>
   </section>
