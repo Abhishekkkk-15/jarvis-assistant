@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, ChevronRight, Copy, Check, Menu, X, ExternalLink, Zap, Mic, Monitor, Network, PenTool, MessageSquare, Settings, Download, Eye, Cpu } from "lucide-react";
+import { Bot, ChevronRight, Copy, Check, Menu, X, ExternalLink, Zap, Mic, Monitor, Network, PenTool, MessageSquare, Settings, Download, Eye, Cpu, Brain } from "lucide-react";
 import {
   JarvisBot, PixelFox, SpaceCat, FireDrake, Ninja, Wizard,
   CyberPunk, MinionBob, AlienDude, Astronaut, type CharacterAnimation
@@ -62,6 +62,7 @@ const NAV = [
   { id: 'overview', label: 'Overview', icon: Bot },
   { id: 'installation', label: 'Installation', icon: Download },
   { id: 'quickstart', label: 'Quick Start', icon: Zap },
+  { id: 'models', label: 'Models', icon: Brain },
   { id: 'characters', label: 'Characters', icon: Cpu },
   { id: 'emotions', label: 'Emotions & Moods', icon: Zap },
   { id: 'minimode', label: 'MiniMode', icon: Monitor },
@@ -281,6 +282,32 @@ pnpm run electron:build`}</Code>
 Ctrl+Shift+K      — Toggle Quick Command Input panel
 F11               — Toggle application fullscreen mode`}</Code>
               <Callout type="info">Click the **Minimize** button in the sidebar. If Mini Mode is enabled in settings, the window will disappear and the companion will float freely on your desktop. If Mini Mode is disabled, the app will perform a standard minimize to your taskbar.</Callout>
+            </Section>
+
+            {/* Models */}
+            <Section id="models">
+              <H1>Supported Models</H1>
+              <P>JARVIS uses specialized, pre-selected AI models optimized for low-latency reasoning, tool orchestration, and computer vision tasks. These models are configured automatically on the backend and run through your API keys.</P>
+
+              <div className="space-y-4 my-6">
+                <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2.5 py-1 text-xs font-bold text-primary bg-primary/10 rounded-full">Core Orchestrator</span>
+                    <code className="text-sm font-semibold font-mono text-foreground">openai/gpt-oss-120b</code>
+                  </div>
+                  <P>This model drives the LangGraph multi-agent loop, handles standard chat messaging, decides which tools to call, and plans step-by-step actions to complete your requests.</P>
+                </div>
+
+                <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2.5 py-1 text-xs font-bold text-green-700 bg-green-50 rounded-full">Screen Vision</span>
+                    <code className="text-sm font-semibold font-mono text-foreground">meta/llama-3.2-90b-vision-instruct</code>
+                  </div>
+                  <P>Used exclusively when you ask JARVIS to see or analyze your screen. This model is fine-tuned for visual instruction-following and accurately identifies elements on your desktop.</P>
+                </div>
+              </div>
+
+              <Callout type="info">Both models are automatically selected by the system depending on the context of your prompt (text-only vs vision inputs) to optimize performance and token usage.</Callout>
             </Section>
 
             {/* Characters */}
