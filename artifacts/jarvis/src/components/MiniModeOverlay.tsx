@@ -75,7 +75,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [enabled] = useLocalStorage('miniModeEnabled', true);
   const [charId] = useLocalStorage('selectedCharacterId', 'jarvis-bot');
   const [posX, setPosX] = useLocalStorage('characterPositionX', window.innerWidth - 150);
-  const [posY, setPosY] = useLocalStorage('characterPositionY', window.innerHeight - 150);
+  const [posY, setPosY] = useLocalStorage('characterPositionY', window.innerHeight - 145);
   const [autonomousMode] = useLocalStorage('jarvisAutonomousMode', false);
 
   // JARVIS global state
@@ -850,7 +850,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       gravity = 1.6; // Heavy and sluggish
       friction = 0.92; // Slows down quickly
     }
-    const floorY = window.innerHeight - 165; // Sit perfectly on top of Windows Taskbar
+    const floorY = window.innerHeight - 145; // Sit perfectly on top of Windows Taskbar
     const rightX = window.innerWidth - 120;
 
     const loop = () => {
