@@ -13,7 +13,7 @@ import { useTTS } from '@/hooks/useTTS';
 export const JarvisMain: React.FC = () => {
   const [isListening, setIsListening] = useLocalStorage('jarvisIsListening', false);
   const [isSpeaking, setIsSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
-  const { affectionScore, mood } = useRelationshipEngine();
+  const { affectionScore, mood, interact } = useRelationshipEngine();
   const [, setIsProcessing] = useLocalStorage('jarvisIsProcessing', false);
   const [, setLastReply] = useLocalStorage('jarvisLastReply', '');
   const [, setToolsUsed] = useLocalStorage<string[]>('jarvisToolsUsed', []);
@@ -231,6 +231,11 @@ export const JarvisMain: React.FC = () => {
     }, {
       onSuccess: (data) => {
         if (data.conversationId) setActiveConversationId(data.conversationId);
+
+        // Boost affection on every successful interaction — longer replies give slightly more
+        const wordCount = (data.reply || '').split(/\s+/).length;
+        const boost = wordCount > 50 ? 3 : wordCount > 20 ? 2 : 1;
+        interact(boost);
 
         let finalReply = data.reply;
         let animTag = '';
