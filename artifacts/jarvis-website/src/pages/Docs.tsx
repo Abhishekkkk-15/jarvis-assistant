@@ -648,7 +648,7 @@ const tools = [
 #    Settings → Integrations → Discord Bot Token`}</Code>
 
               <H2>3. Notion Workspace</H2>
-              <P>Allow JARVIS to query pages, search documents, or save notes directly to your Notion databases.</P>
+              <P>Allow JARVIS to query pages, search documents, and read page content directly from your Notion workspace.</P>
               <Code lang="bash">{`# 1. Create a Notion Integration
 #    Go to developers.notion.com, select "My Integrations", create a token.
 
