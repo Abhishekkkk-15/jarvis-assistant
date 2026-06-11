@@ -1,0 +1,413 @@
+@keyframes char-idle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes char-walk-body {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-2px) rotate(2deg); }
+  75% { transform: translateY(-2px) rotate(-2deg); }
+}
+
+@keyframes char-walk-limb-l {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(15deg); }
+  75% { transform: rotate(-15deg); }
+}
+
+@keyframes char-walk-limb-r {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-15deg); }
+  75% { transform: rotate(15deg); }
+}
+
+@keyframes char-run-body {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-5px) rotate(5deg); }
+  75% { transform: translateY(-5px) rotate(-5deg); }
+}
+
+@keyframes char-run-limb-l {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(35deg); }
+  75% { transform: rotate(-35deg); }
+}
+
+@keyframes char-run-limb-r {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-35deg); }
+  75% { transform: rotate(35deg); }
+}
+
+@keyframes char-wave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(45deg); }
+  50% { transform: rotate(15deg); }
+  75% { transform: rotate(45deg); }
+}
+
+@keyframes char-dance {
+  0%, 100% { transform: scale(1) translateY(0) rotate(0deg); }
+  20% { transform: scale(1.1, 0.9) translateY(2px) rotate(-10deg); }
+  40% { transform: scale(0.9, 1.1) translateY(-4px) rotate(10deg); }
+  60% { transform: scale(1.1, 0.9) translateY(2px) rotate(-10deg); }
+  80% { transform: scale(0.9, 1.1) translateY(-4px) rotate(10deg); }
+}
+
+@keyframes char-sleep {
+  0%, 100% { transform: scale(1, 1) translateY(0); }
+  50% { transform: scale(1.05, 0.95) translateY(2px); }
+}
+
+@keyframes char-sleep-zzz {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  50% { opacity: 1; transform: translateY(-10px) scale(1); }
+  100% { opacity: 0; transform: translateY(-20px) scale(1.2); }
+}
+
+@keyframes char-excited {
+  0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 2px rgba(0, 255, 255, 0.5)); }
+  50% { transform: translateY(-8px) scale(1.05); filter: drop-shadow(0 0 10px rgba(0, 255, 255, 1)); }
+}
+
+@keyframes char-talk {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.02, 0.98); }
+  50% { transform: scale(0.98, 1.02); }
+  75% { transform: scale(1.02, 0.98); }
+}
+
+/* Base class assignments */
+.anim-idle { animation: char-idle 2s ease-in-out infinite; }
+.anim-walk .body { animation: char-walk-body 0.8s linear infinite; }
+.anim-walk .limb-l { animation: char-walk-limb-l 0.8s linear infinite; transform-origin: top center; }
+.anim-walk .limb-r { animation: char-walk-limb-r 0.8s linear infinite; transform-origin: top center; }
+.anim-run .body { animation: char-run-body 0.4s linear infinite; }
+.anim-run .limb-l { animation: char-run-limb-l 0.4s linear infinite; transform-origin: top center; }
+.anim-run .limb-r { animation: char-run-limb-r 0.4s linear infinite; transform-origin: top center; }
+.anim-wave .arm-wave { animation: char-wave 1s ease-in-out infinite; transform-origin: bottom center; }
+.anim-dance { animation: char-dance 1.2s ease-in-out infinite; }
+.anim-sleep .body { animation: char-sleep 3s ease-in-out infinite; }
+.anim-excited { animation: char-excited 0.6s ease-in-out infinite; }
+.anim-talk { animation: char-talk 0.3s ease-in-out infinite; }
+
+.zzz-particles {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  color: #fff;
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 14px;
+  pointer-events: none;
+}
+.zzz-1 { animation: char-sleep-zzz 2s infinite linear; animation-delay: 0s; }
+.zzz-2 { animation: char-sleep-zzz 2s infinite linear; animation-delay: 0.6s; right: -20px; top: -15px; }
+.zzz-3 { animation: char-sleep-zzz 2s infinite linear; animation-delay: 1.2s; right: -5px; top: -20px; }
+
+/* Emotional states */
+@keyframes char-happy {
+  0%, 100% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-10px) scale(1.05, 0.95); }
+  50% { transform: translateY(0) scale(0.95, 1.05); }
+  75% { transform: translateY(-5px) scale(1.02, 0.98); }
+}
+
+@keyframes char-sad {
+  0%, 100% { transform: scale(1, 1) translateY(0); }
+  50% { transform: scale(1.05, 0.9) translateY(4px); }
+}
+
+@keyframes char-angry {
+  0%, 100% { transform: translateX(0); filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.5)); }
+  25% { transform: translateX(-3px); filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.8)); }
+  75% { transform: translateX(3px); filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.8)); }
+}
+
+@keyframes char-confused {
+  0%, 100% { transform: rotate(0deg) translateX(0); }
+  25% { transform: rotate(10deg) translateX(2px); }
+  75% { transform: rotate(-10deg) translateX(-2px); }
+}
+
+@keyframes char-confused-q {
+  0%, 100% { opacity: 0; transform: translateY(0) scale(0.5); }
+  20%, 80% { opacity: 1; transform: translateY(-15px) scale(1); }
+}
+
+.anim-happy { animation: char-happy 1s ease-in-out infinite; }
+.anim-sad { animation: char-sad 3s ease-in-out infinite; opacity: 0.8; }
+.anim-angry { animation: char-angry 0.2s linear infinite; }
+.anim-confused { animation: char-confused 2s ease-in-out infinite; }
+
+.q-mark {
+  position: absolute;
+  top: -20px;
+  right: -5px;
+  color: #f1c40f;
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 20px;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+  animation: char-confused-q 2s infinite;
+}
+
+/* New Emotions */
+
+@keyframes char-surprised {
+  0%, 100% { transform: translateY(0) scale(1); }
+  20% { transform: translateY(-15px) scale(0.9, 1.1); }
+  40% { transform: translateY(0) scale(1.1, 0.9); }
+}
+.anim-surprised { animation: char-surprised 1s ease-in-out infinite; }
+.exclamation-mark {
+  position: absolute; top: -25px; right: -5px; color: #e74c3c; font-family: monospace; font-weight: bold; font-size: 24px; text-shadow: 1px 1px 0 #000; animation: char-confused-q 1s infinite;
+}
+
+@keyframes char-thinking {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(5deg) translateY(-2px); }
+}
+.anim-thinking { animation: char-thinking 3s ease-in-out infinite; }
+.thinking-bubble {
+  position: absolute; top: -20px; right: -15px; color: #fff; background: #333; border-radius: 10px; padding: 2px 6px; font-weight: bold; font-size: 12px; border: 1px solid #555; animation: char-sleep-zzz 3s infinite linear;
+}
+
+@keyframes char-love {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255, 105, 180, 0.5)); }
+  50% { transform: scale(1.05); filter: drop-shadow(0 0 15px rgba(255, 105, 180, 0.8)); }
+}
+.anim-love { animation: char-love 1.5s ease-in-out infinite; }
+.heart-particles { position: absolute; top: -10px; right: 0; width: 100%; height: 100%; pointer-events: none; }
+.heart-1 { animation: char-sleep-zzz 1.5s infinite linear; left: 10px; font-size: 16px; }
+.heart-2 { animation: char-sleep-zzz 1.5s infinite linear 0.7s; right: 10px; font-size: 20px; }
+
+@keyframes char-scared {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+.anim-scared { animation: char-scared 0.1s linear infinite; }
+.sweat-drop {
+  position: absolute; top: 10px; right: -10px; font-size: 20px; animation: char-walk-body 1s infinite;
+}
+
+@keyframes char-dizzy {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.anim-dizzy .body { animation: char-dizzy 2s linear infinite; }
+.dizzy-stars { position: absolute; top: -15px; width: 100%; height: 20px; pointer-events: none; }
+.star-1 { animation: char-dizzy 1s linear infinite; left: 10px; font-size: 14px; }
+.star-2 { animation: char-dizzy 1.5s linear infinite reverse; right: 10px; top: -10px; font-size: 16px; }
+.star-3 { animation: char-dizzy 1.2s linear infinite; left: 30px; top: -5px; font-size: 12px; }
+
+@keyframes char-bored {
+  0%, 100% { transform: scale(1, 0.95) translateY(2px); opacity: 0.8; }
+  50% { transform: scale(1.05, 0.9) translateY(4px); opacity: 0.7; }
+}
+.anim-bored { animation: char-bored 4s ease-in-out infinite; }
+.bored-sigh { position: absolute; top: -10px; right: -20px; color: #888; font-size: 12px; animation: char-sleep-zzz 4s infinite linear; }
+
+@keyframes char-jealous {
+  0%, 100% { transform: rotate(-5deg); filter: drop-shadow(0 0 5px rgba(46, 204, 113, 0.5)); }
+  50% { transform: rotate(-8deg) translateX(-2px); filter: drop-shadow(0 0 10px rgba(46, 204, 113, 0.8)); }
+}
+.anim-jealous { animation: char-jealous 2s ease-in-out infinite; }
+.jealous-hmph { position: absolute; top: -15px; left: -10px; color: #2ecc71; font-weight: bold; font-size: 14px; animation: char-confused-q 2s infinite; }
+
+@keyframes char-laughing {
+  0%, 100% { transform: translateY(0); }
+  25% { transform: translateY(-4px) rotate(2deg); }
+  75% { transform: translateY(-4px) rotate(-2deg); }
+}
+.anim-laughing { animation: char-laughing 0.3s ease-in-out infinite; }
+.laugh-particles { position: absolute; top: -10px; right: -10px; color: #f1c40f; font-weight: bold; }
+.laugh-1 { animation: char-sleep-zzz 1s infinite linear; font-size: 14px; }
+.laugh-2 { animation: char-sleep-zzz 1s infinite linear 0.5s; font-size: 18px; left: 20px; }
+
+@keyframes char-cool {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px); }
+}
+.anim-cool { animation: char-cool 2s ease-in-out infinite; }
+@keyframes drop-glasses {
+  0% { transform: translateY(-50px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.cool-glasses { animation: drop-glasses 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+.anim-shy { animation: char-idle 2s ease-in-out infinite; }
+@keyframes blush-fade {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.2); }
+}
+.shy-blush > div { animation: blush-fade 3s ease-in-out infinite; }
+
+/* New Movements */
+.anim-dash .body { animation: char-run-body 0.2s linear infinite; }
+.anim-dash .limb-l { animation: char-run-limb-l 0.2s linear infinite; transform-origin: top center; }
+.anim-dash .limb-r { animation: char-run-limb-r 0.2s linear infinite; transform-origin: top center; }
+.anim-jump { animation: char-walk-body 0.3s infinite alternate; }
+
+/* Movement Arcs */
+@keyframes roam-jump-arc {
+  0% { margin-top: 0; }
+  50% { margin-top: -150px; }
+  100% { margin-top: 0; }
+}
+.roam-jump-arc {
+  animation: roam-jump-arc 1.2s cubic-bezier(0.2, 0.8, 0.8, 0.2);
+}
+
+@keyframes roam-bounce-arc {
+  0%, 100% { margin-top: 0; }
+  25% { margin-top: -80px; }
+  50% { margin-top: 0; }
+  75% { margin-top: -40px; }
+}
+.roam-bounce-arc {
+  animation: roam-bounce-arc 1.2s cubic-bezier(0.2, 0.8, 0.8, 0.2);
+}
+
+@keyframes roam-zigzag-arc {
+  0%, 100% { margin-left: 0; }
+  25% { margin-left: 50px; }
+  75% { margin-left: -50px; }
+}
+.roam-zigzag-arc {
+  animation: roam-zigzag-arc 2s linear;
+}
+.anim-teleport { animation: char-idle 0.1s infinite; opacity: 0.5; filter: blur(2px); }
+.anim-spin { animation: char-dizzy 0.5s linear infinite; }
+.anim-bounce { animation: char-walk-body 0.2s infinite alternate; }
+.anim-zigzag .body { animation: char-run-body 0.3s linear infinite; }
+.anim-zigzag .limb-l { animation: char-run-limb-l 0.3s linear infinite; transform-origin: top center; }
+.anim-zigzag .limb-r { animation: char-run-limb-r 0.3s linear infinite; transform-origin: top center; }
+
+.anim-crawl .body { animation: char-walk-body 1s linear infinite; transform: scale(1.2, 0.6) translateY(10px); }
+.anim-crawl .limb-l { animation: char-walk-limb-l 1s linear infinite; transform-origin: top center; }
+.anim-crawl .limb-r { animation: char-walk-limb-r 1s linear infinite; transform-origin: top center; }
+
+.anim-sneak .body { animation: char-walk-body 1.5s linear infinite; transform: scaleY(0.85); opacity: 0.7; }
+.anim-sneak .limb-l { animation: char-walk-limb-l 1.5s linear infinite; transform-origin: top center; }
+.anim-sneak .limb-r { animation: char-walk-limb-r 1.5s linear infinite; transform-origin: top center; }
+
+.anim-cartwheel { animation: char-dizzy 0.8s linear infinite; }
+.anim-hover { animation: char-idle 2s ease-in-out infinite; transform: translateY(-10px); }
+
+.anim-pace .body { animation: char-run-body 0.4s linear infinite; }
+.anim-pace .limb-l { animation: char-run-limb-l 0.4s linear infinite; transform-origin: top center; }
+.anim-pace .limb-r { animation: char-run-limb-r 0.4s linear infinite; transform-origin: top center; }
+
+.anim-hide { animation: char-idle 1s infinite; opacity: 0.3; }
+
+@keyframes char-hang {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+.anim-hang { animation: char-hang 1s ease-in-out infinite; transform-origin: top center; }
+
+/* ═══════════════════════════════════════════════════════
+   ALIVE CHARACTER ENHANCEMENTS
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Eye Blink ─────────────────────────────────────────── */
+@keyframes eye-blink {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.05); }
+}
+.eye-blink {
+  animation: eye-blink 0.12s ease-in-out forwards;
+  transform-origin: center;
+}
+
+/* ── Mouth Lip-sync pulse (during speaking) ──────────────*/
+@keyframes lip-sync {
+  0%, 100% { transform: scaleY(1); }
+  25% { transform: scaleY(1.8) scaleX(1.1); }
+  50% { transform: scaleY(0.5) scaleX(0.9); }
+  75% { transform: scaleY(1.4) scaleX(1.05); }
+}
+.lip-syncing {
+  animation: lip-sync 0.18s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* ── Emotion transition smoothing ───────────────────────*/
+.character-wrapper {
+  transition: filter 0.4s ease, transform 0.3s ease;
+}
+
+/* ── Particle Burst (task complete celebration) ──────── */
+@keyframes particle-burst {
+  0%   { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: var(--burst-to) scale(0); }
+}
+.particle-burst-container {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 20;
+}
+.particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: particle-burst 0.8s ease-out forwards;
+}
+
+/* ── Emotion Speech Bubble ──────────────────────────── */
+@keyframes bubble-pop-in {
+  0% { opacity: 0; transform: scale(0.5) translateY(10px); }
+  70% { transform: scale(1.1) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes bubble-pop-out {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.8) translateY(-5px); }
+}
+.emotion-bubble {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  pointer-events: none;
+  z-index: 15;
+  animation: bubble-pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.emotion-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(255,255,255,0.95);
+}
+.emotion-bubble.fade-out {
+  animation: bubble-pop-out 0.3s ease-in forwards;
+}
+
+/* ── Mood indicator glow ─────────────────────────────── */
+.mood-happy    { filter: drop-shadow(0 0 8px rgba(255, 200, 0, 0.5)); }
+.mood-sad      { filter: drop-shadow(0 0 8px rgba(100, 150, 255, 0.4)); }
+.mood-angry    { filter: drop-shadow(0 0 8px rgba(255, 50, 50, 0.6)); }
+.mood-excited  { filter: drop-shadow(0 0 12px rgba(0, 255, 255, 0.7)); }
+.mood-love     { filter: drop-shadow(0 0 10px rgba(255, 100, 180, 0.6)); }
+.mood-cool     { filter: drop-shadow(0 0 8px rgba(100, 220, 255, 0.5)); }
+.mood-thinking { filter: drop-shadow(0 0 6px rgba(180, 100, 255, 0.4)); }
+.mood-scared   { filter: drop-shadow(0 0 6px rgba(200, 200, 100, 0.5)); }
