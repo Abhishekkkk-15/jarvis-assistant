@@ -21,13 +21,13 @@ export const JarvisMain: React.FC = () => {
   const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
 
-  // TTS via Web Speech API hook
-  const tts = useTTS();
-  const muted = !tts.isEnabled;
-
   const { data: settings } = useGetSettings({ query: { queryKey: getGetSettingsQueryKey() } });
   const { data: stats } = useGetStats({ query: { queryKey: getGetStatsQueryKey() } });
   const { data: commandSuggestions } = useGetCommandSuggestions({ query: { queryKey: getGetCommandSuggestionsQueryKey() } });
+
+  // TTS via Web Speech API / Orpheus hook — pass Groq key so Orpheus engine works
+  const tts = useTTS((settings as any)?.groqApiKey ?? null);
+  const muted = !tts.isEnabled;
 
   const sendChat = useSendChat();
   const { toast } = useToast();

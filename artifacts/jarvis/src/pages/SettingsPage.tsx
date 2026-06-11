@@ -17,7 +17,7 @@ export const SettingsPage: React.FC = () => {
   const updateSettings = useUpdateSettings();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const tts = useTTS();
+  const tts = useTTS((settings as any)?.groqApiKey ?? null);
 
   const [miniModeEnabled, setMiniModeEnabled] = useLocalStorage('miniModeEnabled', true);
   const [autonomousMode, setAutonomousMode] = useLocalStorage('jarvisAutonomousMode', false);
@@ -321,81 +321,146 @@ export const SettingsPage: React.FC = () => {
               <div className="flex items-center justify-between rounded-lg border border-border p-4">
                 <div>
                   <p className="text-sm font-medium text-foreground">Enable TTS</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">JARVIS speaks responses aloud (Web Speech API, free)</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">JARVIS speaks responses aloud</p>
                 </div>
                 <Switch checked={tts.isEnabled} onCheckedChange={tts.toggleEnabled} />
               </div>
 
-              {/* Voice Selector */}
-              {tts.voices.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Voice</label>
-                  <Select
-                    value={tts.selectedVoice?.name || ""}
-                    onValueChange={(name) => {
-                      const v = tts.voices.find(v => v.name === name);
-                      if (v) tts.updateVoice(v);
-                    }}
+              {tts.isEnabled && (
+                <>
+                  {/* TTS Engine Selector */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground">TTS Engine</label>
+                    <Select value={tts.engine} onValueChange={(v: any) => tts.updateEngine(v)}>
+                      <SelectTrigger className="text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="browser">🌐 Browser (Web Speech API, free)</SelectItem>
+                        <SelectItem value="orpheus">🎙️ Orpheus via Groq (canopylabs/orpheus-v1-english)</SelectItem>
+                        <SelectItem value="custom">📂 Custom WAV file</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {tts.engine === "orpheus" && "Uses your Groq API key. Requires a Groq key to be set above."}
+                      {tts.engine === "browser" && "Uses the system's built-in voices. Free, no API key needed."}
+                      {tts.engine === "custom" && "Plays a local .wav file whenever JARVIS responds. Useful for a custom SFX."}
+                    </p>
+                  </div>
+
+                  {/* ── Browser engine controls */}
+                  {tts.engine === "browser" && (
+                    <>
+                      {tts.voices.length > 0 && (
+                        <div className="space-y-1.5">
+                          <label className="text-sm font-medium text-foreground">Voice</label>
+                          <Select
+                            value={tts.selectedVoice?.name || ""}
+                            onValueChange={(name) => {
+                              const v = tts.voices.find(v => v.name === name);
+                              if (v) tts.updateVoice(v);
+                            }}
+                          >
+                            <SelectTrigger className="text-sm">
+                              <SelectValue placeholder="Select a voice" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {tts.voices
+                                .filter(v => v.lang.startsWith("en"))
+                                .map(v => (
+                                  <SelectItem key={v.name} value={v.name}>
+                                    {v.name} ({v.lang})
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">Windows Microsoft voices sound best.</p>
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <label className="text-sm font-medium text-foreground">Speed</label>
+                          <span className="text-xs text-muted-foreground">{tts.rate.toFixed(1)}x</span>
+                        </div>
+                        <input type="range" min="0.5" max="2" step="0.1" value={tts.rate}
+                          onChange={(e) => tts.updateRate(parseFloat(e.target.value))}
+                          className="w-full accent-primary" />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Slow (0.5x)</span><span>Normal (1.0x)</span><span>Fast (2.0x)</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <label className="text-sm font-medium text-foreground">Pitch</label>
+                          <span className="text-xs text-muted-foreground">{tts.pitch.toFixed(1)}</span>
+                        </div>
+                        <input type="range" min="0.5" max="2" step="0.1" value={tts.pitch}
+                          onChange={(e) => tts.updatePitch(parseFloat(e.target.value))}
+                          className="w-full accent-primary" />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Low</span><span>Normal</span><span>High</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── Orpheus engine controls */}
+                  {tts.engine === "orpheus" && (
+                    <>
+                      {!settings?.groqApiKeySet && (
+                        <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-3 text-xs text-yellow-800">
+                          ⚠️ Groq API key not set. Add it in the <strong>API Keys</strong> section above and save settings first.
+                        </div>
+                      )}
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-foreground">Orpheus Voice</label>
+                        <Select value={tts.orpheusVoice} onValueChange={(v: any) => tts.updateOrpheusVoice(v)}>
+                          <SelectTrigger className="text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(["tara","leah","jess","leo","dan","mia","zac","zoe"] as const).map(id => (
+                              <SelectItem key={id} value={id}>
+                                {id.charAt(0).toUpperCase() + id.slice(1)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          Powered by <code className="bg-muted px-1 rounded">canopylabs/orpheus-v1-english</code> via Groq.
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── Custom WAV controls */}
+                  {tts.engine === "custom" && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">WAV File Path</label>
+                      <input
+                        type="text"
+                        placeholder="C:\sounds\jarvis_response.wav or /path/to/file.wav"
+                        value={tts.customWavPath}
+                        onChange={(e) => tts.updateCustomWavPath(e.target.value)}
+                        className="w-full text-sm border border-border rounded-md px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter the absolute path to a <code className="bg-muted px-1 rounded">.wav</code> file. JARVIS will play it when responding. Useful for a notification sound.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Test button */}
+                  <button
+                    type="button"
+                    onClick={() => tts.speak("Hello! I am JARVIS, your AI assistant. How may I help you today?")}
+                    disabled={tts.isSpeaking}
+                    className="w-full py-2 rounded-lg border border-primary/40 text-primary text-sm hover:bg-primary/5 transition-colors disabled:opacity-50"
                   >
-                    <SelectTrigger className="text-sm">
-                      <SelectValue placeholder="Select a voice" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tts.voices
-                        .filter(v => v.lang.startsWith("en"))
-                        .map(v => (
-                          <SelectItem key={v.name} value={v.name}>
-                            {v.name} ({v.lang})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">Showing English voices. Windows Microsoft voices sound best.</p>
-                </div>
+                    {tts.isSpeaking ? "🔊 Speaking…" : "🔊 Test Voice"}
+                  </button>
+                </>
               )}
-
-              {/* Speed */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <label className="text-sm font-medium text-foreground">Speed</label>
-                  <span className="text-xs text-muted-foreground">{tts.rate.toFixed(1)}x</span>
-                </div>
-                <input
-                  type="range" min="0.5" max="2" step="0.1"
-                  value={tts.rate}
-                  onChange={(e) => tts.updateRate(parseFloat(e.target.value))}
-                  className="w-full accent-primary"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Slow (0.5x)</span><span>Normal (1.0x)</span><span>Fast (2.0x)</span>
-                </div>
-              </div>
-
-              {/* Pitch */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <label className="text-sm font-medium text-foreground">Pitch</label>
-                  <span className="text-xs text-muted-foreground">{tts.pitch.toFixed(1)}</span>
-                </div>
-                <input
-                  type="range" min="0.5" max="2" step="0.1"
-                  value={tts.pitch}
-                  onChange={(e) => tts.updatePitch(parseFloat(e.target.value))}
-                  className="w-full accent-primary"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Low</span><span>Normal</span><span>High</span>
-                </div>
-              </div>
-
-              {/* Test button */}
-              <button
-                type="button"
-                onClick={() => tts.speak("Hello! I am JARVIS, your AI assistant. How may I help you today?")}
-                className="w-full py-2 rounded-lg border border-primary/40 text-primary text-sm hover:bg-primary/5 transition-colors"
-              >
-                🔊 Test Voice
-              </button>
             </div>
           </section>
 
