@@ -8,10 +8,10 @@ let quickInputWindow: BrowserWindow | null = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
+    width: 1080,
+    height: 600,
+    minWidth: 800,
+    minHeight: 500,
     title: 'JARVIS',
     transparent: true,
     frame: false,
@@ -152,14 +152,14 @@ app.whenReady().then(() => {
     const backendPath = path.join(__dirname, '..', 'backend', 'dist', 'index.cjs');
     const envFile = path.join(__dirname, '..', 'backend', '.env');
     const dbPath = path.join(app.getPath('userData'), 'sqlite.db');
-    
+
     console.log("Starting backend utility process at", backendPath);
-        const logFs = require('fs');
-        const logFsPath = path.join(app.getPath('userData'), 'backend-crash.log');
-        logFs.writeFileSync(logFsPath, 'Backend starting...\n');
-        
-        const bootScript = path.join(app.getPath('userData'), 'boot.cjs');
-        logFs.writeFileSync(bootScript, `
+    const logFs = require('fs');
+    const logFsPath = path.join(app.getPath('userData'), 'backend-crash.log');
+    logFs.writeFileSync(logFsPath, 'Backend starting...\n');
+
+    const bootScript = path.join(app.getPath('userData'), 'boot.cjs');
+    logFs.writeFileSync(bootScript, `
 const fs = require('fs');
 try {
   require(process.env.REAL_BACKEND_PATH);
@@ -169,28 +169,28 @@ try {
 }
         `);
 
-        backendProcess = utilityProcess.fork(bootScript, [], {
-            stdio: 'pipe',
-            env: {
-                ...process.env,
-                DB_PATH: dbPath,
-                ENV_FILE: envFile,
-                REAL_BACKEND_PATH: backendPath,
-                CRASH_LOG_PATH: logFsPath
-            }
-        });
+    backendProcess = utilityProcess.fork(bootScript, [], {
+      stdio: 'pipe',
+      env: {
+        ...process.env,
+        DB_PATH: dbPath,
+        ENV_FILE: envFile,
+        REAL_BACKEND_PATH: backendPath,
+        CRASH_LOG_PATH: logFsPath
+      }
+    });
     if (backendProcess.stdout) {
-        backendProcess.stdout.on('data', (d) => logFs.appendFileSync(logFsPath, d.toString()));
+      backendProcess.stdout.on('data', (d) => logFs.appendFileSync(logFsPath, d.toString()));
     }
     if (backendProcess.stderr) {
-        backendProcess.stderr.on('data', (d) => logFs.appendFileSync(logFsPath, 'ERR: ' + d.toString()));
+      backendProcess.stderr.on('data', (d) => logFs.appendFileSync(logFsPath, 'ERR: ' + d.toString()));
     }
 
     backendProcess.on('message', (msg) => {
-        console.log('Backend says:', msg);
+      console.log('Backend says:', msg);
     });
     backendProcess.on('exit', (code) => {
-        logFs.appendFileSync(logFsPath, `\nBackend exited with code ${code}\n`);
+      logFs.appendFileSync(logFsPath, `\nBackend exited with code ${code}\n`);
     });
 
     app.on('will-quit', () => {
@@ -207,9 +207,9 @@ app.on('window-all-closed', () => {
   }
 });
 
-  app.on('will-quit', () => {
-    globalShortcut.unregisterAll();
-  });
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+});
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {

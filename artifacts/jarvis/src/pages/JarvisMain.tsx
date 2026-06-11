@@ -38,7 +38,7 @@ export const JarvisMain: React.FC = () => {
   const audioChunksRef = useRef<Blob[]>([]);
   const synthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
   const silenceAudioContextRef = useRef<AudioContext | null>(null);
   const silenceRafRef = useRef<number | null>(null);
 
@@ -69,7 +69,7 @@ export const JarvisMain: React.FC = () => {
     setToolsUsed([]);
     setIsSpeaking(false);
     setIsListening(false);
-    
+
     return () => {
       stopAudioStream();
       if (synthesisRef.current) window.speechSynthesis.cancel();
@@ -82,7 +82,7 @@ export const JarvisMain: React.FC = () => {
       setAudioStream(stream);
       setIsListening(true);
       setTranscript('Listening... (speak now)');
-      
+
       audioChunksRef.current = [];
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       mediaRecorderRef.current = mediaRecorder;
@@ -96,15 +96,15 @@ export const JarvisMain: React.FC = () => {
       mediaRecorder.onstop = async () => {
         setTranscript('Transcribing...');
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        
+
         // Convert to base64
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = () => {
           const base64data = (reader.result as string).split(',')[1];
           if (!base64data) {
-             setTranscript('');
-             return;
+            setTranscript('');
+            return;
           }
 
           transcribeAudio.mutate({
@@ -130,29 +130,29 @@ export const JarvisMain: React.FC = () => {
       };
 
       mediaRecorder.start();
-      
+
       // Setup Voice Activity Detection (VAD) for hands-free auto-stop
       const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
       const audioCtx = new AudioContext();
       silenceAudioContextRef.current = audioCtx;
-      
+
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 512;
       source.connect(analyser);
-      
+
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       let silenceStart = performance.now();
       let hasSpoken = false;
-      
+
       const checkSilence = () => {
         if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return;
-        
+
         analyser.getByteFrequencyData(dataArray);
         let sum = 0;
         for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
         const avg = sum / dataArray.length;
-        
+
         if (avg > 15) { // Speech threshold
           hasSpoken = true;
           silenceStart = performance.now();
@@ -168,7 +168,7 @@ export const JarvisMain: React.FC = () => {
             return;
           }
         }
-        
+
         silenceRafRef.current = requestAnimationFrame(checkSilence);
       };
       checkSilence();
@@ -182,16 +182,16 @@ export const JarvisMain: React.FC = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
     }
-    
+
     if (silenceRafRef.current) {
       cancelAnimationFrame(silenceRafRef.current);
       silenceRafRef.current = null;
     }
     if (silenceAudioContextRef.current) {
-      silenceAudioContextRef.current.close().catch(() => {});
+      silenceAudioContextRef.current.close().catch(() => { });
       silenceAudioContextRef.current = null;
     }
-    
+
     setIsListening(false);
     stopAudioStream();
   };
@@ -214,47 +214,47 @@ export const JarvisMain: React.FC = () => {
 
   const handleSendMessage = (text: string, imageBase64?: string) => {
     if (!text.trim()) return;
-    
+
     // If we're answering an agent question, clear it now
     if (agentQuestion) clearQuestion();
-    
+
     setMessages(prev => [...prev, { role: 'user', content: text }]);
     setToolsUsed([]); // Clear tools when starting a new message
     sendChat.mutate({
-      data: { 
-        message: `[System Note - Your Relationship with User: ${mood} (Affection Score: ${Math.round(affectionScore)}/100)]\n\n${text}`, 
-        conversationId: activeConversationId || undefined, 
-        model: settings?.selectedModel, 
+      data: {
+        message: `[System Note - Your Relationship with User: ${mood} (Affection Score: ${Math.round(affectionScore)}/100)]\n\n${text}`,
+        conversationId: activeConversationId || undefined,
+        model: settings?.selectedModel,
         provider: settings?.selectedProvider,
         imageBase64
       }
     }, {
       onSuccess: (data) => {
         if (data.conversationId) setActiveConversationId(data.conversationId);
-        
+
         let finalReply = data.reply;
         let animTag = '';
         const animMatch = finalReply.match(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i);
         if (animMatch) {
-            animTag = animMatch[1];
-            finalReply = finalReply.replace(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i, '').trim();
+          animTag = animMatch[1];
+          finalReply = finalReply.replace(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i, '').trim();
         }
 
         let drawPath = '';
         const drawMatch = finalReply.match(/\[draw:\s*(.+?)\]/i);
         if (drawMatch) {
-            drawPath = drawMatch[1].trim();
-            finalReply = finalReply.replace(/\[draw:\s*(.+?)\]/i, '').trim();
+          drawPath = drawMatch[1].trim();
+          finalReply = finalReply.replace(/\[draw:\s*(.+?)\]/i, '').trim();
         }
 
         setMessages(prev => [...prev, { role: 'assistant', content: finalReply }]);
         setLastReply(finalReply);
-        
+
         if (animTag) {
-            window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: animTag.toLowerCase() } }));
+          window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: animTag.toLowerCase() } }));
         }
         if (drawPath) {
-            window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: 'draw', path: drawPath } }));
+          window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: 'draw', path: drawPath } }));
         }
 
         if (data.toolsUsed && data.toolsUsed.length > 0) {
@@ -296,7 +296,7 @@ export const JarvisMain: React.FC = () => {
 
   const handleMessageWithScreenshot = async (message: string, imageBase64?: string) => {
     let finalImageBase64 = imageBase64;
-    
+
     // If no image was explicitly passed, automatically capture the screen for True Visual AI context!
     if (!finalImageBase64 && window.electronAPI?.captureScreen) {
       try {
@@ -308,7 +308,7 @@ export const JarvisMain: React.FC = () => {
         console.error("Failed to capture screen:", err);
       }
     }
-    
+
     handleSendMessage(message, finalImageBase64);
   };
 
@@ -342,12 +342,12 @@ export const JarvisMain: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col p-5 md:p-8 max-w-6xl mx-auto w-full overflow-y-auto pb-6">
-      
-      <AgentInteractiveOverlay 
-        activeApproval={activeApproval} 
-        agentQuestion={agentQuestion} 
-        resolveApproval={resolveApproval} 
-        clearQuestion={clearQuestion} 
+
+      <AgentInteractiveOverlay
+        activeApproval={activeApproval}
+        agentQuestion={agentQuestion}
+        resolveApproval={resolveApproval}
+        clearQuestion={clearQuestion}
         onSubmitAnswer={handleMessageWithScreenshot}
       />
 
@@ -355,7 +355,6 @@ export const JarvisMain: React.FC = () => {
       <header className="flex justify-between items-center mb-6 shrink-0 select-none" style={{ WebkitAppRegion: 'drag' } as any}>
         <div>
           <h2 className="text-xl font-semibold text-foreground">Assistant</h2>
-          <p className="text-sm text-muted-foreground">{settings?.selectedModel || 'No model selected'}</p>
         </div>
         <button
           onClick={() => tts.toggleEnabled()}
@@ -407,8 +406,8 @@ export const JarvisMain: React.FC = () => {
             <button
               onClick={isListening ? stopListening : startListening}
               className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shrink-0 ${isListening
-                  ? 'bg-destructive/10 border-2 border-destructive text-destructive'
-                  : 'bg-primary/10 border-2 border-primary text-primary hover:bg-primary/20'
+                ? 'bg-destructive/10 border-2 border-destructive text-destructive'
+                : 'bg-primary/10 border-2 border-primary text-primary hover:bg-primary/20'
                 }`}
               data-testid="button-mic"
             >
@@ -430,8 +429,8 @@ export const JarvisMain: React.FC = () => {
                 messages.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[85%] px-4 py-2.5 rounded-xl text-sm leading-relaxed ${msg.role === 'user'
-                        ? 'bg-primary text-white rounded-br-sm'
-                        : 'bg-slate-100 text-foreground rounded-bl-sm'
+                      ? 'bg-primary text-white rounded-br-sm'
+                      : 'bg-slate-100 text-foreground rounded-bl-sm'
                       }`}>
                       <p className="text-[10px] font-semibold opacity-60 mb-1 uppercase tracking-wide">
                         {msg.role === 'user' ? 'You' : 'JARVIS'}
@@ -439,13 +438,13 @@ export const JarvisMain: React.FC = () => {
                       <div className="whitespace-pre-wrap">
                         <ReactMarkdown
                           components={{
-                            p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
-                            ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-2" {...props} />,
-                            ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-2" {...props} />,
-                            li: ({node, ...props}) => <li className="mb-1" {...props} />,
-                            code: ({node, ...props}) => <code className="bg-black/10 px-1.5 py-0.5 rounded text-xs" {...props} />,
-                            pre: ({node, ...props}) => <pre className="bg-slate-800 text-slate-100 p-3 rounded-lg text-xs overflow-x-auto mb-2" {...props} />,
-                            a: ({node, ...props}) => <a target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline" {...props} />,
+                            p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                            ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2" {...props} />,
+                            ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2" {...props} />,
+                            li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                            code: ({ node, ...props }) => <code className="bg-black/10 px-1.5 py-0.5 rounded text-xs" {...props} />,
+                            pre: ({ node, ...props }) => <pre className="bg-slate-800 text-slate-100 p-3 rounded-lg text-xs overflow-x-auto mb-2" {...props} />,
+                            a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline" {...props} />,
                           }}
                         >
                           {msg.content}
