@@ -538,6 +538,10 @@ export async function processChatRequest(parsedData: any) {
     }
   }
 
+  if (agentResponse.includes("I'm not going to engage in this conversation topic")) {
+    agentResponse = "I'm sorry, but the current LLM's strict safety filters blocked my ability to process this request. This frequently happens with LLaMA 3 models on certain providers when asking for system-level actions. Please switch to another model (like Mixtral, Gemini, or OpenAI) in the Settings.";
+  }
+
   const [assistantMsg] = await db
     .insert(messagesTable)
     .values({
