@@ -24,6 +24,7 @@ export const AnimatedCharacter = ({
   const [anim, setAnim] = useState<CharacterAnimation>(defaultAnim);
   const [isBlinking, setIsBlinking] = useState(false);
 
+
   useEffect(() => {
     if (forcedAnim) { setAnim(forcedAnim); return; }
     if (!loop) return;
@@ -80,7 +81,21 @@ export const HeroSection = () => {
   const heroY = useTransform(scrollYProgress, [0, 1], [0, -80]);
   const charsY = useTransform(scrollYProgress, [0, 1], [0, 120]);
   const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+  const [stars, setStars] = useState(0)
 
+  async function fetchGithubStars() {
+    const res = await fetch(
+      "https://api.github.com/repos/abhishekkkk-15/jarvis-assistant"
+    );
+
+    const repo = await res.json();
+
+    console.log(repo.stargazers_count);
+    setStars(repo.stargazers_count)
+  }
+  useEffect(() => {
+    fetchGithubStars()
+  }, [])
   return (
     <section ref={ref} className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16">
       <div className="absolute inset-0 -z-10">
@@ -152,7 +167,7 @@ export const HeroSection = () => {
           </Button>
           <Button size="lg" variant="ghost" className="h-14 px-8 text-base text-muted-foreground hover:text-foreground">
             <Github className="mr-2 h-5 w-5" />
-            <Star className="w-3.5 h-3.5 mr-1" /> 2.4k
+            <Star className="w-3.5 h-3.5 mr-1" />{stars}
           </Button>
         </motion.div>
       </motion.div>
@@ -325,22 +340,22 @@ export const StatsSection = () => (
 
 // ─── Emotion Playground ───────────────────────────────────────────────────────
 const EMOTIONS: { anim: CharacterAnimation; emoji: string; label: string; color: string }[] = [
-  { anim: 'idle',     emoji: '😌', label: 'Idle',     color: 'bg-slate-100 text-slate-700 border-slate-200' },
-  { anim: 'wave',     emoji: '👋', label: 'Wave',     color: 'bg-blue-50 text-blue-700 border-blue-100' },
-  { anim: 'dance',    emoji: '🎵', label: 'Dance',    color: 'bg-purple-50 text-purple-700 border-purple-100' },
-  { anim: 'excited',  emoji: '⚡', label: 'Excited',  color: 'bg-cyan-50 text-cyan-700 border-cyan-100' },
-  { anim: 'happy',    emoji: '😊', label: 'Happy',    color: 'bg-yellow-50 text-yellow-700 border-yellow-100' },
-  { anim: 'sad',      emoji: '😔', label: 'Sad',      color: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
-  { anim: 'angry',    emoji: '😤', label: 'Angry',    color: 'bg-red-50 text-red-700 border-red-100' },
-  { anim: 'love',     emoji: '❤️', label: 'Love',     color: 'bg-pink-50 text-pink-700 border-pink-100' },
+  { anim: 'idle', emoji: '😌', label: 'Idle', color: 'bg-slate-100 text-slate-700 border-slate-200' },
+  { anim: 'wave', emoji: '👋', label: 'Wave', color: 'bg-blue-50 text-blue-700 border-blue-100' },
+  { anim: 'dance', emoji: '🎵', label: 'Dance', color: 'bg-purple-50 text-purple-700 border-purple-100' },
+  { anim: 'excited', emoji: '⚡', label: 'Excited', color: 'bg-cyan-50 text-cyan-700 border-cyan-100' },
+  { anim: 'happy', emoji: '😊', label: 'Happy', color: 'bg-yellow-50 text-yellow-700 border-yellow-100' },
+  { anim: 'sad', emoji: '😔', label: 'Sad', color: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
+  { anim: 'angry', emoji: '😤', label: 'Angry', color: 'bg-red-50 text-red-700 border-red-100' },
+  { anim: 'love', emoji: '❤️', label: 'Love', color: 'bg-pink-50 text-pink-700 border-pink-100' },
   { anim: 'thinking', emoji: '🤔', label: 'Thinking', color: 'bg-violet-50 text-violet-700 border-violet-100' },
-  { anim: 'cool',     emoji: '😎', label: 'Cool',     color: 'bg-teal-50 text-teal-700 border-teal-100' },
-  { anim: 'sleep',    emoji: '💤', label: 'Sleep',    color: 'bg-slate-50 text-slate-500 border-slate-100' },
+  { anim: 'cool', emoji: '😎', label: 'Cool', color: 'bg-teal-50 text-teal-700 border-teal-100' },
+  { anim: 'sleep', emoji: '💤', label: 'Sleep', color: 'bg-slate-50 text-slate-500 border-slate-100' },
   { anim: 'confused', emoji: '❓', label: 'Confused', color: 'bg-orange-50 text-orange-700 border-orange-100' },
-  { anim: 'laughing', emoji: '😄', label: 'Laugh',    color: 'bg-lime-50 text-lime-700 border-lime-100' },
-  { anim: 'scared',   emoji: '😰', label: 'Scared',   color: 'bg-amber-50 text-amber-700 border-amber-100' },
-  { anim: 'dizzy',    emoji: '⭐', label: 'Dizzy',    color: 'bg-rose-50 text-rose-700 border-rose-100' },
-  { anim: 'shy',      emoji: '🌸', label: 'Shy',      color: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100' },
+  { anim: 'laughing', emoji: '😄', label: 'Laugh', color: 'bg-lime-50 text-lime-700 border-lime-100' },
+  { anim: 'scared', emoji: '😰', label: 'Scared', color: 'bg-amber-50 text-amber-700 border-amber-100' },
+  { anim: 'dizzy', emoji: '⭐', label: 'Dizzy', color: 'bg-rose-50 text-rose-700 border-rose-100' },
+  { anim: 'shy', emoji: '🌸', label: 'Shy', color: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100' },
 ];
 
 const CHAR_PICKS = [
@@ -418,12 +433,12 @@ export const EmotionPlayground = () => {
 
 // ─── Features ─────────────────────────────────────────────────────────────────
 const FEATURES = [
-  { icon: Mic,            title: "Wake Word",      body: "Say 'Hey JARVIS' anywhere. No clicks needed.", C: JarvisBot,  anim: 'talk' as CharacterAnimation },
-  { icon: Monitor,        title: "MiniMode",       body: "Characters with real physics on your desktop.", C: PixelFox,   anim: 'bounce' as CharacterAnimation },
-  { icon: Eye,            title: "Screen Vision",  body: "Reads your screen, understands your context.", C: SpaceCat,   anim: 'thinking' as CharacterAnimation },
-  { icon: PenTool,        title: "Draw on Screen", body: "Annotates your display live with arrows & text.", C: CyberPunk,  anim: 'draw' as CharacterAnimation },
-  { icon: Network,        title: "LangGraph AI",   body: "Multi-agent loop: plan → browse → code → execute.", C: AlienDude,  anim: 'excited' as CharacterAnimation },
-  { icon: MessageSquare,  title: "Telegram Sync",  body: "Control your desktop agent remotely via Telegram.", C: Astronaut,  anim: 'wave' as CharacterAnimation },
+  { icon: Mic, title: "Wake Word", body: "Say 'Hey JARVIS' anywhere. No clicks needed.", C: JarvisBot, anim: 'talk' as CharacterAnimation },
+  { icon: Monitor, title: "MiniMode", body: "Characters with real physics on your desktop.", C: PixelFox, anim: 'bounce' as CharacterAnimation },
+  { icon: Eye, title: "Screen Vision", body: "Reads your screen, understands your context.", C: SpaceCat, anim: 'thinking' as CharacterAnimation },
+  { icon: PenTool, title: "Draw on Screen", body: "Annotates your display live with arrows & text.", C: CyberPunk, anim: 'draw' as CharacterAnimation },
+  { icon: Network, title: "LangGraph AI", body: "Multi-agent loop: plan → browse → code → execute.", C: AlienDude, anim: 'excited' as CharacterAnimation },
+  { icon: MessageSquare, title: "Telegram Sync", body: "Control your desktop agent remotely via Telegram.", C: Astronaut, anim: 'wave' as CharacterAnimation },
 ];
 
 export const FeaturesSection = () => (
@@ -499,7 +514,7 @@ export const ChatDemoSection = () => {
             className="rounded-2xl border border-border shadow-2xl overflow-hidden bg-white">
             <div className="bg-secondary px-4 py-3 flex items-center gap-2 border-b border-border">
               <div className="flex gap-1.5">
-                {['bg-red-400','bg-yellow-400','bg-green-400'].map(c => <div key={c} className={`w-3 h-3 rounded-full ${c}`} />)}
+                {['bg-red-400', 'bg-yellow-400', 'bg-green-400'].map(c => <div key={c} className={`w-3 h-3 rounded-full ${c}`} />)}
               </div>
               <div className="flex-1 text-center text-xs font-semibold text-muted-foreground">JARVIS Assistant</div>
               <JarvisBot animation={curAnim} size={28} />
@@ -546,7 +561,7 @@ const CAST = [
   { C: Astronaut, name: "Astronaut", tag: "The Drifter" },
 ];
 
-const HOVER_ANIMS: CharacterAnimation[] = ['wave','dance','excited','happy','love','cool','laughing','shy','surprised','thinking'];
+const HOVER_ANIMS: CharacterAnimation[] = ['wave', 'dance', 'excited', 'happy', 'love', 'cool', 'laughing', 'shy', 'surprised', 'thinking'];
 
 const CastCard = ({ C, name, tag, idx }: { C: React.FC<any>; name: string; tag: string; idx: number }) => {
   const [hovered, setHovered] = useState(false);
@@ -623,7 +638,7 @@ export const Footer = () => (
       <div className="flex items-center gap-2 font-bold text-foreground"><Bot className="w-5 h-5 text-primary" /> JARVIS Project</div>
       <p>© {new Date().getFullYear()} JARVIS. Open source — MIT License.</p>
       <div className="flex gap-6">
-        {['Twitter','GitHub','Discord'].map(l => <a key={l} href="#" className="hover:text-primary transition-colors">{l}</a>)}
+        {['Twitter', 'GitHub', 'Discord'].map(l => <a key={l} href="#" className="hover:text-primary transition-colors">{l}</a>)}
       </div>
     </div>
   </footer>
