@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, ChevronRight, Copy, Check, Menu, X, ExternalLink, Zap, Mic, Monitor, Network, PenTool, MessageSquare, Settings, Download, Eye, Cpu, Brain } from "lucide-react";
+import { triggerDownload } from "../lib/utils";
+
 import {
   JarvisBot, PixelFox, SpaceCat, FireDrake, Ninja, Wizard,
   CyberPunk, MinionBob, AlienDude, Astronaut, type CharacterAnimation
@@ -140,7 +142,7 @@ export const DocsPage = () => {
             <span className="text-muted-foreground text-sm hidden sm:block">Documentation</span>
           </div>
           <div className="flex items-center gap-3">
-            <a href="https://github.com" target="_blank" rel="noreferrer"
+            <a href="https://github.com/Abhishekkkk-15/jarvis-assistant" target="_blank" rel="noreferrer"
               className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
               <ExternalLink className="w-4 h-4" /> GitHub
             </a>
@@ -235,10 +237,10 @@ export const DocsPage = () => {
               <H2>Download</H2>
               <P>Grab the latest setup executable from GitHub Releases:</P>
               <div className="my-4">
-                <a href="https://github.com/Abhishekkkk-15/jarvis-assistant/releases/download/v1.0.0/JARVIS-Setup.exe"
+                <button onClick={triggerDownload}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-medium rounded-xl hover:bg-primary/90 transition-all shadow-md hover:shadow-lg">
-                  <Download className="w-4 h-4" /> Download JARVIS-Setup.exe (v1.0.0)
-                </a>
+                  <Download className="w-4 h-4" /> Download JARVIS Installer (Latest)
+                </button>
               </div>
               <Code lang="powershell">{`# Run the downloaded JARVIS-Setup.exe to install the desktop assistant companion.`}</Code>
 
@@ -728,7 +730,7 @@ E:\\Jarvis-Assistant-Companionzip\\sqlite.db`}</Code>
 
               <div className="mt-12 pt-8 border-t border-border flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">© {new Date().getFullYear()} JARVIS Project — MIT License</div>
-                <a href="https://github.com" target="_blank" rel="noreferrer"
+                <a href="https://github.com/Abhishekkkk-15/jarvis-assistant" target="_blank" rel="noreferrer"
                   className="flex items-center gap-1.5 text-sm text-primary hover:underline font-medium">
                   <ExternalLink className="w-4 h-4" /> GitHub
                 </a>
