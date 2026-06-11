@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" fill="none">
+  <!-- Main Head Box -->
+  <rect x="63" y="95" width="130" height="90" rx="28" stroke="#5c6ef2" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Eyes -->
+  <line x1="108" y1="132" x2="108" y2="148" stroke="#5c6ef2" stroke-width="14" stroke-linecap="round"/>
+  <line x1="148" y1="132" x2="148" y2="148" stroke="#5c6ef2" stroke-width="14" stroke-linecap="round"/>
+  
+  <!-- Ears -->
+  <line x1="47" y1="140" x2="63" y2="140" stroke="#5c6ef2" stroke-width="14" stroke-linecap="round"/>
+  <line x1="193" y1="140" x2="209" y2="140" stroke="#5c6ef2" stroke-width="14" stroke-linecap="round"/>
+  
+  <!-- Antenna -->
+  <path d="M 128 95 L 128 67 L 150 67" stroke="#5c6ef2" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
