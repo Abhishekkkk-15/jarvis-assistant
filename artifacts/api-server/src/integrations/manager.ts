@@ -72,8 +72,14 @@ class IntegrationsManager {
     const conversationId = this.conversationMap.get(msg.chatId);
     const port = process.env.PORT || 4444;
 
+    // Show 'typing...' indicator immediately and refresh it every 4 seconds
+    this.telegram.sendChatAction(msg.chatId, 'typing');
+    const typingInterval = setInterval(() => {
+      this.telegram?.sendChatAction(msg.chatId, 'typing');
+    }, 4000);
+
     try {
-      const res = await fetch(`http://localhost:${port}/api/chat`, {
+      const res = await fetch(`http://127.0.0.1:${port}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -81,17 +87,27 @@ class IntegrationsManager {
           conversationId: conversationId || undefined
         })
       });
-      const data = await res.json() as any;
+      
+      const text = await res.text();
+      let data: any = {};
+      try { data = JSON.parse(text); } catch { /* ignore */ }
+
+      if (!res.ok) {
+        this.telegram.sendMessage(msg.chatId, `JARVIS Error: ${data.error || res.statusText || 'Unknown server error'}`);
+        return;
+      }
+
       if (data.reply) {
         this.telegram.sendMessage(msg.chatId, data.reply);
       }
       if (data.conversationId) {
         this.conversationMap.set(msg.chatId, data.conversationId);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('[Integrations] Telegram remote control failed:', e);
-      this.telegram.sendMessage(msg.chatId, 'Error connecting to local JARVIS API.');
+      this.telegram.sendMessage(msg.chatId, `Error connecting to local JARVIS API: ${e.message}`);
     } finally {
+      clearInterval(typingInterval);
       this.activeTelegramChatId = null;
     }
   }

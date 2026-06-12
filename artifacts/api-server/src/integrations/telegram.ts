@@ -30,6 +30,18 @@ export class TelegramIntegration {
       }
   }
 
+  async sendChatAction(chatId: number, action: string = 'typing') {
+      try {
+          await fetch(`https://api.telegram.org/bot${this.token}/sendChatAction`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ chat_id: chatId, action })
+          });
+      } catch (e) {
+          console.error('[Telegram Integration] Failed to send chat action:', e);
+      }
+  }
+
   async answerCallbackQuery(callbackQueryId: string, text?: string) {
       try {
           const body: any = { callback_query_id: callbackQueryId };
