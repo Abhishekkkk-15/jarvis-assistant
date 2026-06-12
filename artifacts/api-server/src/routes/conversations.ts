@@ -1,38 +1,17 @@
 import { Router } from "express";
-import { db, conversationsTable, messagesTable } from "@workspace/db";
-import { eq, desc, sql, count } from "drizzle-orm";
 import {
   CreateConversationBody,
   GetConversationParams,
   DeleteConversationParams,
 } from "@workspace/api-zod";
+import * as conversationsService from "../services/conversationsService.js";
 
 const router = Router();
 
 router.get("/conversations", async (req, res) => {
   try {
-    const rows = await db
-      .select({
-        id: conversationsTable.id,
-        title: conversationsTable.title,
-        createdAt: conversationsTable.createdAt,
-        updatedAt: conversationsTable.updatedAt,
-        messageCount: count(messagesTable.id),
-      })
-      .from(conversationsTable)
-      .leftJoin(messagesTable, eq(messagesTable.conversationId, conversationsTable.id))
-      .groupBy(conversationsTable.id)
-      .orderBy(desc(conversationsTable.updatedAt));
-
-    res.json(
-      rows.map((r) => ({
-        id: r.id,
-        title: r.title,
-        createdAt: r.createdAt.toISOString(),
-        updatedAt: r.updatedAt.toISOString(),
-        messageCount: Number(r.messageCount),
-      }))
-    );
+    const list = await conversationsService.listConversations();
+    res.json(list);
   } catch (err) {
     req.log.error({ err }, "Failed to list conversations");
     res.status(500).json({ error: "Internal server error" });
@@ -47,18 +26,8 @@ router.post("/conversations", async (req, res) => {
       return;
     }
 
-    const [conv] = await db
-      .insert(conversationsTable)
-      .values({ title: parsed.data.title })
-      .returning();
-
-    res.status(201).json({
-      id: conv.id,
-      title: conv.title,
-      createdAt: conv.createdAt.toISOString(),
-      updatedAt: conv.updatedAt.toISOString(),
-      messageCount: 0,
-    });
+    const conv = await conversationsService.createConversation(parsed.data.title);
+    res.status(201).json(conv);
   } catch (err) {
     req.log.error({ err }, "Failed to create conversation");
     res.status(500).json({ error: "Internal server error" });
@@ -73,36 +42,13 @@ router.get("/conversations/:id", async (req, res) => {
       return;
     }
 
-    const [conv] = await db
-      .select()
-      .from(conversationsTable)
-      .where(eq(conversationsTable.id, params.data.id));
-
+    const conv = await conversationsService.getConversation(params.data.id);
     if (!conv) {
       res.status(404).json({ error: "Conversation not found" });
       return;
     }
 
-    const messages = await db
-      .select()
-      .from(messagesTable)
-      .where(eq(messagesTable.conversationId, conv.id))
-      .orderBy(messagesTable.createdAt);
-
-    res.json({
-      id: conv.id,
-      title: conv.title,
-      createdAt: conv.createdAt.toISOString(),
-      updatedAt: conv.updatedAt.toISOString(),
-      messages: messages.map((m) => ({
-        id: m.id,
-        role: m.role,
-        content: m.content,
-        createdAt: m.createdAt.toISOString(),
-        conversationId: m.conversationId,
-        model: m.model ?? null,
-      })),
-    });
+    res.json(conv);
   } catch (err) {
     req.log.error({ err }, "Failed to get conversation");
     res.status(500).json({ error: "Internal server error" });
@@ -117,10 +63,7 @@ router.delete("/conversations/:id", async (req, res) => {
       return;
     }
 
-    await db
-      .delete(conversationsTable)
-      .where(eq(conversationsTable.id, params.data.id));
-
+    await conversationsService.deleteConversation(params.data.id);
     res.status(204).send();
   } catch (err) {
     req.log.error({ err }, "Failed to delete conversation");

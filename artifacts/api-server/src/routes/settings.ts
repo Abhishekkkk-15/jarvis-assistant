@@ -1,43 +1,13 @@
 import { Router } from "express";
-import { db, settingsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
 import { UpdateSettingsBody } from "@workspace/api-zod";
-import { integrationsManager } from "../integrations/manager.js";
+import * as settingsService from "../services/settingsService.js";
 
 const router = Router();
 
-async function ensureSettings() {
-  const rows = await db.select().from(settingsTable).limit(1);
-  if (rows.length === 0) {
-    const [row] = await db.insert(settingsTable).values({}).returning();
-    return row;
-  }
-  return rows[0]!;
-}
-
-function toResponse(s: typeof settingsTable.$inferSelect) {
-  return {
-    id: s.id,
-    groqApiKeySet: !!s.groqApiKey,
-    nvidiaApiKeySet: !!s.nvidiaApiKey,
-    selectedModel: s.selectedModel,
-    selectedProvider: s.selectedProvider,
-    wakeWord: s.wakeWord,
-    voiceEnabled: s.voiceEnabled,
-    selectedCharacterId: s.selectedCharacterId,
-    miniModeEnabled: s.miniModeEnabled,
-    telegramBotToken: s.telegramBotToken,
-    discordBotToken: s.discordBotToken,
-    notionApiKey: s.notionApiKey,
-    spotifyClientId: s.spotifyClientId,
-    spotifyClientSecret: s.spotifyClientSecret,
-  };
-}
-
 router.get("/settings", async (req, res) => {
   try {
-    const settings = await ensureSettings();
-    res.json(toResponse(settings));
+    const settingsResponse = await settingsService.getSettingsResponse();
+    res.json(settingsResponse);
   } catch (err) {
     req.log.error({ err }, "Failed to get settings");
     res.status(500).json({ error: "Internal server error" });
@@ -52,34 +22,8 @@ router.put("/settings", async (req, res) => {
       return;
     }
 
-    const settings = await ensureSettings();
-    const updates: Partial<typeof settingsTable.$inferInsert> = {};
-
-    const d = parsed.data;
-    if (d.groqApiKey != null) updates.groqApiKey = d.groqApiKey;
-    if (d.nvidiaApiKey != null) updates.nvidiaApiKey = d.nvidiaApiKey;
-    if (d.selectedModel != null) updates.selectedModel = d.selectedModel;
-    if (d.selectedProvider != null) updates.selectedProvider = d.selectedProvider;
-    if (d.wakeWord != null) updates.wakeWord = d.wakeWord;
-    if (d.voiceEnabled != null) updates.voiceEnabled = d.voiceEnabled;
-    if (d.selectedCharacterId != null) updates.selectedCharacterId = d.selectedCharacterId;
-    if (d.miniModeEnabled != null) updates.miniModeEnabled = d.miniModeEnabled;
-    if (d.telegramBotToken !== undefined) updates.telegramBotToken = d.telegramBotToken;
-    if (d.discordBotToken !== undefined) updates.discordBotToken = d.discordBotToken;
-    if (d.notionApiKey !== undefined) updates.notionApiKey = d.notionApiKey;
-    if (d.spotifyClientId !== undefined) updates.spotifyClientId = d.spotifyClientId;
-    if (d.spotifyClientSecret !== undefined) updates.spotifyClientSecret = d.spotifyClientSecret;
-
-
-    const [updated] = await db
-      .update(settingsTable)
-      .set(updates)
-      .where(eq(settingsTable.id, settings.id))
-      .returning();
-
-    integrationsManager.reload();
-
-    res.json(toResponse(updated!));
+    const updatedResponse = await settingsService.updateSettings(parsed.data);
+    res.json(updatedResponse);
   } catch (err) {
     req.log.error({ err }, "Failed to update settings");
     res.status(500).json({ error: "Internal server error" });
