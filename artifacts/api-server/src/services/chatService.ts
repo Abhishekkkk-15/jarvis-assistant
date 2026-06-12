@@ -238,6 +238,7 @@ export async function processChatRequest(parsedData: any) {
 
   const hasImage = !!parsedData.imageBase64;
 
+  // Provider and model switching is currently in progress
   let provider = parsedData.provider || settings.selectedProvider || "groq";
   let isFallback = false;
   // let modelName = hasImage ? "meta/llama-3.2-90b-vision-instruct" : "nvidia/nemotron-3-ultra-550b-a55b";
