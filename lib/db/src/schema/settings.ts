@@ -18,6 +18,9 @@ export const settingsTable = sqliteTable("settings", {
   spotifyClientId: text("spotify_client_id"),
   spotifyClientSecret: text("spotify_client_secret"),
   githubPat: text("github_pat"),
+  emailAddress: text("email_address"),
+  emailPassword: text("email_password"),
+  emailProvider: text("email_provider"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()).$onUpdate(() => new Date()),
 });

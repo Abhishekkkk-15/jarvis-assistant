@@ -82,7 +82,10 @@ export const GetSettingsResponse = zod.object({
   "systemPrompt": zod.string().nullish(),
   "notionApiKey": zod.string().nullish(),
   "spotifyClientId": zod.string().nullish(),
-  "spotifyClientSecret": zod.string().nullish()
+  "spotifyClientSecret": zod.string().nullish(),
+  "emailAddress": zod.string().nullish(),
+  "emailPassword": zod.string().nullish(),
+  "emailProvider": zod.string().nullish()
 })
 
 
@@ -103,7 +106,10 @@ export const UpdateSettingsBody = zod.object({
   "systemPrompt": zod.string().nullish(),
   "notionApiKey": zod.string().nullish(),
   "spotifyClientId": zod.string().nullish(),
-  "spotifyClientSecret": zod.string().nullish()
+  "spotifyClientSecret": zod.string().nullish(),
+  "emailAddress": zod.string().nullish(),
+  "emailPassword": zod.string().nullish(),
+  "emailProvider": zod.string().nullish()
 })
 
 export const UpdateSettingsResponse = zod.object({
@@ -121,7 +127,10 @@ export const UpdateSettingsResponse = zod.object({
   "systemPrompt": zod.string().nullish(),
   "notionApiKey": zod.string().nullish(),
   "spotifyClientId": zod.string().nullish(),
-  "spotifyClientSecret": zod.string().nullish()
+  "spotifyClientSecret": zod.string().nullish(),
+  "emailAddress": zod.string().nullish(),
+  "emailPassword": zod.string().nullish(),
+  "emailProvider": zod.string().nullish()
 })
 
 

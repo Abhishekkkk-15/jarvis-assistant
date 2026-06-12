@@ -175,10 +175,10 @@ export function createJarvisGraph(
     console.log("Running", state.iterationCount, state.plan, " ", state.next);
     if (state.iterationCount > 50) {
       next = "FINISH";
-    } else if (!state.planValidated && state.plan!.length > 0) {
-      next = "PlanValidator";
     } else if (state.plan === null || state.plan === undefined) {
       next = "Planner";
+    } else if (!state.planValidated && state.plan.length > 0) {
+      next = "PlanValidator";
     } else if (state.currentStep >= state.plan.length) {
       if (state.plan.length > 0 && !state.synthesized) {
         next = "Synthesizer";

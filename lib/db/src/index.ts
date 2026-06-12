@@ -83,6 +83,9 @@ export function setupDb() {
       spotify_client_id TEXT,
       spotify_client_secret TEXT,
       github_pat TEXT,
+      email_address TEXT,
+      email_password TEXT,
+      email_provider TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     );
@@ -93,6 +96,9 @@ export function setupDb() {
     "ALTER TABLE settings ADD COLUMN spotify_client_id TEXT;",
     "ALTER TABLE settings ADD COLUMN spotify_client_secret TEXT;",
     "ALTER TABLE settings ADD COLUMN github_pat TEXT;",
+    "ALTER TABLE settings ADD COLUMN email_address TEXT;",
+    "ALTER TABLE settings ADD COLUMN email_password TEXT;",
+    "ALTER TABLE settings ADD COLUMN email_provider TEXT;",
     "ALTER TABLE messages ADD COLUMN tokens_used INTEGER NOT NULL DEFAULT 0;",
   ];
 

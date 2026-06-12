@@ -407,6 +407,12 @@ components:
           type: ["string", "null"]
         spotifyClientSecret:
           type: ["string", "null"]
+        emailAddress:
+          type: ["string", "null"]
+        emailPassword:
+          type: ["string", "null"]
+        emailProvider:
+          type: ["string", "null"]
 
     SettingsInput:
       type: object
@@ -438,6 +444,12 @@ components:
         spotifyClientId:
           type: ["string", "null"]
         spotifyClientSecret:
+          type: ["string", "null"]
+        emailAddress:
+          type: ["string", "null"]
+        emailPassword:
+          type: ["string", "null"]
+        emailProvider:
           type: ["string", "null"]
 
     Message:

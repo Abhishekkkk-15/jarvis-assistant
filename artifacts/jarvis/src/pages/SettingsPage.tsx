@@ -44,7 +44,9 @@ export const SettingsPage: React.FC = () => {
         githubPat: '',
         wakeWord: settings.wakeWord || 'jarvis',
         voiceEnabled: settings.voiceEnabled ?? true,
-
+        emailAddress: settings.emailAddress || '',
+        emailPassword: '',
+        emailProvider: settings.emailProvider || 'gmail',
       });
     }
   }, [settings, form]);
@@ -61,7 +63,7 @@ export const SettingsPage: React.FC = () => {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
         toast({ title: "Settings saved" });
-        form.reset({ ...values, nvidiaApiKey: '', groqApiKey: '' });
+        form.reset({ ...values, nvidiaApiKey: '', groqApiKey: '', emailPassword: '' });
       },
       onError: () => {
         toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
@@ -303,6 +305,68 @@ export const SettingsPage: React.FC = () => {
                       <Input type="password" placeholder="Enter Spotify Client Secret" {...field} value={field.value || ''} />
                     </FormControl>
                     <FormDescription className="text-xs">Used by JARVIS to search and control your Spotify playback.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </section>
+
+          {/* Email Configuration */}
+          <section className={sectionClass}>
+            <h3 className={sectionHeadingClass}>
+              <MessageSquareCode size={15} className="text-primary" /> Email Configuration
+            </h3>
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="emailProvider"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Email Provider</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select email provider" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="gmail">Gmail</SelectItem>
+                        <SelectItem value="outlook">Outlook / Hotmail</SelectItem>
+                        <SelectItem value="yahoo">Yahoo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="emailAddress"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Email Address</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="you@example.com" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="emailPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">App Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter 16-character App Password" {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Do not use your main password. Create an "App Password" in your email provider's security settings.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -87,6 +87,12 @@ export interface Settings {
   spotifyClientId?: string | null;
   /** @nullable */
   spotifyClientSecret?: string | null;
+  /** @nullable */
+  emailAddress?: string | null;
+  /** @nullable */
+  emailPassword?: string | null;
+  /** @nullable */
+  emailProvider?: string | null;
 }
 
 export interface SettingsInput {
@@ -118,6 +124,12 @@ export interface SettingsInput {
   spotifyClientId?: string | null;
   /** @nullable */
   spotifyClientSecret?: string | null;
+  /** @nullable */
+  emailAddress?: string | null;
+  /** @nullable */
+  emailPassword?: string | null;
+  /** @nullable */
+  emailProvider?: string | null;
 }
 
 export interface Message {

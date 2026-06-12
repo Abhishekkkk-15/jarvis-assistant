@@ -15,6 +15,7 @@ import { windowsSystemTools } from "./windowsSystem.js";
 import { everythingTools } from "./everything.js";
 import { cdpBrowserTools } from "./cdpBrowser.js";
 import { githubTools } from "./github.js";
+import { emailTools } from "./email.js";
 
 export const allTools = [
   ...browserTools,
@@ -34,4 +35,5 @@ export const allTools = [
   ...everythingTools,
   ...cdpBrowserTools,
   ...githubTools,
+  ...emailTools,
 ];

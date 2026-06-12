@@ -28,4 +28,10 @@ export interface Settings {
   spotifyClientId?: string | null;
   /** @nullable */
   spotifyClientSecret?: string | null;
+  /** @nullable */
+  emailAddress?: string | null;
+  /** @nullable */
+  emailPassword?: string | null;
+  /** @nullable */
+  emailProvider?: string | null;
 }

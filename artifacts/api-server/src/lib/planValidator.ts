@@ -88,8 +88,8 @@ export const securityRules: SecurityRule[] = [
   },
   {
     match: (tool, args) => tool === "send_email",
-    risk: RiskLevel.MEDIUM,
-    reason: "Sending email could leak information",
+    risk: RiskLevel.HIGH,
+    reason: "Sending email on behalf of user",
   },
 ];
 
@@ -128,7 +128,8 @@ export function assessRisk(
     "list_scheduled_tasks",
     "media_control",
     "display_brightness",
-    "website_screenshot_capture"
+    "website_screenshot_capture",
+    "read_recent_emails"
   ];
   if (safeTools.includes(toolName)) {
     return { risk: RiskLevel.NONE, reason: "" };
