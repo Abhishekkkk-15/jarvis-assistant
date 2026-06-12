@@ -6,6 +6,9 @@ const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost
 let mainWindow: BrowserWindow | null = null;
 let quickInputWindow: BrowserWindow | null = null;
 
+// Bypass Chrome's autoplay policy so the background AudioContext (for Wake Word) starts immediately
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1080,
