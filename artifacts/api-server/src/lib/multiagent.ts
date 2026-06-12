@@ -26,8 +26,6 @@ export type PlanStep = {
   tool_name: string;
   expectedOutcome: string;
   arguments: any;
-  risk: string;
-  riskReason: string;
 };
 
 // --- Graph State ---
@@ -98,28 +96,6 @@ export const GraphState = Annotation.Root({
   synthesized: Annotation<boolean>({
     value: (x, y) => y,
     default: () => false,
-  }),
-  approvedSteps: Annotation<Set<string>>({
-    reducer: (prev, next) => {
-      const newSet = new Set(prev);
-      if (next instanceof Set) {
-        for (const id of next) newSet.add(id);
-      } else if (Array.isArray(next)) {
-        for (const id of next) newSet.add(id);
-      }
-      return newSet;
-    },
-    default: () => new Set(),
-  }),
-  pendingApproval: Annotation<{
-    stepId: string;
-    toolName: string;
-    risk: RiskLevel;
-    reason: string;
-    args: any;
-  } | null>({
-    value: (x, y) => y,
-    default: () => null,
   }),
   next: Annotation<string>({
     value: (x, y) => y,
@@ -203,16 +179,6 @@ export function createJarvisGraph(
         next: "NextStep",
         iterationCount: state.iterationCount + 1,
       };
-    }
-    if (state.plan && state.planValidated) {
-      const currentStep = state.plan[state.currentStep];
-      if (currentStep) {
-        const { risk } = assessRisk(currentStep.tool_name, currentStep.arguments);
-        const isApproved = state.approvedSteps.has(currentStep.id);
-        if ((risk === RiskLevel.HIGH || risk === RiskLevel.CRITICAL) && !isApproved) {
-          return { next: "HumanApproval", iterationCount: state.iterationCount + 1 };
-        }
-      }
     }
     return { next, iterationCount: state.iterationCount + 1 };
   };
@@ -304,8 +270,7 @@ export function createJarvisGraph(
       observations: [],
       executionHistory: [],
       next: "Supervisor",
-      planValidated: false,
-      approvedSteps: new Set()
+      planValidated: false
     };
 
     if (result.reply) {
@@ -355,6 +320,30 @@ export function createJarvisGraph(
 
     let toolResults: any[] = [];
     if (result.tool_calls && result.tool_calls.length > 0) {
+      // Step 1: Validate risk for all tool calls inline
+      for (const tc of result.tool_calls) {
+        const { risk, reason } = assessRisk(tc.name, tc.args);
+        if (risk === RiskLevel.HIGH || risk === RiskLevel.CRITICAL) {
+          const userResponse = await requestApprovalFromUser(
+            currentStepDef.id,
+            `Tool '${tc.name}' requires approval. Reason: ${reason}`
+          );
+          if (userResponse !== "approved") {
+            return {
+              messages: [
+                new AIMessage({
+                  content: `User rejected dangerous action: ${tc.name}. Replanning...`,
+                  name: "Executor",
+                }),
+              ],
+              next: "Replanner",
+              retryCount: 3, // Force replan on next supervisor cycle
+            };
+          }
+        }
+      }
+
+      // Step 2: Execute tool calls if all approved/safe
       for (const tc of result.tool_calls) {
         const tool = toolsByName[tc.name];
         if (tool) {
@@ -531,8 +520,7 @@ export function createJarvisGraph(
       lastResult: null,
       verified: false,
       next: "Supervisor",
-      planValidated: false,
-      approvedSteps: new Set()
+      planValidated: false
     };
   };
 
@@ -569,7 +557,6 @@ export function createJarvisGraph(
     const errors: string[] = [];
     const fixedSteps: PlanStep[] = [];
     const seenIds = new Set<string>();
-    const needsApproval: string[] = [];
     for (let i = 0; i < plan.length; i++) {
       const step = plan[i];
       if (seenIds.has(step.id)) {
@@ -594,13 +581,6 @@ export function createJarvisGraph(
       if (!step.expectedOutcome || step.expectedOutcome.trim() === "") {
         errors.push(`Step ${step.id}: expectedOutcome is empty`);
       }
-      const args = step.arguments || {};
-      const { risk, reason } = assessRisk(toolName, args);
-      if (risk === RiskLevel.HIGH || risk === RiskLevel.CRITICAL) {
-        needsApproval.push(step.id);
-        step.risk = risk;
-        step.riskReason = reason;
-      }
       fixedSteps.push({ ...step, tool_name: toolName });
     }
     if (errors.length > 0) {
@@ -623,62 +603,6 @@ export function createJarvisGraph(
     };
   };
 
-  const humanApprovalNode = async (state: typeof GraphState.State) => {
-    const currentStepId = state.plan?.[state.currentStep]?.id;
-    if (!currentStepId) {
-      // No step to approve – go back
-      return { next: "Supervisor" };
-    }
-
-    // If already approved, skip
-    if (state.approvedSteps.has(currentStepId)) {
-      return { next: "Supervisor" };
-    }
-
-    const currentStep = state.plan![state.currentStep];
-    const { risk, reason } = assessRisk(
-      currentStep.tool_name,
-      currentStep.arguments,
-    );
-
-    if (risk !== RiskLevel.HIGH && risk !== RiskLevel.CRITICAL) {
-      // Not risky – auto‑approve
-      const newApproved = new Set(state.approvedSteps);
-      newApproved.add(currentStepId);
-      return {
-        approvedSteps: newApproved,
-        next: "Supervisor",
-      };
-    }
-
-    // Need human approval. Wait via WebSocket for user response.
-    const userResponse = await requestApprovalFromUser(
-      currentStepId,
-      `Tool '${currentStep.tool_name}' requires approval. Reason: ${reason}`
-    );
-
-    if (userResponse === "approved") {
-      const newApproved = new Set(state.approvedSteps);
-      newApproved.add(currentStepId);
-      return {
-        approvedSteps: newApproved,
-        pendingApproval: null,
-        next: "Supervisor",
-      };
-    } else {
-      // User rejected – trigger replanning or abort
-      return {
-        messages: [
-          new AIMessage({
-            content: `User rejected dangerous action: ${currentStep.tool_name}. Replanning...`,
-            name: "HumanApproval",
-          }),
-        ],
-        next: "Replanner",
-        retryCount: 3, // force replan on next supervisor cycle
-      };
-    }
-  };
 
   // --- Build Graph ---
   const workflow = new StateGraph(GraphState)
@@ -686,7 +610,6 @@ export function createJarvisGraph(
     .addNode("Supervisor", supervisorNode)
     .addNode("Planner", plannerNode)
     .addNode("PlanValidator", planValidatorNode)
-    .addNode("HumanApproval", humanApprovalNode)
     .addNode("Executor", executorNode)
     .addNode("Observer", observerNode)
     .addNode("Verifier", verifierNode)
@@ -701,7 +624,6 @@ export function createJarvisGraph(
       Planner: "Planner",
       PlanValidator: "PlanValidator",
       Executor: "Executor",
-      HumanApproval: "HumanApproval",
 
       Observer: "Observer",
       Verifier: "Verifier",
@@ -718,8 +640,7 @@ export function createJarvisGraph(
     .addEdge("Replanner", "Supervisor")
     .addEdge("Synthesizer", "Supervisor")
     .addEdge("NextStep", "Supervisor")
-    .addEdge("PlanValidator", "Supervisor")
-    .addEdge("HumanApproval", "Supervisor");
+    .addEdge("PlanValidator", "Supervisor");
 
   return workflow.compile();
 }
