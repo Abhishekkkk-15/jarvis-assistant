@@ -47,6 +47,7 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+    app.quit();
   });
 }
 
@@ -355,4 +356,12 @@ psProcess.stdout.on('data', (data) => {
 
 psProcess.stderr.on('data', (data) => {
   console.error('PowerShell Error:', data.toString());
+});
+
+app.on('will-quit', () => {
+  if (psProcess) {
+    try {
+      psProcess.kill();
+    } catch (e) {}
+  }
 });
