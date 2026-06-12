@@ -17,6 +17,7 @@ import { cdpBrowserTools } from "./cdpBrowser.js";
 import { githubTools } from "./github.js";
 import { emailTools } from "./email.js";
 import { read_jarvis_manual } from "./jarvis_manual.js";
+import { settingsTools } from "./settings.js";
 
 export const allTools = [
   ...browserTools,
@@ -37,5 +38,6 @@ export const allTools = [
   ...cdpBrowserTools,
   ...githubTools,
   ...emailTools,
+  ...settingsTools,
   read_jarvis_manual,
 ];
