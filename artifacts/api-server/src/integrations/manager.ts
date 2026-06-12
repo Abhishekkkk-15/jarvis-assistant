@@ -1,12 +1,26 @@
 import { db, settingsTable } from '@workspace/db';
 import { TelegramIntegration } from './telegram.js';
-import { broadcast } from "../lib/wsManager.js";
+import { broadcast, addBroadcastListener } from "../lib/wsManager.js";
 
 class IntegrationsManager {
   private telegram: TelegramIntegration | null = null;
   private checkInterval: NodeJS.Timeout | null = null;
+  private conversationMap = new Map<number, number>();
+  private activeTelegramChatId: number | null = null;
 
-  constructor() {}
+  constructor() {
+    addBroadcastListener((event: any) => {
+      if (event.type === 'approval_needed' && this.activeTelegramChatId && this.telegram) {
+        // Send approval request to the active remote Telegram chat
+        this.telegram.sendMessage(this.activeTelegramChatId, `⚠️ **Approval Required**\n\n${event.reason}`, {
+          inline_keyboard: [[
+            { text: "✅ Approve", callback_data: `approve_${event.requestId}` },
+            { text: "❌ Deny", callback_data: `deny_${event.requestId}` }
+          ]]
+        });
+      }
+    });
+  }
 
   async start() {
     console.log('[Integrations] Starting manager...');
@@ -25,7 +39,11 @@ class IntegrationsManager {
       // Handle Telegram
       if (settings.telegramBotToken) {
         if (!this.telegram) {
-          this.telegram = new TelegramIntegration(settings.telegramBotToken, this.handleNotification);
+          this.telegram = new TelegramIntegration(
+            settings.telegramBotToken, 
+            this.handleTelegramMessage,
+            this.handleTelegramCallback
+          );
           this.telegram.start();
         }
       } else {
@@ -35,21 +53,70 @@ class IntegrationsManager {
         }
       }
 
-      // Handle Discord (placeholder for now)
-      // if (settings.discordBotToken) { ... }
-
     } catch (e) {
       console.error('[Integrations] Failed to check settings:', e);
     }
   }
 
-  // Reload immediately when settings change via API
   public async reload() {
     await this.checkSettings();
   }
 
-  private handleNotification = (msg: { title: string; message: string }) => {
-    broadcast({ type: 'system_notification', ...msg });
+  private handleTelegramMessage = async (msg: { chatId: number; title: string; message: string }) => {
+    // Notify desktop
+    broadcast({ type: 'system_notification', title: msg.title, message: msg.message });
+    
+    if (!this.telegram) return;
+    
+    this.activeTelegramChatId = msg.chatId;
+    const conversationId = this.conversationMap.get(msg.chatId);
+    const port = process.env.PORT || 4444;
+
+    try {
+      const res = await fetch(`http://localhost:${port}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: msg.message,
+          conversationId: conversationId || undefined
+        })
+      });
+      const data = await res.json() as any;
+      if (data.reply) {
+        this.telegram.sendMessage(msg.chatId, data.reply);
+      }
+      if (data.conversationId) {
+        this.conversationMap.set(msg.chatId, data.conversationId);
+      }
+    } catch (e) {
+      console.error('[Integrations] Telegram remote control failed:', e);
+      this.telegram.sendMessage(msg.chatId, 'Error connecting to local JARVIS API.');
+    } finally {
+      this.activeTelegramChatId = null;
+    }
+  }
+
+  private handleTelegramCallback = async (query: { id: string; chatId: number; data: string; messageId: number }) => {
+    if (!this.telegram) return;
+    
+    if (query.data.startsWith('approve_') || query.data.startsWith('deny_')) {
+      const parts = query.data.split('_');
+      const decision = parts[0] === 'approve' ? 'approved' : 'denied';
+      const requestId = parts[1];
+      const port = process.env.PORT || 4444;
+
+      try {
+        await fetch(`http://localhost:${port}/api/commands/approval`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestId, decision })
+        });
+        await this.telegram.answerCallbackQuery(query.id, `Action ${decision}!`);
+        await this.telegram.sendMessage(query.chatId, `Action was **${decision}**.`);
+      } catch (e) {
+        await this.telegram.answerCallbackQuery(query.id, 'Failed to send approval.');
+      }
+    }
   }
 }
 

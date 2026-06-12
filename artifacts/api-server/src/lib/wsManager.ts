@@ -13,12 +13,29 @@ export function setupWsManager(wss: WebSocketServer) {
   });
 }
 
+const broadcastListeners = new Set<(event: any) => void>();
+
+export function addBroadcastListener(listener: (event: any) => void) {
+  broadcastListeners.add(listener);
+}
+
+export function removeBroadcastListener(listener: (event: any) => void) {
+  broadcastListeners.delete(listener);
+}
+
 /** Broadcast a JSON message to all connected clients */
 export function broadcast(event: object) {
   const msg = JSON.stringify(event);
   for (const client of clients) {
     if (client.readyState === WebSocket.OPEN) {
       client.send(msg);
+    }
+  }
+  for (const listener of broadcastListeners) {
+    try {
+      listener(event);
+    } catch (e) {
+      console.error('Broadcast listener error:', e);
     }
   }
 }
