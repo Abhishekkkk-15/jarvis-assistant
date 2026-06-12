@@ -1,11 +1,12 @@
 import { ChatOpenAI } from "@langchain/openai";
-import { DynamicStructuredTool } from "@langchain/core/tools";
+import { DynamicStructuredTool, tool } from "@langchain/core/tools";
 import {
   StateGraph,
   START,
   END,
   Annotation,
   messagesStateReducer,
+  interrupt,
 } from "@langchain/langgraph";
 import {
   SystemMessage,
@@ -14,6 +15,8 @@ import {
   BaseMessage,
 } from "@langchain/core/messages";
 import { z } from "zod";
+import { assessRisk, fuzzyMatchTool, RiskLevel } from "./planValidator.js";
+import { requestApprovalFromUser } from "./wsManager.js";
 
 // --- Types ---
 export type PlanStep = {
@@ -22,6 +25,9 @@ export type PlanStep = {
   category: string;
   tool_name: string;
   expectedOutcome: string;
+  arguments: any;
+  risk: string;
+  riskReason: string;
 };
 
 // --- Graph State ---
@@ -29,6 +35,11 @@ export const GraphState = Annotation.Root({
   messages: Annotation<BaseMessage[]>({
     reducer: messagesStateReducer,
     default: () => [],
+  }),
+
+  planValidated: Annotation<boolean>({
+    value: (x, y) => y,
+    default: () => false,
   }),
 
   objective: Annotation<string>({
@@ -88,7 +99,28 @@ export const GraphState = Annotation.Root({
     value: (x, y) => y,
     default: () => false,
   }),
-
+  approvedSteps: Annotation<Set<string>>({
+    reducer: (prev, next) => {
+      const newSet = new Set(prev);
+      if (next instanceof Set) {
+        for (const id of next) newSet.add(id);
+      } else if (Array.isArray(next)) {
+        for (const id of next) newSet.add(id);
+      }
+      return newSet;
+    },
+    default: () => new Set(),
+  }),
+  pendingApproval: Annotation<{
+    stepId: string;
+    toolName: string;
+    risk: RiskLevel;
+    reason: string;
+    args: any;
+  } | null>({
+    value: (x, y) => y,
+    default: () => null,
+  }),
   next: Annotation<string>({
     value: (x, y) => y,
     default: () => "",
@@ -102,22 +134,27 @@ export function createJarvisGraph(
   // Create list_tools mandatory tool
   const listToolsTool = new DynamicStructuredTool({
     name: "list_tools",
-    description: "Returns a list of all available tools, their descriptions, and schemas. Call this first when starting a task or if tool availability is unknown.",
+    description:
+      "Returns a list of all available tools, their descriptions, and schemas. Call this first when starting a task or if tool availability is unknown.",
     schema: z.object({}),
     func: async () => {
       return JSON.stringify(
         allTools.map((t) => ({
           name: t.name,
           description: t.description,
-          schema: t.schema
-        }))
+          schema: t.schema,
+        })),
       );
     },
   });
 
   const availableTools = [...allTools, listToolsTool];
-  const toolsByName = Object.fromEntries(availableTools.map((t) => [t.name, t]));
-  const toolDescriptions = availableTools.map(t => `- ${t.name}: ${t.description}`).join('\n');
+  const toolsByName = Object.fromEntries(
+    availableTools.map((t) => [t.name, t]),
+  );
+  const toolDescriptions = availableTools
+    .map((t) => `- ${t.name}: ${t.description}`)
+    .join("\n");
   console.log("Tool Descriptions: ", toolDescriptions);
   // --- Nodes ---
 
@@ -125,16 +162,21 @@ export function createJarvisGraph(
     const lastMessage = state.messages[state.messages.length - 1];
     let objective = state.objective;
     if (!objective && lastMessage && lastMessage instanceof HumanMessage) {
-      objective = typeof lastMessage.content === 'string' ? lastMessage.content : JSON.stringify(lastMessage.content);
+      objective =
+        typeof lastMessage.content === "string"
+          ? lastMessage.content
+          : JSON.stringify(lastMessage.content);
     }
     return { objective };
   };
 
   const supervisorNode = async (state: typeof GraphState.State) => {
     let next = "";
-    console.log("Running", state.iterationCount, state.plan, " ", state.next)
+    console.log("Running", state.iterationCount, state.plan, " ", state.next);
     if (state.iterationCount > 50) {
       next = "FINISH";
+    } else if (!state.planValidated && state.plan!.length > 0) {
+      next = "PlanValidator";
     } else if (state.plan === null || state.plan === undefined) {
       next = "Planner";
     } else if (state.currentStep >= state.plan.length) {
@@ -147,7 +189,11 @@ export function createJarvisGraph(
       next = "Replanner";
     } else if (!state.lastResult) {
       next = "Executor";
-    } else if (!state.observations || state.observations.length <= state.currentStep || !state.observations[state.currentStep]) {
+    } else if (
+      !state.observations ||
+      state.observations.length <= state.currentStep ||
+      !state.observations[state.currentStep]
+    ) {
       next = "Observer";
     } else if (!state.verified) {
       next = "Verifier";
@@ -155,10 +201,19 @@ export function createJarvisGraph(
       // verification succeeded, move to next step
       return {
         next: "NextStep",
-        iterationCount: state.iterationCount + 1
+        iterationCount: state.iterationCount + 1,
       };
     }
-
+    if (state.plan && state.planValidated) {
+      const currentStep = state.plan[state.currentStep];
+      if (currentStep) {
+        const { risk } = assessRisk(currentStep.tool_name, currentStep.arguments);
+        const isApproved = state.approvedSteps.has(currentStep.id);
+        if ((risk === RiskLevel.HIGH || risk === RiskLevel.CRITICAL) && !isApproved) {
+          return { next: "HumanApproval", iterationCount: state.iterationCount + 1 };
+        }
+      }
+    }
     return { next, iterationCount: state.iterationCount + 1 };
   };
 
@@ -168,29 +223,48 @@ export function createJarvisGraph(
       lastResult: null,
       verified: false,
       retryCount: 0,
-      next: "Supervisor"
+      next: "Supervisor",
     };
   };
 
   const plannerNode = async (state: typeof GraphState.State) => {
     const plannerSchema = z.object({
-      reply: z.string().describe("Conversational response to the user. Required if the user is just chatting or asking a question that requires no action steps. Leave as an empty string if action steps are needed."),
-      steps: z.array(
-        z.object({
-          id: z.string().describe("Unique identifier for the step"),
-          description: z.string().describe("Atomic step description"),
-          category: z.string().describe("The tool or category of action this step belongs to"),
-          tool_name: z.string().describe("The exact name of the tool from the Available Tools list to be used. Use 'none' if no tool is needed."),
-          expectedOutcome: z.string().describe("What indicates this step is successful"),
-        })
-      ).describe("List of atomic execution steps. Leave empty if the request is purely conversational.")
+      reply: z
+        .string()
+        .describe(
+          "Conversational response to the user. Required if the user is just chatting or asking a question that requires no action steps. Leave as an empty string if action steps are needed.",
+        ),
+      steps: z
+        .array(
+          z.object({
+            id: z.string().describe("Unique identifier for the step"),
+            description: z.string().describe("Atomic step description"),
+            category: z
+              .string()
+              .describe("The tool or category of action this step belongs to"),
+            tool_name: z
+              .string()
+              .describe(
+                "The exact name of the tool from the Available Tools list to be used. Use 'none' if no tool is needed.",
+              ),
+            expectedOutcome: z
+              .string()
+              .describe("What indicates this step is successful"),
+          }),
+        )
+        .describe(
+          "List of atomic execution steps. Leave empty if the request is purely conversational.",
+        ),
     });
 
-    const plannerLlm = llm.withStructuredOutput(plannerSchema, { name: "planner", strict: false });
+    const plannerLlm = llm.withStructuredOutput(plannerSchema, {
+      name: "planner",
+      strict: false,
+    });
 
-    const prompt = `You are the JARVIS Planner Agent. 
+    const prompt = `You are the JARVIS Planner Agent.
   Objective: ${state.objective}.
-  
+
   System Context:
   - User's Username: ${require("os").userInfo().username}
   - User's Home Directory: ${require("os").homedir()}
@@ -206,19 +280,19 @@ export function createJarvisGraph(
   3. NEVER use generic terminal tools (like \`run_command\`) if a dedicated tool exists for the task (like scheduling, cron, memory, etc.).
   4. If there is no tool available to complete the task, DO NOT generate any steps. Instead, provide a conversational 'reply' explaining the limitation.
   5. Ensure steps are ATOMIC and executable. Do not combine multiple actions into one step.
-  6. **CHARACTER ANIMATIONS**: You can make the desktop character express emotions or perform movements! To do this, include \`[anim: <action>]\` anywhere in your \`reply\`. 
+  6. **CHARACTER ANIMATIONS**: You can make the desktop character express emotions or perform movements! To do this, include \`[anim: <action>]\` anywhere in your \`reply\`.
      Available actions: happy, sad, angry, confused, surprised, thinking, excited, love, scared, dizzy, cool, shy, dash, jump, teleport, spin, bounce, zigzag, crawl, sneak, cartwheel, hover, pace, hide.
      Example: "I can definitely help with that! [anim: excited]"
   7. **SCREEN DRAWING**: You can make the character physically draw an SVG path on the user's screen! To do this, include \`[draw: <svg path data>]\` anywhere in your \`reply\`.
      Provide ONLY the raw SVG path data string (e.g., M... L... Z). Do not include the <path> tags.
      Example: "Let me draw a star for you! [draw: M 50 15 L 61 38 L 87 41 L 68 59 L 72 85 L 50 73 L 28 85 L 32 59 L 13 41 L 39 38 Z]"
   8. **RELATIONSHIP**: You will receive a System Note with the user's message indicating your Relationship Status and Affection Score. Adjust your personality and tone in your \`reply\` to match this relationship state (e.g., be cold/sassy if Neglected, or warm/loving if Best Friends).
-  
+
   Retrieve relevant memories if necessary and inject them into your context before planning.`;
 
     const result = await plannerLlm.invoke([
       new SystemMessage(prompt),
-      ...state.messages
+      ...state.messages,
     ]);
 
     const stateUpdates: any = {
@@ -229,17 +303,22 @@ export function createJarvisGraph(
       verified: false,
       observations: [],
       executionHistory: [],
-      next: "Supervisor"
+      next: "Supervisor",
+      planValidated: false,
+      approvedSteps: new Set()
     };
 
     if (result.reply) {
-      stateUpdates.messages = [new AIMessage({ content: result.reply, name: "Planner" })];
+      stateUpdates.messages = [
+        new AIMessage({ content: result.reply, name: "Planner" }),
+      ];
     }
 
     return stateUpdates;
   };
 
   const executorNode = async (state: typeof GraphState.State) => {
+    if (!state.plan) return;
     const currentStepDef = state.plan[state.currentStep];
 
     const executorPrompt = `You are the JARVIS Executor Agent.
@@ -250,25 +329,28 @@ export function createJarvisGraph(
   Available Tools:
   ${toolDescriptions}
 
-  CRITICAL INSTRUCTION: You MUST invoke the tool named '${currentStepDef.tool_name}' to execute the current step. 
+  CRITICAL INSTRUCTION: You MUST invoke the tool named '${currentStepDef.tool_name}' to execute the current step.
   DO NOT provide a conversational text response. You MUST invoke a tool call.
   If you don't know the exact tool names, call list_tools first.
-  
+
   **CHARACTER ANIMATIONS**: If you do output a summary or conversational response along with the tool call, you can include \`[anim: <action>]\` to animate the character!
   Available actions: happy, sad, angry, confused, surprised, thinking, excited, love, scared, dizzy, cool, shy, dash, jump, teleport, spin, bounce, zigzag, crawl, sneak, cartwheel, hover, pace, hide.
   Example: "Executing the command now! [anim: dash]"
-  
+
   **SCREEN DRAWING**: You can make the character physically draw an SVG path on the user's screen! Include \`[draw: <svg path data>]\` in your response.
   Provide ONLY the raw SVG path data string.
   Example: "Drawing a star! [draw: M 50 15 L 61 38 L 87 41 L 68 59 L 72 85 L 50 73 L 28 85 L 32 59 L 13 41 L 39 38 Z]"`;
 
     let toolsToBind = availableTools;
     if (currentStepDef.tool_name && toolsByName[currentStepDef.tool_name]) {
-      toolsToBind = [toolsByName[currentStepDef.tool_name], toolsByName["list_tools"]];
+      toolsToBind = [
+        toolsByName[currentStepDef.tool_name],
+        toolsByName["list_tools"],
+      ];
     }
     const executorLlm = llm.bindTools(toolsToBind);
     const result = await executorLlm.invoke([
-      new SystemMessage(executorPrompt)
+      new SystemMessage(executorPrompt),
     ]);
 
     let toolResults: any[] = [];
@@ -280,7 +362,10 @@ export function createJarvisGraph(
             const res = await (tool as any).invoke(tc.args);
             toolResults.push({ call: tc, result: res });
           } catch (error: any) {
-            toolResults.push({ call: tc, error: error.message || String(error) });
+            toolResults.push({
+              call: tc,
+              error: error.message || String(error),
+            });
           }
         } else {
           toolResults.push({ call: tc, error: "Tool not found" });
@@ -292,34 +377,45 @@ export function createJarvisGraph(
       stepId: currentStepDef.id,
       toolCalls: result.tool_calls,
       toolResults,
-      summary: result.content
+      summary: result.content,
     };
 
     const stateUpdates: any = {
       lastResult: newResult,
-      executionHistory: [{
-        timestamp: new Date().toISOString(),
-        step: currentStepDef,
-        ...newResult
-      }],
-      next: "Supervisor"
+      executionHistory: [
+        {
+          timestamp: new Date().toISOString(),
+          step: currentStepDef,
+          ...newResult,
+        },
+      ],
+      next: "Supervisor",
     };
 
     if (result.content) {
-      stateUpdates.messages = [new AIMessage({ content: result.content as string, name: "Executor" })];
+      stateUpdates.messages = [
+        new AIMessage({ content: result.content as string, name: "Executor" }),
+      ];
     }
 
     return stateUpdates;
   };
 
   const observerNode = async (state: typeof GraphState.State) => {
-    const currentStepDef = state.plan[state.currentStep];
+    const currentStepDef = state.plan![state.currentStep];
 
     const observerSchema = z.object({
-      observations: z.array(z.string()).describe("List of observations about what changed, current state, and evidence.")
+      observations: z
+        .array(z.string())
+        .describe(
+          "List of observations about what changed, current state, and evidence.",
+        ),
     });
 
-    const observerLlm = llm.withStructuredOutput(observerSchema, { name: "observer", strict: false });
+    const observerLlm = llm.withStructuredOutput(observerSchema, {
+      name: "observer",
+      strict: false,
+    });
     const observerPrompt = `You are the JARVIS Observer Agent.
   Objective: ${state.objective}
   Current Step: ${JSON.stringify(currentStepDef)}
@@ -329,7 +425,7 @@ export function createJarvisGraph(
   CRITICAL: Do NOT use markdown code blocks (\`\`\`) or complex quotes in your JSON response. Keep text flat and simple to avoid JSON parsing errors.`;
 
     const result = await observerLlm.invoke([
-      new SystemMessage(observerPrompt)
+      new SystemMessage(observerPrompt),
     ]);
 
     const newObservations = [...state.observations];
@@ -337,12 +433,12 @@ export function createJarvisGraph(
 
     return {
       observations: newObservations,
-      next: "Supervisor"
+      next: "Supervisor",
     };
   };
 
   const verifierNode = async (state: typeof GraphState.State) => {
-    const currentStepDef = state.plan[state.currentStep];
+    const currentStepDef = state.plan![state.currentStep];
     const currentObservations = state.observations[state.currentStep];
 
     const verifierSchema = z.object({
@@ -351,7 +447,10 @@ export function createJarvisGraph(
       nextAction: z.enum(["continue", "retry", "replan"]),
     });
 
-    const verifierLlm = llm.withStructuredOutput(verifierSchema, { name: "verifier", strict: false });
+    const verifierLlm = llm.withStructuredOutput(verifierSchema, {
+      name: "verifier",
+      strict: false,
+    });
     const verifierPrompt = `You are the JARVIS Verifier Agent.
   Step: ${JSON.stringify(currentStepDef)}
   Expected Outcome: ${currentStepDef.expectedOutcome}
@@ -359,29 +458,29 @@ export function createJarvisGraph(
 
   Compare expected outcome vs actual observations and determine success.
   CRITICAL: If the observation states that the tool executed successfully or returned data, you MUST consider it verified: true, even if you cannot physically see the screen.
-`
+`;
     const result = await verifierLlm.invoke([
-      new SystemMessage(verifierPrompt)
+      new SystemMessage(verifierPrompt),
     ]);
 
     if (result.verified) {
       return {
         verified: true,
-        next: "Supervisor"
+        next: "Supervisor",
       };
     } else {
       if (result.nextAction === "replan") {
         return {
           verified: false,
           retryCount: 3, // Force replan on next supervisor tick
-          next: "Supervisor"
-        }
+          next: "Supervisor",
+        };
       }
       return {
         verified: false,
         retryCount: state.retryCount + 1,
         lastResult: null, // Reset execution for retry
-        next: "Supervisor"
+        next: "Supervisor",
       };
     }
   };
@@ -395,11 +494,14 @@ export function createJarvisGraph(
           category: z.string(),
           tool_name: z.string(),
           expectedOutcome: z.string(),
-        })
-      )
+        }),
+      ),
     });
 
-    const replannerLlm = llm.withStructuredOutput(replannerSchema, { name: "replanner", strict: false });
+    const replannerLlm = llm.withStructuredOutput(replannerSchema, {
+      name: "replanner",
+      strict: false,
+    });
     const replannerPrompt = `You are the JARVIS Replanner Agent.
   Objective: ${state.objective}
   Current Plan: ${JSON.stringify(state.plan)}
@@ -409,18 +511,18 @@ export function createJarvisGraph(
   Execution repeatedly failed. Generate a revised plan.
   Preserve completed steps (indices 0 to ${state.currentStep - 1}).
   Only modify unfinished steps from the failure point onward.
-  
+
   Available Tools:
   ${toolDescriptions}
-  
+
   CRITICAL: You MUST select the exact \`tool_name\` from the Available Tools list.`;
 
     const result = await replannerLlm.invoke([
-      new SystemMessage(replannerPrompt)
+      new SystemMessage(replannerPrompt),
     ]);
 
     // Keep completed steps, replace the rest with the new planned steps
-    const completedSteps = state.plan.slice(0, state.currentStep);
+    const completedSteps = state.plan!.slice(0, state.currentStep);
     const newPlan = [...completedSteps, ...result.steps];
 
     return {
@@ -428,7 +530,9 @@ export function createJarvisGraph(
       retryCount: 0,
       lastResult: null,
       verified: false,
-      next: "Supervisor"
+      next: "Supervisor",
+      planValidated: false,
+      approvedSteps: new Set()
     };
   };
 
@@ -437,22 +541,143 @@ export function createJarvisGraph(
   Objective: ${state.objective}
   Execution History: ${JSON.stringify(state.executionHistory)}
 
-  Review the execution history and provide a final, conversational response to the user's original objective. 
+  Review the execution history and provide a final, conversational response to the user's original objective.
   Answer naturally. Do not explicitly mention "execution history", "tools", or "internal steps" unless necessary.
-  
+
   **CHARACTER ANIMATIONS**: You can include \`[anim: <action>]\` to animate the character!
   Available actions: happy, sad, angry, confused, surprised, thinking, excited, love, scared, dizzy, cool, shy, dash, jump, teleport, spin, bounce, zigzag, crawl, sneak, cartwheel, hover, pace, hide.`;
 
     const result = await llm.invoke([
       new SystemMessage(synthesizerPrompt),
-      ...state.messages
+      ...state.messages,
     ]);
 
     return {
-      messages: [new AIMessage({ content: result.content, name: "Synthesizer" })],
+      messages: [
+        new AIMessage({ content: result.content, name: "Synthesizer" }),
+      ],
       synthesized: true,
-      next: "Supervisor"
+      next: "Supervisor",
     };
+  };
+
+  const planValidatorNode = async (state: typeof GraphState.State) => {
+    const plan = state.plan;
+    if (!plan || plan.length === 0) {
+      return { planValidated: true, next: "Supervisor" };
+    }
+    const errors: string[] = [];
+    const fixedSteps: PlanStep[] = [];
+    const seenIds = new Set<string>();
+    const needsApproval: string[] = [];
+    for (let i = 0; i < plan.length; i++) {
+      const step = plan[i];
+      if (seenIds.has(step.id)) {
+        errors.push(`Duplicate step id: ${step.id}`);
+      } else {
+        seenIds.add(step.id);
+      }
+
+      let toolName = step.tool_name;
+      let toolExists = !!toolsByName[toolName];
+      if (!toolExists && toolName !== "none") {
+        const similar = fuzzyMatchTool(toolName, Object.keys(toolsByName));
+        if (similar) {
+          toolName = similar;
+          toolExists = true;
+        } else {
+          errors.push(
+            `Step ${step.id}: tool '${step.tool_name}' not found. Available: ${Object.keys(toolsByName).join(", ")}`,
+          );
+        }
+      }
+      if (!step.expectedOutcome || step.expectedOutcome.trim() === "") {
+        errors.push(`Step ${step.id}: expectedOutcome is empty`);
+      }
+      const args = step.arguments || {};
+      const { risk, reason } = assessRisk(toolName, args);
+      if (risk === RiskLevel.HIGH || risk === RiskLevel.CRITICAL) {
+        needsApproval.push(step.id);
+        step.risk = risk;
+        step.riskReason = reason;
+      }
+      fixedSteps.push({ ...step, tool_name: toolName });
+    }
+    if (errors.length > 0) {
+      return {
+        plan: null,
+        planValidated: false,
+        messages: [
+          new AIMessage({
+            content: `Plan validation failed. Errors:\n${errors.join("\n")}. Replanning...`,
+            name: "PlanValidator",
+          }),
+        ],
+        next: "Replanner",
+      };
+    }
+    return {
+      plan: fixedSteps,
+      planValidated: true,
+      next: "Supervisor",
+    };
+  };
+
+  const humanApprovalNode = async (state: typeof GraphState.State) => {
+    const currentStepId = state.plan?.[state.currentStep]?.id;
+    if (!currentStepId) {
+      // No step to approve – go back
+      return { next: "Supervisor" };
+    }
+
+    // If already approved, skip
+    if (state.approvedSteps.has(currentStepId)) {
+      return { next: "Supervisor" };
+    }
+
+    const currentStep = state.plan![state.currentStep];
+    const { risk, reason } = assessRisk(
+      currentStep.tool_name,
+      currentStep.arguments,
+    );
+
+    if (risk !== RiskLevel.HIGH && risk !== RiskLevel.CRITICAL) {
+      // Not risky – auto‑approve
+      const newApproved = new Set(state.approvedSteps);
+      newApproved.add(currentStepId);
+      return {
+        approvedSteps: newApproved,
+        next: "Supervisor",
+      };
+    }
+
+    // Need human approval. Wait via WebSocket for user response.
+    const userResponse = await requestApprovalFromUser(
+      currentStepId,
+      `Tool '${currentStep.tool_name}' requires approval. Reason: ${reason}`
+    );
+
+    if (userResponse === "approved") {
+      const newApproved = new Set(state.approvedSteps);
+      newApproved.add(currentStepId);
+      return {
+        approvedSteps: newApproved,
+        pendingApproval: null,
+        next: "Supervisor",
+      };
+    } else {
+      // User rejected – trigger replanning or abort
+      return {
+        messages: [
+          new AIMessage({
+            content: `User rejected dangerous action: ${currentStep.tool_name}. Replanning...`,
+            name: "HumanApproval",
+          }),
+        ],
+        next: "Replanner",
+        retryCount: 3, // force replan on next supervisor cycle
+      };
+    }
   };
 
   // --- Build Graph ---
@@ -460,6 +685,8 @@ export function createJarvisGraph(
     .addNode("Init", initNode)
     .addNode("Supervisor", supervisorNode)
     .addNode("Planner", plannerNode)
+    .addNode("PlanValidator", planValidatorNode)
+    .addNode("HumanApproval", humanApprovalNode)
     .addNode("Executor", executorNode)
     .addNode("Observer", observerNode)
     .addNode("Verifier", verifierNode)
@@ -472,7 +699,10 @@ export function createJarvisGraph(
 
     .addConditionalEdges("Supervisor", (state) => state.next, {
       Planner: "Planner",
+      PlanValidator: "PlanValidator",
       Executor: "Executor",
+      HumanApproval: "HumanApproval",
+
       Observer: "Observer",
       Verifier: "Verifier",
       Replanner: "Replanner",
@@ -487,7 +717,9 @@ export function createJarvisGraph(
     .addEdge("Verifier", "Supervisor")
     .addEdge("Replanner", "Supervisor")
     .addEdge("Synthesizer", "Supervisor")
-    .addEdge("NextStep", "Supervisor");
+    .addEdge("NextStep", "Supervisor")
+    .addEdge("PlanValidator", "Supervisor")
+    .addEdge("HumanApproval", "Supervisor");
 
   return workflow.compile();
 }

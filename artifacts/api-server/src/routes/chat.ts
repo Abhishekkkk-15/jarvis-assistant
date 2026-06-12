@@ -12,6 +12,10 @@ router.post("/chat", async (req, res) => {
       return;
     }
 
+    // Extend timeout to 5 minutes to allow time for WebSocket human approval
+    req.setTimeout(300_000);
+    res.setTimeout(300_000);
+
     const result = await processChatRequest(parsed.data);
     res.json(result);
   } catch (err: any) {
