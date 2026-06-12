@@ -129,7 +129,8 @@ export function assessRisk(
     "media_control",
     "display_brightness",
     "website_screenshot_capture",
-    "read_recent_emails"
+    "read_recent_emails",
+    "read_jarvis_manual"
   ];
   if (safeTools.includes(toolName)) {
     return { risk: RiskLevel.NONE, reason: "" };
