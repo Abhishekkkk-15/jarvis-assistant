@@ -19,6 +19,8 @@ import { emailTools } from "./email.js";
 import { read_jarvis_manual } from "./jarvis_manual.js";
 import { settingsTools } from "./settings.js";
 import { sendTelegramMessageTool } from "./telegram.js";
+import { antigravityTools } from "./antigravity.js";
+import { claudeTools } from "./claude_cli.js";
 
 export const allTools = [
   ...browserTools,
@@ -40,6 +42,8 @@ export const allTools = [
   ...githubTools,
   ...emailTools,
   ...settingsTools,
+  ...antigravityTools,
+  ...claudeTools,
   sendTelegramMessageTool,
   read_jarvis_manual,
 ];
