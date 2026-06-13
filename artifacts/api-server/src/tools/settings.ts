@@ -26,7 +26,7 @@ export const settingsTools = [
     },
     {
       name: "check_configured_settings",
-      description: "Checks which integrations and credentials the user has configured (e.g. Email, Notion, Spotify, Telegram). Returns boolean statuses indicating if they are setup. Use this to check if a user has configured an integration before trying to use it.",
+      description: "Checks which integrations and credentials the user has configured (e.g. Email, Notion, Spotify, Telegram). Returns boolean statuses. Use this ONLY if the user explicitly asks about their configuration status or what integrations are setup.",
       schema: z.object({}),
     }
   )

@@ -242,7 +242,7 @@ export async function processChatRequest(parsedData: any) {
   let provider = parsedData.provider || settings.selectedProvider || "groq";
   let isFallback = false;
   // let modelName = hasImage ? "meta/llama-3.2-90b-vision-instruct" : "nvidia/nemotron-3-ultra-550b-a55b";
-  let modelName = hasImage ? "moonshotai/kimi-k2.6" : "openai/gpt-oss-120b";
+  let modelName = "minimaxai/minimax-m3";
 
   if (provider === "groq" && !settings.groqApiKey && settings.nvidiaApiKey) {
     provider = "nvidia";
@@ -261,6 +261,7 @@ export async function processChatRequest(parsedData: any) {
     throw new Error(`No ${provider.toUpperCase()} API key configured. Please add your API key in Settings.`);
   }
 
+  // const endpoint = "https://api.groq.com/openai/v1";
   const endpoint = "https://integrate.api.nvidia.com/v1";
 
   const llm = new ChatOpenAI({

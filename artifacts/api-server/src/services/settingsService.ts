@@ -27,6 +27,10 @@ export function toResponse(s: typeof settingsTable.$inferSelect) {
     notionApiKey: s.notionApiKey,
     spotifyClientId: s.spotifyClientId,
     spotifyClientSecret: s.spotifyClientSecret,
+    githubPatSet: !!s.githubPat,
+    emailAddress: s.emailAddress,
+    emailProvider: s.emailProvider,
+    emailPasswordSet: !!s.emailPassword,
   };
 }
 
@@ -53,6 +57,10 @@ export async function updateSettings(parsedData: any) {
   if (d.notionApiKey !== undefined) updates.notionApiKey = d.notionApiKey;
   if (d.spotifyClientId !== undefined) updates.spotifyClientId = d.spotifyClientId;
   if (d.spotifyClientSecret !== undefined) updates.spotifyClientSecret = d.spotifyClientSecret;
+  if (d.githubPat !== undefined) updates.githubPat = d.githubPat;
+  if (d.emailAddress !== undefined) updates.emailAddress = d.emailAddress;
+  if (d.emailPassword !== undefined) updates.emailPassword = d.emailPassword;
+  if (d.emailProvider !== undefined) updates.emailProvider = d.emailProvider;
 
   const [updated] = await db
     .update(settingsTable)

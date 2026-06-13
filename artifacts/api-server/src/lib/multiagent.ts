@@ -131,7 +131,6 @@ export function createJarvisGraph(
   const toolDescriptions = availableTools
     .map((t) => `- ${t.name}: ${t.description}`)
     .join("\n");
-  console.log("Tool Descriptions: ", toolDescriptions);
   // --- Nodes ---
 
   const initNode = async (state: typeof GraphState.State) => {
@@ -148,7 +147,7 @@ export function createJarvisGraph(
 
   const supervisorNode = async (state: typeof GraphState.State) => {
     let next = "";
-    console.log("Running", state.iterationCount, state.plan, " ", state.next);
+    console.log("Running", state.iterationCount, state.plan, " ", state.next, " ", state.retryCount);
     if (state.iterationCount > 50) {
       next = "FINISH";
     } else if (state.plan === null || state.plan === undefined) {
@@ -225,6 +224,7 @@ export function createJarvisGraph(
 
     const plannerLlm = llm.withStructuredOutput(plannerSchema, {
       name: "planner",
+      method: "functionCalling",
       strict: false,
     });
 
@@ -318,7 +318,7 @@ export function createJarvisGraph(
     const result = await executorLlm.invoke([
       new SystemMessage(executorPrompt),
     ]);
-
+    console.log("executor result: ", result);
     let toolResults: any[] = [];
     if (result.tool_calls && result.tool_calls.length > 0) {
       // Step 1: Validate risk for all tool calls inline
@@ -382,9 +382,16 @@ export function createJarvisGraph(
       next: "Supervisor",
     };
 
-    if (result.content) {
+    let executorContentStr = "";
+    if (typeof result.content === "string") {
+      executorContentStr = result.content;
+    } else if (Array.isArray(result.content) && result.content.length > 0) {
+      executorContentStr = result.content.map((c: any) => typeof c === "string" ? c : c.text || "").join("");
+    }
+
+    if (executorContentStr) {
       stateUpdates.messages = [
-        new AIMessage({ content: result.content as string, name: "Executor" }),
+        new AIMessage({ content: executorContentStr, name: "Executor" }),
       ];
     }
 
@@ -404,6 +411,7 @@ export function createJarvisGraph(
 
     const observerLlm = llm.withStructuredOutput(observerSchema, {
       name: "observer",
+      method: "functionCalling",
       strict: false,
     });
     const observerPrompt = `You are the JARVIS Observer Agent.
@@ -439,6 +447,7 @@ export function createJarvisGraph(
 
     const verifierLlm = llm.withStructuredOutput(verifierSchema, {
       name: "verifier",
+      method: "functionCalling",
       strict: false,
     });
     const verifierPrompt = `You are the JARVIS Verifier Agent.
@@ -490,6 +499,7 @@ export function createJarvisGraph(
 
     const replannerLlm = llm.withStructuredOutput(replannerSchema, {
       name: "replanner",
+      method: "functionCalling",
       strict: false,
     });
     const replannerPrompt = `You are the JARVIS Replanner Agent.
