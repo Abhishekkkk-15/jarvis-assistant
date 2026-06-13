@@ -2,12 +2,12 @@ export class TelegramIntegration {
   private token: string;
   private lastUpdateId: number = 0;
   private isRunning: boolean = false;
-  private onMessage: (msg: { chatId: number; title: string; message: string }) => void;
+  private onMessage: (msg: { chatId: number; title: string; message: string; imageBase64?: string }) => void;
   private onCallbackQuery?: (query: { id: string; chatId: number; data: string; messageId: number }) => void;
 
   constructor(
       token: string, 
-      onMessage: (msg: { chatId: number; title: string; message: string }) => void,
+      onMessage: (msg: { chatId: number; title: string; message: string; imageBase64?: string }) => void,
       onCallbackQuery?: (query: { id: string; chatId: number; data: string; messageId: number }) => void
   ) {
       this.token = token;
@@ -27,6 +27,23 @@ export class TelegramIntegration {
           });
       } catch (e) {
           console.error('[Telegram Integration] Failed to send message:', e);
+      }
+  }
+
+  async sendPhoto(chatId: number, photoBuffer: Buffer, caption?: string, filename: string = 'image.png') {
+      try {
+          const formData = new FormData();
+          formData.append('chat_id', chatId.toString());
+          if (caption) formData.append('caption', caption);
+          
+          formData.append('photo', new Blob([photoBuffer]), filename);
+
+          await fetch(`https://api.telegram.org/bot${this.token}/sendPhoto`, {
+              method: 'POST',
+              body: formData
+          });
+      } catch (e) {
+          console.error('[Telegram Integration] Failed to send photo:', e);
       }
   }
 
@@ -57,6 +74,32 @@ export class TelegramIntegration {
       }
   }
 
+  private async downloadPhotoBase64(fileId: string): Promise<string | undefined> {
+      try {
+          const fileRes = await fetch(`https://api.telegram.org/bot${this.token}/getFile?file_id=${fileId}`);
+          if (!fileRes.ok) return undefined;
+          
+          const fileData = await fileRes.json() as any;
+          if (!fileData.ok || !fileData.result?.file_path) return undefined;
+
+          const filePath = fileData.result.file_path;
+          const photoRes = await fetch(`https://api.telegram.org/file/bot${this.token}/${filePath}`);
+          if (!photoRes.ok) return undefined;
+
+          const arrayBuffer = await photoRes.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          
+          // Determine mime type from extension
+          const ext = filePath.split('.').pop()?.toLowerCase();
+          const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
+          
+          return `data:${mime};base64,${buffer.toString('base64')}`;
+      } catch (e) {
+          console.error('[Telegram Integration] Failed to download photo:', e);
+          return undefined;
+      }
+  }
+
   async start() {
       this.isRunning = true;
       console.log('[Telegram Integration] Started listening for messages');
@@ -74,12 +117,23 @@ export class TelegramIntegration {
                   for (const update of data.result) {
                       this.lastUpdateId = update.update_id;
                       
-                      if (update.message?.text) {
+                      if (update.message?.text || update.message?.photo) {
                           const sender = update.message.chat.first_name || update.message.chat.title || 'Telegram';
+                          let imageBase64: string | undefined;
+                          
+                          if (update.message.photo && update.message.photo.length > 0) {
+                              // Telegram sends an array of photo sizes. The last one is the largest.
+                              const largestPhoto = update.message.photo[update.message.photo.length - 1];
+                              imageBase64 = await this.downloadPhotoBase64(largestPhoto.file_id);
+                          }
+
+                          const text = update.message.text || update.message.caption || (imageBase64 ? 'I sent you an image.' : '');
+
                           this.onMessage({
                               chatId: update.message.chat.id,
                               title: `Telegram: ${sender}`,
-                              message: update.message.text
+                              message: text,
+                              imageBase64
                           });
                       } else if (update.callback_query && this.onCallbackQuery) {
                           this.onCallbackQuery({

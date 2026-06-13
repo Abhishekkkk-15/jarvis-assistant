@@ -61,8 +61,20 @@ class IntegrationsManager {
   public async reload() {
     await this.checkSettings();
   }
+  public getTelegram(): TelegramIntegration | null {
+    return this.telegram;
+  }
 
-  private handleTelegramMessage = async (msg: { chatId: number; title: string; message: string }) => {
+  public getActiveTelegramChatId(): number | null {
+    if (this.activeTelegramChatId) return this.activeTelegramChatId;
+    if (this.conversationMap.size > 0) {
+      // return the most recent or any known chat ID
+      return Array.from(this.conversationMap.keys())[0];
+    }
+    return null;
+  }
+
+  private handleTelegramMessage = async (msg: { chatId: number; title: string; message: string; imageBase64?: string }) => {
     // Notify desktop
     broadcast({ type: 'system_notification', title: msg.title, message: msg.message });
     
@@ -84,6 +96,7 @@ class IntegrationsManager {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: msg.message,
+          imageBase64: msg.imageBase64,
           conversationId: conversationId || undefined
         })
       });

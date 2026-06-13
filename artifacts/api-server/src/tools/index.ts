@@ -18,6 +18,7 @@ import { githubTools } from "./github.js";
 import { emailTools } from "./email.js";
 import { read_jarvis_manual } from "./jarvis_manual.js";
 import { settingsTools } from "./settings.js";
+import { sendTelegramMessageTool } from "./telegram.js";
 
 export const allTools = [
   ...browserTools,
@@ -39,5 +40,6 @@ export const allTools = [
   ...githubTools,
   ...emailTools,
   ...settingsTools,
+  sendTelegramMessageTool,
   read_jarvis_manual,
 ];
