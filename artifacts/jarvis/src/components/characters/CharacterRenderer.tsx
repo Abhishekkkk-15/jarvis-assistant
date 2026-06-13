@@ -398,7 +398,9 @@ export const SpaceCat: React.FC<CharacterProps> = ({ animation = 'idle', size = 
   );
 };
 
-export const FireDrake: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const FireDrake: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
@@ -422,35 +424,37 @@ export const FireDrake: React.FC<CharacterProps> = ({ animation = 'idle', size =
         <polygon points="60,15 65,25 55,25" fill="#e74c3c" />
         <polygon points="50,12 54,20 46,20" fill="#e74c3c" />
         {/* Face */}
-        {(animation === 'happy' || animation === 'excited') ? (
-          <g>
-            <path d="M 40 27 Q 42 24 44 27" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 56 27 Q 58 24 60 27" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'sad' ? (
-          <g>
-            <path d="M 40 26 Q 42 24 44 28" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 56 28 Q 58 24 60 26" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'angry' ? (
-          <g>
-            <path d="M 40 26 L 44 28" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="42" cy="27" r="2" fill="#000" />
-            <path d="M 56 28 L 60 26" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="58" cy="27" r="2" fill="#000" />
-          </g>
-        ) : (
-          <g>
-            <circle cx="42" cy="28" r="3" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            <circle cx="58" cy="28" r="3" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            {animation === 'sleep' && (
-              <g>
-                <line x1="40" y1="29" x2="45" y2="29" stroke="#000" strokeWidth="2" />
-                <line x1="55" y1="29" x2="60" y2="29" stroke="#000" strokeWidth="2" />
-              </g>
-            )}
-          </g>
-        )}
+        <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+          {(animation === 'happy' || animation === 'excited') ? (
+            <g>
+              <path d="M 40 27 Q 42 24 44 27" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 56 27 Q 58 24 60 27" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'sad' ? (
+            <g>
+              <path d="M 40 26 Q 42 24 44 28" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 56 28 Q 58 24 60 26" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'angry' ? (
+            <g>
+              <path d="M 40 26 L 44 28" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="42" cy="27" r="2" fill="#000" />
+              <path d="M 56 28 L 60 26" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="58" cy="27" r="2" fill="#000" />
+            </g>
+          ) : (
+            <g>
+              <circle cx="42" cy="28" r="3" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              <circle cx="58" cy="28" r="3" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              {animation === 'sleep' && (
+                <g>
+                  <line x1="40" y1="29" x2="45" y2="29" stroke="#000" strokeWidth="2" />
+                  <line x1="55" y1="29" x2="60" y2="29" stroke="#000" strokeWidth="2" />
+                </g>
+              )}
+            </g>
+          )}
+        </g>
         <ellipse cx="50" cy="38" rx="10" ry="6" fill="#2ecc71" />
         <circle cx="46" cy="37" r="1" fill="#000" />
         <circle cx="54" cy="37" r="1" fill="#000" />
@@ -463,7 +467,9 @@ export const FireDrake: React.FC<CharacterProps> = ({ animation = 'idle', size =
   );
 };
 
-export const Ninja: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const Ninja: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
@@ -484,38 +490,42 @@ export const Ninja: React.FC<CharacterProps> = ({ animation = 'idle', size = 80,
         <rect x="31" y="18" width="38" height="6" fill="#c0392b" />
         <path d="M 69 21 L 80 15 L 75 25 Z" fill="#c0392b" className="limb-r" />
         {/* Eyes */}
-        {(animation === 'happy' || animation === 'excited') ? (
-          <g>
-            <path d="M 40 34 Q 43 31 46 34" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 54 34 Q 57 31 60 34" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'sad' ? (
-          <g>
-            <path d="M 41 33 Q 43 31 45 35" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 55 35 Q 57 31 59 33" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'angry' ? (
-          <g>
-            <path d="M 41 33 L 45 35" stroke="#f00" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="43" cy="34" r="2" fill="#f00" />
-            <path d="M 55 35 L 59 33" stroke="#f00" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="57" cy="34" r="2" fill="#f00" />
-          </g>
-        ) : (
-          <g>
-            <circle cx="43" cy="34" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            <circle cx="57" cy="34" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            {animation === 'sleep' && (
-              <g><line x1="41" y1="35" x2="45" y2="35" stroke="#000" strokeWidth="2" /><line x1="55" y1="35" x2="59" y2="35" stroke="#000" strokeWidth="2" /></g>
-            )}
-          </g>
-        )}
+        <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+          {(animation === 'happy' || animation === 'excited') ? (
+            <g>
+              <path d="M 40 34 Q 43 31 46 34" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 54 34 Q 57 31 60 34" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'sad' ? (
+            <g>
+              <path d="M 41 33 Q 43 31 45 35" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 55 35 Q 57 31 59 33" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'angry' ? (
+            <g>
+              <path d="M 41 33 L 45 35" stroke="#f00" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="43" cy="34" r="2" fill="#f00" />
+              <path d="M 55 35 L 59 33" stroke="#f00" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="57" cy="34" r="2" fill="#f00" />
+            </g>
+          ) : (
+            <g>
+              <circle cx="43" cy="34" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              <circle cx="57" cy="34" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              {animation === 'sleep' && (
+                <g><line x1="41" y1="35" x2="45" y2="35" stroke="#000" strokeWidth="2" /><line x1="55" y1="35" x2="59" y2="35" stroke="#000" strokeWidth="2" /></g>
+              )}
+            </g>
+          )}
+        </g>
       </svg>
     </BaseCharacter>
   );
 };
 
-export const Wizard: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const Wizard: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
@@ -538,38 +548,42 @@ export const Wizard: React.FC<CharacterProps> = ({ animation = 'idle', size = 80
         <path d="M 20 30 L 80 30 L 50 0 Z" fill="#2c3e50" />
         <ellipse cx="50" cy="30" rx="35" ry="5" fill="#34495e" />
         {/* Eyes */}
-        {(animation === 'happy' || animation === 'excited') ? (
-          <g>
-            <path d="M 41 32 Q 44 29 47 32" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 53 32 Q 56 29 59 32" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'sad' ? (
-          <g>
-            <path d="M 42 31 Q 44 29 46 33" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 54 33 Q 56 29 58 31" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'angry' ? (
-          <g>
-            <path d="M 42 31 L 46 33" stroke="#f00" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="44" cy="32" r="2" fill="#f00" />
-            <path d="M 54 33 L 58 31" stroke="#f00" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="56" cy="32" r="2" fill="#f00" />
-          </g>
-        ) : (
-          <g>
-            <circle cx="44" cy="32" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            <circle cx="56" cy="32" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            {animation === 'sleep' && (
-              <g><line x1="42" y1="33" x2="46" y2="33" stroke="#000" strokeWidth="2" /><line x1="54" y1="33" x2="58" y2="33" stroke="#000" strokeWidth="2" /></g>
-            )}
-          </g>
-        )}
+        <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+          {(animation === 'happy' || animation === 'excited') ? (
+            <g>
+              <path d="M 41 32 Q 44 29 47 32" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 53 32 Q 56 29 59 32" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'sad' ? (
+            <g>
+              <path d="M 42 31 Q 44 29 46 33" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 54 33 Q 56 29 58 31" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'angry' ? (
+            <g>
+              <path d="M 42 31 L 46 33" stroke="#f00" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="44" cy="32" r="2" fill="#f00" />
+              <path d="M 54 33 L 58 31" stroke="#f00" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="56" cy="32" r="2" fill="#f00" />
+            </g>
+          ) : (
+            <g>
+              <circle cx="44" cy="32" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              <circle cx="56" cy="32" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              {animation === 'sleep' && (
+                <g><line x1="42" y1="33" x2="46" y2="33" stroke="#000" strokeWidth="2" /><line x1="54" y1="33" x2="58" y2="33" stroke="#000" strokeWidth="2" /></g>
+              )}
+            </g>
+          )}
+        </g>
       </svg>
     </BaseCharacter>
   );
 };
 
-export const CyberPunk: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const CyberPunk: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 1.5);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
@@ -589,12 +603,14 @@ export const CyberPunk: React.FC<CharacterProps> = ({ animation = 'idle', size =
         <path d="M 35 15 L 45 5 L 55 15 Z" fill="#9b59b6" />
         {/* Cyber Glasses */}
         <rect x="32" y="22" width="36" height="8" rx="2" fill="#000" />
-        <rect x="34" y="24" width="32" height="4" fill={
-          animation === 'angry' ? '#f00' :
-          animation === 'sad' ? '#3498db' :
-          animation === 'happy' ? '#f1c40f' :
-          '#0ff'
-        } className={(animation === 'excited' || animation === 'happy') ? 'animate-pulse' : ''} />
+        <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+          <rect x="34" y="24" width="32" height="4" fill={
+            animation === 'angry' ? '#f00' :
+            animation === 'sad' ? '#3498db' :
+            animation === 'happy' ? '#f1c40f' :
+            '#0ff'
+          } className={(animation === 'excited' || animation === 'happy') ? 'animate-pulse' : ''} />
+        </g>
         {/* Mouth */}
         {animation === 'happy' || animation === 'excited' ? (
           <path d="M 45 35 Q 50 40 55 35" fill="none" stroke="#000" strokeWidth="2" />
@@ -762,7 +778,9 @@ export const AlienDude: React.FC<CharacterProps> = ({ animation = 'idle', size =
   );
 };
 
-export const SpiderMan: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const SpiderMan: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 1.5);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   const isSwinging = animation === 'walk' || animation === 'run';
   const isCrouching = animation === 'idle' || animation === 'sad';
   const isHanging = animation === 'sleep';
@@ -783,33 +801,35 @@ export const SpiderMan: React.FC<CharacterProps> = ({ animation = 'idle', size =
         <g transform={isHanging ? "translate(0, 50) rotate(180, 50, 30)" : isCrouching ? "translate(0, 20)" : isSwinging ? "translate(-10, -10) rotate(-15, 50, 30)" : ""}>
           <circle cx="50" cy="30" r="14" fill="#e74c3c" />
           {/* Eyes */}
-          {(animation === 'happy' || animation === 'excited') ? (
-            <g>
-              <path d="M 40 25 Q 48 20 48 30 Z" fill="#fff" stroke="#000" strokeWidth="1" />
-              <path d="M 60 25 Q 52 20 52 30 Z" fill="#fff" stroke="#000" strokeWidth="1" />
-            </g>
-          ) : animation === 'sad' ? (
-            <g>
-              <path d="M 42 22 Q 48 28 48 32 Q 42 32 40 28" fill="#fff" stroke="#000" strokeWidth="1" />
-              <path d="M 58 22 Q 52 28 52 32 Q 58 32 60 28" fill="#fff" stroke="#000" strokeWidth="1" />
-            </g>
-          ) : animation === 'angry' ? (
-            <g>
-              <path d="M 38 22 Q 48 28 48 32 L 40 26 Z" fill="#fff" stroke="#000" strokeWidth="1" />
-              <path d="M 62 22 Q 52 28 52 32 L 60 26 Z" fill="#fff" stroke="#000" strokeWidth="1" />
-            </g>
-          ) : (
-            <g>
-              <path d="M 40 25 Q 48 20 48 32 Q 42 32 40 25" fill="#fff" stroke="#000" strokeWidth="1" className={animation === 'sleep' ? 'opacity-0' : ''} />
-              <path d="M 60 25 Q 52 20 52 32 Q 58 32 60 25" fill="#fff" stroke="#000" strokeWidth="1" className={animation === 'sleep' ? 'opacity-0' : ''} />
-              {animation === 'sleep' && (
-                <g>
-                  <line x1="40" y1="30" x2="48" y2="25" stroke="#000" strokeWidth="2" />
-                  <line x1="60" y1="30" x2="52" y2="25" stroke="#000" strokeWidth="2" />
-                </g>
-              )}
-            </g>
-          )}
+          <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+            {(animation === 'happy' || animation === 'excited') ? (
+              <g>
+                <path d="M 40 25 Q 48 20 48 30 Z" fill="#fff" stroke="#000" strokeWidth="1" />
+                <path d="M 60 25 Q 52 20 52 30 Z" fill="#fff" stroke="#000" strokeWidth="1" />
+              </g>
+            ) : animation === 'sad' ? (
+              <g>
+                <path d="M 42 22 Q 48 28 48 32 Q 42 32 40 28" fill="#fff" stroke="#000" strokeWidth="1" />
+                <path d="M 58 22 Q 52 28 52 32 Q 58 32 60 28" fill="#fff" stroke="#000" strokeWidth="1" />
+              </g>
+            ) : animation === 'angry' ? (
+              <g>
+                <path d="M 38 22 Q 48 28 48 32 L 40 26 Z" fill="#fff" stroke="#000" strokeWidth="1" />
+                <path d="M 62 22 Q 52 28 52 32 L 60 26 Z" fill="#fff" stroke="#000" strokeWidth="1" />
+              </g>
+            ) : (
+              <g>
+                <path d="M 40 25 Q 48 20 48 32 Q 42 32 40 25" fill="#fff" stroke="#000" strokeWidth="1" className={animation === 'sleep' ? 'opacity-0' : ''} />
+                <path d="M 60 25 Q 52 20 52 32 Q 58 32 60 25" fill="#fff" stroke="#000" strokeWidth="1" className={animation === 'sleep' ? 'opacity-0' : ''} />
+                {animation === 'sleep' && (
+                  <g>
+                    <line x1="40" y1="30" x2="48" y2="25" stroke="#000" strokeWidth="2" />
+                    <line x1="60" y1="30" x2="52" y2="25" stroke="#000" strokeWidth="2" />
+                  </g>
+                )}
+              </g>
+            )}
+          </g>
           
           {/* Web pattern on head */}
           <path d="M 50 16 L 50 44 M 36 30 L 64 30 M 40 20 L 60 40 M 40 40 L 60 20" stroke="#c0392b" strokeWidth="0.5" />
@@ -878,7 +898,9 @@ export const SpiderMan: React.FC<CharacterProps> = ({ animation = 'idle', size =
   );
 };
 
-export const IronHero: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const IronHero: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   const isFlying = animation === 'walk' || animation === 'run';
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
@@ -912,40 +934,44 @@ export const IronHero: React.FC<CharacterProps> = ({ animation = 'idle', size = 
           <rect x="35" y="15" width="30" height="30" rx="5" fill="#c0392b" />
         <polygon points="38,20 62,20 58,40 42,40" fill="#f1c40f" />
         {/* Eyes */}
-        {(animation === 'happy' || animation === 'excited') ? (
-          <g>
-            <path d="M 42 27 Q 45 23 48 27" fill="none" stroke="#0ff" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 52 27 Q 55 23 58 27" fill="none" stroke="#0ff" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'sad' ? (
-          <g>
-            <path d="M 42 25 Q 45 23 48 27" fill="none" stroke="#0ff" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 52 27 Q 55 23 58 25" fill="none" stroke="#0ff" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'angry' ? (
-          <g>
-            <path d="M 42 25 L 48 27" stroke="#0ff" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 52 27 L 58 25" stroke="#0ff" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : (
-          <g>
-            <rect x="42" y="25" width="6" height="4" fill="#0ff" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            <rect x="52" y="25" width="6" height="4" fill="#0ff" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            {animation === 'sleep' && (
-              <g>
-                <line x1="42" y1="27" x2="48" y2="27" stroke="#333" strokeWidth="2" />
-                <line x1="52" y1="27" x2="58" y2="27" stroke="#333" strokeWidth="2" />
-              </g>
-            )}
-          </g>
-        )}
+        <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+          {(animation === 'happy' || animation === 'excited') ? (
+            <g>
+              <path d="M 42 27 Q 45 23 48 27" fill="none" stroke="#0ff" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 52 27 Q 55 23 58 27" fill="none" stroke="#0ff" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'sad' ? (
+            <g>
+              <path d="M 42 25 Q 45 23 48 27" fill="none" stroke="#0ff" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 52 27 Q 55 23 58 25" fill="none" stroke="#0ff" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'angry' ? (
+            <g>
+              <path d="M 42 25 L 48 27" stroke="#0ff" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 52 27 L 58 25" stroke="#0ff" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : (
+            <g>
+              <rect x="42" y="25" width="6" height="4" fill="#0ff" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              <rect x="52" y="25" width="6" height="4" fill="#0ff" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              {animation === 'sleep' && (
+                <g>
+                  <line x1="42" y1="27" x2="48" y2="27" stroke="#333" strokeWidth="2" />
+                  <line x1="52" y1="27" x2="58" y2="27" stroke="#333" strokeWidth="2" />
+                </g>
+              )}
+            </g>
+          )}
+        </g>
         </g>
       </svg>
     </BaseCharacter>
   );
 };
 
-export const ElectricMouse: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const ElectricMouse: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   const isElectric = animation === 'excited' || animation === 'angry' || animation === 'run';
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
@@ -979,37 +1005,39 @@ export const ElectricMouse: React.FC<CharacterProps> = ({ animation = 'idle', si
         <circle cx="35" cy="40" r="4" fill="#e74c3c" className={animation === 'excited' ? 'animate-pulse' : ''} />
         <circle cx="65" cy="40" r="4" fill="#e74c3c" className={animation === 'excited' ? 'animate-pulse' : ''} />
         {/* Eyes */}
-        {(animation === 'happy' || animation === 'excited') ? (
-          <g>
-            <path d="M 40 33 Q 43 30 46 33" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 54 33 Q 57 30 60 33" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'sad' ? (
-          <g>
-            <path d="M 40 31 Q 43 30 46 34" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 54 34 Q 57 30 60 31" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'angry' ? (
-          <g>
-            <path d="M 40 31 L 46 34" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="43" cy="32" r="3" fill="#000" />
-            <path d="M 54 34 L 60 31" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="57" cy="32" r="3" fill="#000" />
-          </g>
-        ) : (
-          <g>
-            <circle cx="43" cy="32" r="3" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            <circle cx="57" cy="32" r="3" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            {animation === 'sleep' && (
-              <g>
-                <line x1="40" y1="33" x2="46" y2="33" stroke="#000" strokeWidth="2" />
-                <line x1="54" y1="33" x2="60" y2="33" stroke="#000" strokeWidth="2" />
-              </g>
-            )}
-            <circle cx="44" cy="31" r="1" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            <circle cx="58" cy="31" r="1" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
-          </g>
-        )}
+        <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+          {(animation === 'happy' || animation === 'excited') ? (
+            <g>
+              <path d="M 40 33 Q 43 30 46 33" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 54 33 Q 57 30 60 33" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'sad' ? (
+            <g>
+              <path d="M 40 31 Q 43 30 46 34" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 54 34 Q 57 30 60 31" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'angry' ? (
+            <g>
+              <path d="M 40 31 L 46 34" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="43" cy="32" r="3" fill="#000" />
+              <path d="M 54 34 L 60 31" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="57" cy="32" r="3" fill="#000" />
+            </g>
+          ) : (
+            <g>
+              <circle cx="43" cy="32" r="3" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              <circle cx="57" cy="32" r="3" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              {animation === 'sleep' && (
+                <g>
+                  <line x1="40" y1="33" x2="46" y2="33" stroke="#000" strokeWidth="2" />
+                  <line x1="54" y1="33" x2="60" y2="33" stroke="#000" strokeWidth="2" />
+                </g>
+              )}
+              <circle cx="44" cy="31" r="1" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              <circle cx="58" cy="31" r="1" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
+            </g>
+          )}
+        </g>
         {/* Mouth */}
         <path d="M 47 38 Q 50 42 53 38" fill="none" stroke="#000" strokeWidth="1.5" />
       </svg>
@@ -1017,7 +1045,9 @@ export const ElectricMouse: React.FC<CharacterProps> = ({ animation = 'idle', si
   );
 };
 
-export const DarkKnight: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const DarkKnight: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
@@ -1038,33 +1068,35 @@ export const DarkKnight: React.FC<CharacterProps> = ({ animation = 'idle', size 
         <circle cx="50" cy="30" r="16" fill="#f5b041" /> {/* face */}
         <path d="M 34 30 A 16 16 0 0 1 66 30 L 66 25 L 60 10 L 55 18 L 45 18 L 40 10 L 34 25 Z" fill="#2c3e50" /> {/* Cowl */}
         {/* Eyes */}
-        {(animation === 'happy' || animation === 'excited') ? (
-          <g>
-            <path d="M 40 28 Q 43 25 46 28" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 54 28 Q 57 25 60 28" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'sad' ? (
-          <g>
-            <path d="M 40 26 Q 43 25 46 29" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 54 29 Q 57 25 60 26" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'angry' ? (
-          <g>
-            <path d="M 40 26 L 46 29" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 54 29 L 60 26" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : (
-          <g>
-            <polygon points="40,25 46,28 40,29" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            <polygon points="60,25 54,28 60,29" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            {animation === 'sleep' && (
-              <g>
-                <line x1="40" y1="28" x2="46" y2="28" stroke="#000" strokeWidth="2" />
-                <line x1="54" y1="28" x2="60" y2="28" stroke="#000" strokeWidth="2" />
-              </g>
-            )}
-          </g>
-        )}
+        <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+          {(animation === 'happy' || animation === 'excited') ? (
+            <g>
+              <path d="M 40 28 Q 43 25 46 28" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 54 28 Q 57 25 60 28" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'sad' ? (
+            <g>
+              <path d="M 40 26 Q 43 25 46 29" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 54 29 Q 57 25 60 26" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'angry' ? (
+            <g>
+              <path d="M 40 26 L 46 29" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 54 29 L 60 26" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : (
+            <g>
+              <polygon points="40,25 46,28 40,29" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              <polygon points="60,25 54,28 60,29" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              {animation === 'sleep' && (
+                <g>
+                  <line x1="40" y1="28" x2="46" y2="28" stroke="#000" strokeWidth="2" />
+                  <line x1="54" y1="28" x2="60" y2="28" stroke="#000" strokeWidth="2" />
+                </g>
+              )}
+            </g>
+          )}
+        </g>
         {/* Mouth */}
         <path d="M 45 38 Q 50 36 55 38" fill="none" stroke="#000" strokeWidth="1.5" />
       </svg>
@@ -1072,7 +1104,9 @@ export const DarkKnight: React.FC<CharacterProps> = ({ animation = 'idle', size 
   );
 };
 
-export const NinjaTurtle: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const NinjaTurtle: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   const isSleeping = animation === 'sleep';
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
@@ -1094,27 +1128,35 @@ export const NinjaTurtle: React.FC<CharacterProps> = ({ animation = 'idle', size
             <circle cx="50" cy="25" r="14" fill="#2ecc71" />
             <rect x="35" y="20" width="30" height="8" rx="2" fill="#e74c3c" />
             <path d="M 65 24 Q 75 20 80 26 Q 72 26 65 28 Z" fill="#e74c3c" />
-            {(animation === 'happy' || animation === 'excited') ? (
-              <g>
-                <path d="M 40 25 Q 43 22 46 25" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-                <path d="M 54 25 Q 57 22 60 25" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-              </g>
-            ) : animation === 'sad' ? (
-              <g>
-                <path d="M 40 23 Q 43 22 46 26" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-                <path d="M 54 26 Q 57 22 60 23" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-              </g>
-            ) : animation === 'angry' ? (
-              <g>
-                <path d="M 40 23 L 46 26" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-                <path d="M 54 26 L 60 23" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-              </g>
-            ) : (
-              <g>
-                <circle cx="43" cy="24" r="2" fill="#fff" />
-                <circle cx="57" cy="24" r="2" fill="#fff" />
-              </g>
-            )}
+            <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+              {(animation === 'happy' || animation === 'excited') ? (
+                <g>
+                  <path d="M 40 25 Q 43 22 46 25" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M 54 25 Q 57 22 60 25" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                </g>
+              ) : animation === 'sad' ? (
+                <g>
+                  <path d="M 40 23 Q 43 22 46 26" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M 54 26 Q 57 22 60 23" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                </g>
+              ) : animation === 'angry' ? (
+                <g>
+                  <path d="M 40 23 L 46 26" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M 54 26 L 60 23" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                </g>
+              ) : (
+                <g>
+                  <circle cx="43" cy="24" r="2" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
+                  <circle cx="57" cy="24" r="2" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
+                  {animation === 'sleep' && (
+                    <g>
+                      <line x1="41" y1="24" x2="45" y2="24" stroke="#fff" strokeWidth="2" />
+                      <line x1="55" y1="24" x2="59" y2="24" stroke="#fff" strokeWidth="2" />
+                    </g>
+                  )}
+                </g>
+              )}
+            </g>
             <path d="M 46 32 Q 50 35 54 32" fill="none" stroke="#000" strokeWidth="1.5" />
           </g>
         )}
@@ -1123,7 +1165,9 @@ export const NinjaTurtle: React.FC<CharacterProps> = ({ animation = 'idle', size
   );
 };
 
-export const PirateCaptain: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const PirateCaptain: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   const isWalking = animation === 'walk' || animation === 'run';
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
@@ -1143,18 +1187,20 @@ export const PirateCaptain: React.FC<CharacterProps> = ({ animation = 'idle', si
           <path d="M 25 15 Q 50 -5 75 15 Q 85 25 50 25 Q 15 25 25 15 Z" fill="#2c3e50" />
           <circle cx="44" cy="26" r="3" fill="#000" />
           <line x1="36" y1="20" x2="50" y2="30" stroke="#000" strokeWidth="1" />
-          {(animation === 'happy' || animation === 'excited') ? (
-            <path d="M 54 26 Q 57 23 60 26" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-          ) : animation === 'sad' ? (
-            <path d="M 54 26 Q 57 23 60 27" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-          ) : animation === 'angry' ? (
-            <path d="M 54 27 L 60 24" stroke="#000" strokeWidth="2" strokeLinecap="round" />
-          ) : (
-            <g>
-              <circle cx="57" cy="26" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
-              {animation === 'sleep' && <line x1="54" y1="27" x2="60" y2="27" stroke="#000" strokeWidth="2" />}
-            </g>
-          )}
+          <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+            {(animation === 'happy' || animation === 'excited') ? (
+              <path d="M 54 26 Q 57 23 60 26" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            ) : animation === 'sad' ? (
+              <path d="M 54 26 Q 57 23 60 27" fill="none" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            ) : animation === 'angry' ? (
+              <path d="M 54 27 L 60 24" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+            ) : (
+              <g>
+                <circle cx="57" cy="26" r="2" fill="#000" className={animation === 'sleep' ? 'opacity-0' : ''} />
+                {animation === 'sleep' && <line x1="54" y1="27" x2="60" y2="27" stroke="#000" strokeWidth="2" />}
+              </g>
+            )}
+          </g>
           <path d="M 45 35 L 55 35 L 53 37 Z" fill="#000" />
         </g>
       </svg>
@@ -1162,7 +1208,9 @@ export const PirateCaptain: React.FC<CharacterProps> = ({ animation = 'idle', si
   );
 };
 
-export const ZombieGuy: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const ZombieGuy: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
@@ -1176,41 +1224,45 @@ export const ZombieGuy: React.FC<CharacterProps> = ({ animation = 'idle', size =
         <g className={animation === 'walk' || animation === 'run' ? '' : 'limb-r'}><rect x="54" y="75" width="6" height="15" fill="#34495e" transform={animation === 'walk' || animation === 'run' ? "rotate(-15 54 75)" : ""} /></g>
         <circle cx="50" cy="30" r="15" fill="#1abc9c" />
         <path d="M 45 15 Q 50 10 55 15 Q 60 20 55 20 Q 50 22 45 20 Z" fill="#e74c3c" />
-        {(animation === 'happy' || animation === 'excited') ? (
-          <g>
-            <path d="M 40 28 Q 43 25 46 28" fill="none" stroke="#2c3e50" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 54 28 Q 57 25 60 28" fill="none" stroke="#2c3e50" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'sad' ? (
-          <g>
-            <path d="M 40 26 Q 43 25 46 30" fill="none" stroke="#2c3e50" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 54 30 Q 57 25 60 26" fill="none" stroke="#2c3e50" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : animation === 'angry' ? (
-          <g>
-            <path d="M 40 26 L 46 30" stroke="#2c3e50" strokeWidth="2" strokeLinecap="round" />
-            <path d="M 54 30 L 60 26" stroke="#2c3e50" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        ) : (
-          <g>
-            <circle cx="43" cy="28" r="4" fill="#2c3e50" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            <circle cx="43" cy="28" r="1" fill="#e74c3c" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            <circle cx="57" cy="30" r="2" fill="#2c3e50" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            {animation === 'sleep' && (
-              <g>
-                <line x1="40" y1="30" x2="46" y2="30" stroke="#2c3e50" strokeWidth="2" />
-                <line x1="54" y1="30" x2="60" y2="30" stroke="#2c3e50" strokeWidth="2" />
-              </g>
-            )}
-          </g>
-        )}
+        <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+          {(animation === 'happy' || animation === 'excited') ? (
+            <g>
+              <path d="M 40 28 Q 43 25 46 28" fill="none" stroke="#2c3e50" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 54 28 Q 57 25 60 28" fill="none" stroke="#2c3e50" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'sad' ? (
+            <g>
+              <path d="M 40 26 Q 43 25 46 30" fill="none" stroke="#2c3e50" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 54 30 Q 57 25 60 26" fill="none" stroke="#2c3e50" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : animation === 'angry' ? (
+            <g>
+              <path d="M 40 26 L 46 30" stroke="#2c3e50" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 54 30 L 60 26" stroke="#2c3e50" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          ) : (
+            <g>
+              <circle cx="43" cy="28" r="4" fill="#2c3e50" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              <circle cx="43" cy="28" r="1" fill="#e74c3c" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              <circle cx="57" cy="30" r="2" fill="#2c3e50" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              {animation === 'sleep' && (
+                <g>
+                  <line x1="40" y1="30" x2="46" y2="30" stroke="#2c3e50" strokeWidth="2" />
+                  <line x1="54" y1="30" x2="60" y2="30" stroke="#2c3e50" strokeWidth="2" />
+                </g>
+              )}
+            </g>
+          )}
+        </g>
         <path d="M 45 38 L 47 40 L 49 38 L 51 40 L 53 38 L 55 40" fill="none" stroke="#2c3e50" strokeWidth="1.5" />
       </svg>
     </BaseCharacter>
   );
 };
 
-export const CyberBot: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const CyberBot: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
       <svg width="100%" height="100%" viewBox="0 0 100 100" className="body overflow-visible">
@@ -1229,24 +1281,28 @@ export const CyberBot: React.FC<CharacterProps> = ({ animation = 'idle', size = 
         <line x1="50" y1="15" x2="50" y2="5" stroke="#7f8c8d" strokeWidth="2" />
         <circle cx="50" cy="5" r="3" fill="#e74c3c" className="animate-pulse" />
         <rect x="38" y="22" width="24" height="10" rx="2" fill="#000" />
-        {(animation === 'happy' || animation === 'excited') ? (
-          <path d="M 40 27 Q 50 20 60 27" fill="none" stroke="#e74c3c" strokeWidth="3" />
-        ) : animation === 'sad' ? (
-          <path d="M 40 25 Q 50 30 60 25" fill="none" stroke="#e74c3c" strokeWidth="3" />
-        ) : animation === 'angry' ? (
-          <path d="M 40 24 L 50 28 L 60 24" fill="none" stroke="#e74c3c" strokeWidth="3" />
-        ) : (
-          <g>
-            <rect x="42" y="24" width="16" height="6" rx="3" fill="#e74c3c" className={animation === 'sleep' ? 'opacity-0' : ''} />
-            {animation === 'sleep' && <line x1="42" y1="27" x2="58" y2="27" stroke="#e74c3c" strokeWidth="2" />}
-          </g>
-        )}
+        <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+          {(animation === 'happy' || animation === 'excited') ? (
+            <path d="M 40 27 Q 50 20 60 27" fill="none" stroke="#e74c3c" strokeWidth="3" />
+          ) : animation === 'sad' ? (
+            <path d="M 40 25 Q 50 30 60 25" fill="none" stroke="#e74c3c" strokeWidth="3" />
+          ) : animation === 'angry' ? (
+            <path d="M 40 24 L 50 28 L 60 24" fill="none" stroke="#e74c3c" strokeWidth="3" />
+          ) : (
+            <g>
+              <rect x="42" y="24" width="16" height="6" rx="3" fill="#e74c3c" className={animation === 'sleep' ? 'opacity-0' : ''} />
+              {animation === 'sleep' && <line x1="42" y1="27" x2="58" y2="27" stroke="#e74c3c" strokeWidth="2" />}
+            </g>
+          )}
+        </g>
       </svg>
     </BaseCharacter>
   );
 };
 
-export const VampireLord: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const VampireLord: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   const isBat = animation === 'run' || animation === 'dance';
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
@@ -1272,33 +1328,35 @@ export const VampireLord: React.FC<CharacterProps> = ({ animation = 'idle', size
             <g className="limb-r"><rect x="52" y="80" width="6" height="15" fill="#000" /></g>
             <circle cx="50" cy="30" r="14" fill="#ecf0f1" />
             <path d="M 36 30 Q 36 10 50 15 Q 64 10 64 30 L 60 20 Q 50 25 40 20 Z" fill="#000" />
-            {(animation === 'happy' || animation === 'excited') ? (
-              <g>
-                <path d="M 42 28 Q 45 25 48 28" fill="none" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" />
-                <path d="M 52 28 Q 55 25 58 28" fill="none" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" />
-              </g>
-            ) : animation === 'sad' ? (
-              <g>
-                <path d="M 42 26 Q 45 25 48 30" fill="none" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" />
-                <path d="M 52 30 Q 55 25 58 26" fill="none" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" />
-              </g>
-            ) : animation === 'angry' ? (
-              <g>
-                <path d="M 42 26 L 48 30" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" />
-                <path d="M 52 30 L 58 26" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" />
-              </g>
-            ) : (
-              <g>
-                <circle cx="45" cy="28" r="2" fill="#c0392b" className={animation === 'sleep' ? 'opacity-0' : ''} />
-                <circle cx="55" cy="28" r="2" fill="#c0392b" className={animation === 'sleep' ? 'opacity-0' : ''} />
-                {animation === 'sleep' && (
-                  <g>
-                    <line x1="42" y1="28" x2="48" y2="28" stroke="#000" strokeWidth="2" />
-                    <line x1="52" y1="28" x2="58" y2="28" stroke="#000" strokeWidth="2" />
-                  </g>
-                )}
-              </g>
-            )}
+            <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+              {(animation === 'happy' || animation === 'excited') ? (
+                <g>
+                  <path d="M 42 28 Q 45 25 48 28" fill="none" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M 52 28 Q 55 25 58 28" fill="none" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" />
+                </g>
+              ) : animation === 'sad' ? (
+                <g>
+                  <path d="M 42 26 Q 45 25 48 30" fill="none" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M 52 30 Q 55 25 58 26" fill="none" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" />
+                </g>
+              ) : animation === 'angry' ? (
+                <g>
+                  <path d="M 42 26 L 48 30" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M 52 30 L 58 26" stroke="#c0392b" strokeWidth="2" strokeLinecap="round" />
+                </g>
+              ) : (
+                <g>
+                  <circle cx="45" cy="28" r="2" fill="#c0392b" className={animation === 'sleep' ? 'opacity-0' : ''} />
+                  <circle cx="55" cy="28" r="2" fill="#c0392b" className={animation === 'sleep' ? 'opacity-0' : ''} />
+                  {animation === 'sleep' && (
+                    <g>
+                      <line x1="42" y1="28" x2="48" y2="28" stroke="#000" strokeWidth="2" />
+                      <line x1="52" y1="28" x2="58" y2="28" stroke="#000" strokeWidth="2" />
+                    </g>
+                  )}
+                </g>
+              )}
+            </g>
             <path d="M 46 35 Q 50 38 54 35" fill="none" stroke="#000" strokeWidth="1" />
             <polygon points="46,35 48,35 47,38" fill="#fff" />
             <polygon points="52,35 54,35 53,38" fill="#fff" />
@@ -1309,7 +1367,9 @@ export const VampireLord: React.FC<CharacterProps> = ({ animation = 'idle', size
   );
 };
 
-export const GhostBoo: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const GhostBoo: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 2);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   const isAngry = animation === 'angry' || animation === 'excited';
   return (
     <BaseCharacter size={size} flipped={flipped} animation={animation}>
@@ -1318,33 +1378,35 @@ export const GhostBoo: React.FC<CharacterProps> = ({ animation = 'idle', size = 
           <path d={`M 30 40 Q 50 10 70 40 L 70 80 ${isAngry ? 'Q 65 90 60 80 Q 55 70 50 80 Q 45 90 40 80 Q 35 70 30 80' : 'Q 60 70 50 80 Q 40 90 30 80'} Z`} fill="#ecf0f1" opacity={isAngry ? "1" : "0.85"} />
           <path d="M 30 50 Q 20 40 15 50" fill="none" stroke="#ecf0f1" strokeWidth="6" strokeLinecap="round" className="limb-l" />
           <path d="M 70 50 Q 80 40 85 50" fill="none" stroke="#ecf0f1" strokeWidth="6" strokeLinecap="round" className={animation === 'wave' ? 'arm-wave' : 'limb-r'} />
-          {(animation === 'happy' || animation === 'excited') ? (
-            <g>
-              <path d="M 40 33 Q 43 30 46 33" fill="none" stroke="#2c3e50" strokeWidth="3" strokeLinecap="round" />
-              <path d="M 54 33 Q 57 30 60 33" fill="none" stroke="#2c3e50" strokeWidth="3" strokeLinecap="round" />
-            </g>
-          ) : animation === 'sad' ? (
-            <g>
-              <path d="M 40 31 Q 43 30 46 35" fill="none" stroke="#2c3e50" strokeWidth="3" strokeLinecap="round" />
-              <path d="M 54 35 Q 57 30 60 31" fill="none" stroke="#2c3e50" strokeWidth="3" strokeLinecap="round" />
-            </g>
-          ) : animation === 'angry' ? (
-            <g>
-              <path d="M 40 31 L 46 35" stroke="#2c3e50" strokeWidth="3" strokeLinecap="round" />
-              <path d="M 54 35 L 60 31" stroke="#2c3e50" strokeWidth="3" strokeLinecap="round" />
-            </g>
-          ) : (
-            <g>
-              <circle cx="43" cy="35" r="4" fill="#2c3e50" className={animation === 'sleep' ? 'opacity-0' : ''} />
-              <circle cx="57" cy="35" r="4" fill="#2c3e50" className={animation === 'sleep' ? 'opacity-0' : ''} />
-              {animation === 'sleep' && (
-                <g>
-                  <line x1="40" y1="35" x2="46" y2="35" stroke="#2c3e50" strokeWidth="3" />
-                  <line x1="54" y1="35" x2="60" y2="35" stroke="#2c3e50" strokeWidth="3" />
-                </g>
-              )}
-            </g>
-          )}
+          <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+            {(animation === 'happy' || animation === 'excited') ? (
+              <g>
+                <path d="M 40 33 Q 43 30 46 33" fill="none" stroke="#2c3e50" strokeWidth="3" strokeLinecap="round" />
+                <path d="M 54 33 Q 57 30 60 33" fill="none" stroke="#2c3e50" strokeWidth="3" strokeLinecap="round" />
+              </g>
+            ) : animation === 'sad' ? (
+              <g>
+                <path d="M 40 31 Q 43 30 46 35" fill="none" stroke="#2c3e50" strokeWidth="3" strokeLinecap="round" />
+                <path d="M 54 35 Q 57 30 60 31" fill="none" stroke="#2c3e50" strokeWidth="3" strokeLinecap="round" />
+              </g>
+            ) : animation === 'angry' ? (
+              <g>
+                <path d="M 40 31 L 46 35" stroke="#2c3e50" strokeWidth="3" strokeLinecap="round" />
+                <path d="M 54 35 L 60 31" stroke="#2c3e50" strokeWidth="3" strokeLinecap="round" />
+              </g>
+            ) : (
+              <g>
+                <circle cx="43" cy="35" r="4" fill="#2c3e50" className={animation === 'sleep' ? 'opacity-0' : ''} />
+                <circle cx="57" cy="35" r="4" fill="#2c3e50" className={animation === 'sleep' ? 'opacity-0' : ''} />
+                {animation === 'sleep' && (
+                  <g>
+                    <line x1="40" y1="35" x2="46" y2="35" stroke="#2c3e50" strokeWidth="3" />
+                    <line x1="54" y1="35" x2="60" y2="35" stroke="#2c3e50" strokeWidth="3" />
+                  </g>
+                )}
+              </g>
+            )}
+          </g>
           {animation === 'talk' || animation === 'excited' ? (
             <ellipse cx="50" cy="48" rx="4" ry="6" fill="#2c3e50" />
           ) : animation === 'happy' ? (
@@ -1360,7 +1422,9 @@ export const GhostBoo: React.FC<CharacterProps> = ({ animation = 'idle', size = 
   );
 };
 
-export const SamuraiWarrior: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false }) => {
+export const SamuraiWarrior: React.FC<CharacterProps> = ({ animation = 'idle', size = 80, flipped = false, isBlinking = false, mouseX, mouseY, posX, posY }) => {
+  const { x: ex, y: ey } = computeEyeOffset(mouseX, mouseY, posX, posY, size, 1);
+  const eyeTransform = `translate(${flipped ? -ex : ex}, ${ey})`;
   const isKneeling = animation === 'sleep';
   const drawSword = animation === 'excited' || animation === 'angry' || animation === 'run';
   return (
@@ -1383,33 +1447,35 @@ export const SamuraiWarrior: React.FC<CharacterProps> = ({ animation = 'idle', s
           <path d="M 45 15 L 40 5 L 48 10 Z" fill="#f1c40f" />
           <path d="M 55 15 L 60 5 L 52 10 Z" fill="#f1c40f" />
           <rect x="40" y="24" width="20" height="6" fill="#000" />
-          {(animation === 'happy' || animation === 'excited') ? (
-            <g>
-              <path d="M 42 27 Q 45 25 48 27" fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
-              <path d="M 52 27 Q 55 25 58 27" fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
-            </g>
-          ) : animation === 'sad' ? (
-            <g>
-              <path d="M 42 25 Q 45 25 48 28" fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
-              <path d="M 52 28 Q 55 25 58 25" fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
-            </g>
-          ) : animation === 'angry' ? (
-            <g>
-              <path d="M 42 25 L 48 28" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
-              <path d="M 52 28 L 58 25" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
-            </g>
-          ) : (
-            <g>
-              <circle cx="45" cy="27" r="1" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
-              <circle cx="55" cy="27" r="1" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
-              {animation === 'sleep' && (
-                <g>
-                  <line x1="42" y1="27" x2="48" y2="27" stroke="#fff" strokeWidth="1" />
-                  <line x1="52" y1="27" x2="58" y2="27" stroke="#fff" strokeWidth="1" />
-                </g>
-              )}
-            </g>
-          )}
+          <g transform={eyeTransform} className={isBlinking ? 'eye-blink' : ''}>
+            {(animation === 'happy' || animation === 'excited') ? (
+              <g>
+                <path d="M 42 27 Q 45 25 48 27" fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
+                <path d="M 52 27 Q 55 25 58 27" fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
+              </g>
+            ) : animation === 'sad' ? (
+              <g>
+                <path d="M 42 25 Q 45 25 48 28" fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
+                <path d="M 52 28 Q 55 25 58 25" fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
+              </g>
+            ) : animation === 'angry' ? (
+              <g>
+                <path d="M 42 25 L 48 28" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
+                <path d="M 52 28 L 58 25" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
+              </g>
+            ) : (
+              <g>
+                <circle cx="45" cy="27" r="1" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
+                <circle cx="55" cy="27" r="1" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
+                {animation === 'sleep' && (
+                  <g>
+                    <line x1="42" y1="27" x2="48" y2="27" stroke="#fff" strokeWidth="1" />
+                    <line x1="52" y1="27" x2="58" y2="27" stroke="#fff" strokeWidth="1" />
+                  </g>
+                )}
+              </g>
+            )}
+          </g>
         </g>
       </svg>
     </BaseCharacter>

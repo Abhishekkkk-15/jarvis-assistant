@@ -245,11 +245,28 @@
 }
 .shy-blush > div { animation: blush-fade 3s ease-in-out infinite; }
 
-/* New Movements */
-.anim-dash .body { animation: char-run-body 0.2s linear infinite; }
-.anim-dash .limb-l { animation: char-run-limb-l 0.2s linear infinite; transform-origin: top center; }
-.anim-dash .limb-r { animation: char-run-limb-r 0.2s linear infinite; transform-origin: top center; }
-.anim-jump { animation: char-walk-body 0.3s infinite alternate; }
+/* New Movements — see improved versions above */
+
+/* ─── Jump: squash and stretch ────────────────────────────── */
+@keyframes char-jump {
+  0%   { transform: translateY(0)     scaleX(1.1)  scaleY(0.9); }
+  15%  { transform: translateY(-6px)  scaleX(0.96) scaleY(1.04); }
+  40%  { transform: translateY(-24px) scaleX(0.92) scaleY(1.08); }
+  65%  { transform: translateY(-6px)  scaleX(0.97) scaleY(1.03); }
+  78%  { transform: translateY(0)     scaleX(1.12) scaleY(0.88); }
+  88%  { transform: translateY(-6px)  scaleX(0.98) scaleY(1.02); }
+  100% { transform: translateY(0)     scaleX(1.1)  scaleY(0.9); }
+}
+.anim-jump { animation: char-jump 0.85s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* ─── Dash: forward-leaning sprint ────────────────────────── */
+@keyframes char-dash-body {
+  0%, 100% { transform: translateY(0)    rotate(6deg) scaleX(1.06) scaleY(0.94); }
+  50%      { transform: translateY(-4px) rotate(9deg) scaleX(1.1)  scaleY(0.9); }
+}
+.anim-dash .body   { animation: char-dash-body   0.18s ease-in-out infinite; }
+.anim-dash .limb-l { animation: char-run-limb-l  0.14s linear      infinite; transform-origin: top center; }
+.anim-dash .limb-r { animation: char-run-limb-r  0.14s linear      infinite; transform-origin: top center; }
 
 /* Movement Arcs */
 @keyframes roam-jump-arc {
@@ -280,8 +297,28 @@
   animation: roam-zigzag-arc 2s linear;
 }
 .anim-teleport { animation: char-idle 0.1s infinite; opacity: 0.5; filter: blur(2px); }
-.anim-spin { animation: char-dizzy 0.5s linear infinite; }
-.anim-bounce { animation: char-walk-body 0.2s infinite alternate; }
+
+/* ─── Spin: smooth accelerated rotation with squash ───────── */
+@keyframes char-spin {
+  0%   { transform: rotate(0deg)   scaleX(1)    scaleY(1); }
+  15%  { transform: rotate(54deg)  scaleX(1.04) scaleY(0.97); }
+  50%  { transform: rotate(180deg) scaleX(0.94) scaleY(1.06); }
+  85%  { transform: rotate(306deg) scaleX(1.04) scaleY(0.97); }
+  100% { transform: rotate(360deg) scaleX(1)    scaleY(1); }
+}
+.anim-spin { animation: char-spin 0.55s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+
+/* ─── Bounce: decaying multi-bounce ───────────────────────── */
+@keyframes char-bounce {
+  0%, 100% { transform: translateY(0)     scaleX(1.08) scaleY(0.92); }
+  18%      { transform: translateY(-18px) scaleX(0.93) scaleY(1.07); }
+  36%      { transform: translateY(0)     scaleX(1.08) scaleY(0.92); }
+  50%      { transform: translateY(-10px) scaleX(0.96) scaleY(1.04); }
+  64%      { transform: translateY(0)     scaleX(1.04) scaleY(0.96); }
+  74%      { transform: translateY(-5px)  scaleX(0.98) scaleY(1.02); }
+  84%      { transform: translateY(0)     scaleX(1.02) scaleY(0.98); }
+}
+.anim-bounce { animation: char-bounce 0.9s ease-in-out infinite; }
 .anim-zigzag .body { animation: char-run-body 0.3s linear infinite; }
 .anim-zigzag .limb-l { animation: char-run-limb-l 0.3s linear infinite; transform-origin: top center; }
 .anim-zigzag .limb-r { animation: char-run-limb-r 0.3s linear infinite; transform-origin: top center; }
@@ -290,9 +327,25 @@
 .anim-crawl .limb-l { animation: char-walk-limb-l 1s linear infinite; transform-origin: top center; }
 .anim-crawl .limb-r { animation: char-walk-limb-r 1s linear infinite; transform-origin: top center; }
 
-.anim-sneak .body { animation: char-walk-body 1.5s linear infinite; transform: scaleY(0.85); opacity: 0.7; }
-.anim-sneak .limb-l { animation: char-walk-limb-l 1.5s linear infinite; transform-origin: top center; }
-.anim-sneak .limb-r { animation: char-walk-limb-r 1.5s linear infinite; transform-origin: top center; }
+/* ─── Sneak: crouched tiptoe walk ─────────────────────────── */
+@keyframes char-sneak-body {
+  0%, 100% { transform: scaleX(1)    scaleY(0.78) translateY(8px)  rotate(0deg); }
+  25%       { transform: scaleX(0.97) scaleY(0.75) translateY(10px) rotate(2deg); }
+  75%       { transform: scaleX(0.97) scaleY(0.75) translateY(10px) rotate(-1.5deg); }
+}
+@keyframes char-sneak-limb-l {
+  0%, 100% { transform: rotate(0deg)  translateY(0); }
+  30%      { transform: rotate(20deg) translateY(-3px); }
+  60%      { transform: rotate(-8deg) translateY(0); }
+}
+@keyframes char-sneak-limb-r {
+  0%, 100% { transform: rotate(0deg)  translateY(0); }
+  30%      { transform: rotate(-8deg) translateY(0); }
+  60%      { transform: rotate(20deg) translateY(-3px); }
+}
+.anim-sneak .body  { animation: char-sneak-body   2.4s ease-in-out infinite; opacity: 0.75; }
+.anim-sneak .limb-l { animation: char-sneak-limb-l 2.4s ease-in-out infinite; transform-origin: top center; }
+.anim-sneak .limb-r { animation: char-sneak-limb-r 2.4s ease-in-out infinite; transform-origin: top center; }
 
 .anim-cartwheel { animation: char-dizzy 0.8s linear infinite; }
 .anim-hover { animation: char-idle 2s ease-in-out infinite; transform: translateY(-10px); }
