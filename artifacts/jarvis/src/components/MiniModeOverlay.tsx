@@ -166,16 +166,24 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         ? personality.emotionAnimation
         : (isDancingToMusic && !isDragging && !isPhysicsActive ? 'dance' : baseAnimation)));
 
-  // Sync mouse events for transparent window properly
+  // Sync transparent window mouse events dynamically for drag and drop support
   useEffect(() => {
-    if (!isMinimized || !window.electronAPI) return;
+    if (!isMinimized || !window.electronAPI || typeof window.electronAPI.updateOverlayRect !== 'function') return;
 
-    if (isDragging || showContextMenu || isHoveringRef.current) {
+    if (isDragging || showContextMenu) {
+      window.electronAPI.updateOverlayRect(null);
       window.electronAPI.setIgnoreMouseEvents(false);
     } else {
-      window.electronAPI.setIgnoreMouseEvents(true);
+      // Character is 120x120 by default. Add some padding for safety.
+      window.electronAPI.updateOverlayRect({ x: posX - 10, y: posY - 10, width: 140, height: 140 });
     }
-  }, [isDragging, showContextMenu, isMinimized]);
+    
+    return () => {
+      if (window.electronAPI && typeof window.electronAPI.updateOverlayRect === 'function') {
+        window.electronAPI.updateOverlayRect(null);
+      }
+    };
+  }, [isDragging, showContextMenu, isMinimized, posX, posY]);
 
   // Speech bubble
   const initialMountRef = useRef(true);
@@ -980,10 +988,38 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
       const reader = new FileReader();
       reader.onload = (event) => {
-        const imageBase64 = event.target?.result as string;
-        if (imageBase64) {
-          const message = `I just dropped an image named \`${file.name}\`. Take a look at it!`;
-          window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message, imageBase64 } }));
+        const rawBase64 = event.target?.result as string;
+        if (rawBase64) {
+          // Resize image to max 1024x1024 to prevent 400 Payload Too Large from APIs
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_SIZE = 1024;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height && width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            } else if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              const resizedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+              const message = `I just dropped an image named \`${file.name}\`. Take a look at it!`;
+              window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message, imageBase64: resizedBase64 } }));
+            } else {
+              const message = `I just dropped an image named \`${file.name}\`. Take a look at it!`;
+              window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message, imageBase64: rawBase64 } }));
+            }
+          };
+          img.src = rawBase64;
         }
       };
       reader.readAsDataURL(file);

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain, desktopCapturer, globalShortcut, powerMonitor, utilityProcess } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, desktopCapturer, globalShortcut, powerMonitor, utilityProcess, screen } from 'electron';
 import path from 'path';
 const isDev = process.env.NODE_ENV === 'development';
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:3000';
@@ -227,7 +227,58 @@ app.on('activate', () => {
   }
 });
 
+let overlayRect: { x: number, y: number, width: number, height: number } | null = null;
+let overlayRectWinId: number | null = null;
+let ignoreMousePollingInterval: NodeJS.Timeout | null = null;
+
+ipcMain.on('update-overlay-rect', (event, rect) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+  overlayRect = rect;
+  
+  if (rect && !ignoreMousePollingInterval) {
+    overlayRectWinId = win.id;
+    ignoreMousePollingInterval = setInterval(() => {
+      if (!overlayRect || !overlayRectWinId) {
+        clearInterval(ignoreMousePollingInterval!);
+        ignoreMousePollingInterval = null;
+        return;
+      }
+      const targetWin = BrowserWindow.fromId(overlayRectWinId);
+      if (!targetWin || targetWin.isDestroyed()) {
+        clearInterval(ignoreMousePollingInterval!);
+        ignoreMousePollingInterval = null;
+        return;
+      }
+      
+      const mousePos = screen.getCursorScreenPoint();
+      // Calculate intersection based on the screen position of the window
+      const winBounds = targetWin.getBounds();
+      // overlayRect is relative to the window, so we add winBounds.x and winBounds.y
+      const globalRectX = winBounds.x + overlayRect.x;
+      const globalRectY = winBounds.y + overlayRect.y;
+      
+      const isInside = mousePos.x >= globalRectX && 
+                       mousePos.x <= globalRectX + overlayRect.width &&
+                       mousePos.y >= globalRectY &&
+                       mousePos.y <= globalRectY + overlayRect.height;
+                       
+      if (isInside) {
+        targetWin.setIgnoreMouseEvents(false);
+      } else {
+        targetWin.setIgnoreMouseEvents(true, { forward: true });
+      }
+    }, 50);
+  } else if (!rect && ignoreMousePollingInterval) {
+    clearInterval(ignoreMousePollingInterval);
+    ignoreMousePollingInterval = null;
+    win.setIgnoreMouseEvents(true, { forward: true });
+  }
+});
+
 ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
+  // We disable manual toggling if overlay polling is active to prevent conflicts
+  if (overlayRect) return;
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return;
   if (ignore) {

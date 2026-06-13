@@ -340,13 +340,93 @@ export const JarvisMain: React.FC = () => {
     };
   }, [activeConversationId, settings]);
 
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDraggingOver) setIsDraggingOver(true);
+  };
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(true);
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const rawBase64 = event.target?.result as string;
+        if (rawBase64) {
+          // Resize image to max 1024x1024 to prevent 400 Payload Too Large from APIs
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_SIZE = 1024;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height && width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            } else if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              const resizedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+              handleSendMessage(`I just dropped an image named \`${file.name}\`. Take a look at it!`, resizedBase64);
+            } else {
+              handleSendMessage(`I just dropped an image named \`${file.name}\`. Take a look at it!`, rawBase64);
+            }
+          };
+          img.src = rawBase64;
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      toast({ title: "Unsupported File", description: "Please drop an image file.", variant: "destructive" });
+    }
+  };
+
   // Sync isSpeaking from TTS hook to local storage so MiniMode can read it
   useEffect(() => {
     setIsSpeaking(tts.isSpeaking);
   }, [tts.isSpeaking]);
 
   return (
-    <div className="h-full flex flex-col p-5 md:p-8 max-w-6xl mx-auto w-full overflow-y-auto pb-6">
+    <div 
+      className="h-full flex flex-col p-5 md:p-8 max-w-6xl mx-auto w-full overflow-y-auto pb-6 relative"
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDraggingOver && (
+        <div className="absolute inset-0 z-50 bg-primary/10 backdrop-blur-sm border-4 border-dashed border-primary rounded-xl flex items-center justify-center pointer-events-none">
+          <div className="bg-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-3">
+            <span className="text-2xl animate-bounce">🖼️</span>
+            <span className="text-lg font-bold text-primary">Drop image for JARVIS to see</span>
+          </div>
+        </div>
+      )}
 
       <AgentInteractiveOverlay
         activeApproval={activeApproval}

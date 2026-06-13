@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getActiveWindow: () => ipcRenderer.invoke('get-active-window'),
   hideQuickInput: () => ipcRenderer.send('hide-quick-input'),
   sendToMain: (msg: string) => ipcRenderer.send('send-to-main', msg),
+  updateOverlayRect: (rect: { x: number, y: number, width: number, height: number } | null) => ipcRenderer.send('update-overlay-rect', rect),
 });
 
 ipcRenderer.on('message-from-quick-input', (event, message) => {
