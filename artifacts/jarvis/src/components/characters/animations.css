@@ -464,3 +464,25 @@
 .mood-cool     { filter: drop-shadow(0 0 8px rgba(100, 220, 255, 0.5)); }
 .mood-thinking { filter: drop-shadow(0 0 6px rgba(180, 100, 255, 0.4)); }
 .mood-scared   { filter: drop-shadow(0 0 6px rgba(200, 200, 100, 0.5)); }
+
+/* ═══════════════════════════════════════════════════════
+   ALIVE BEHAVIOUR LAYER
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Breathing: subtle chest rise/fall layered on idle body ── */
+@keyframes char-breathe {
+  0%, 100% { transform: scaleY(1)    scaleX(1)    translateY(0); }
+  35%       { transform: scaleY(1.02) scaleX(0.99) translateY(-1px); }
+  65%       { transform: scaleY(1.02) scaleX(0.99) translateY(-1px); }
+}
+.anim-idle .body {
+  animation: char-breathe 3.8s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+/* ── Head lean wrapper (applied via JS ref in MiniModeOverlay) ── */
+.char-lean-wrapper {
+  transform-origin: bottom center;
+  transition: transform 0.5s ease-out;
+  will-change: transform;
+}

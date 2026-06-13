@@ -134,6 +134,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const lastMousePos = useRef({ x: 0, y: 0, time: 0 });
   const physicsRaf = useRef<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const leanRef = useRef<HTMLDivElement | null>(null);
 
   // Wandering state
   const isWanderingRef = useRef(false);
@@ -439,6 +440,14 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
     const handleMouseMove = (e: MouseEvent) => {
       cursorRef.current = { x: e.clientX, y: e.clientY };
+
+      // Head lean toward cursor — direct DOM write, no re-render needed
+      if (leanRef.current) {
+        const dx = e.clientX - (posX + 60);
+        const leanDeg = Math.max(-4, Math.min(4, (dx / 500) * 4));
+        leanRef.current.style.transform = `rotate(${leanDeg}deg)`;
+      }
+
       if (isTrackingCursor && !isDragging && !isPhysicsActive && !isDancingToMusic && !isProcessing) {
         setFlipped(e.clientX < posX);
       }
@@ -506,6 +515,23 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     }, 10000);
     return () => clearInterval(trackingTimer);
   }, [isDragging, isListening, isSpeaking, isPhysicsActive, isDancingToMusic, posX]);
+
+  // Idle look-around fidget: occasionally glances left or right while idle
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (
+        !isDragging && !isListening && !isSpeaking &&
+        !isPhysicsActive && !isDancingToMusic && !isTrackingCursor &&
+        baseAnimation === 'idle'
+      ) {
+        if (Math.random() < 0.35) {
+          setFlipped(f => !f);
+          setTimeout(() => setFlipped(f => !f), 1800 + Math.random() * 2200);
+        }
+      }
+    }, 11000);
+    return () => clearInterval(timer);
+  }, [isDragging, isListening, isSpeaking, isPhysicsActive, isDancingToMusic, isTrackingCursor, baseAnimation]);
 
   // Autonomous movement
   useEffect(() => {
@@ -1243,15 +1269,17 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
         <div style={{ transform: `scale(${squash.x}, ${squash.y}) rotate(${rotation}deg)`, transition: 'transform 0.15s ease-out', width: '100%', height: '100%' }}>
           <div className={`w-full h-full ${movementStyle === 'jump' ? 'roam-jump-arc' : ''} ${movementStyle === 'bounce' ? 'roam-bounce-arc' : ''} ${movementStyle === 'zigzag' ? 'roam-zigzag-arc' : ''}`}>
-            {charId.startsWith('custom-') ? (() => {
-              const customChar = customCharacters.find(c => c.id === charId);
-              if (customChar) {
-                return <CustomCharacterRenderer character={customChar} animation={animation} size={120} flipped={flipped} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />;
-              }
-              return <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />;
-            })() : (
-              <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />
-            )}
+            <div ref={leanRef} className="char-lean-wrapper w-full h-full">
+              {charId.startsWith('custom-') ? (() => {
+                const customChar = customCharacters.find(c => c.id === charId);
+                if (customChar) {
+                  return <CustomCharacterRenderer character={customChar} animation={animation} size={120} flipped={flipped} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />;
+                }
+                return <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />;
+              })() : (
+                <CharacterComponent animation={animation} size={120} flipped={flipped} isBlinking={personality.isBlinking} isSpeaking={isSpeaking} moodLabel={personality.moodLabel} mouseX={cursorRef.current.x} mouseY={cursorRef.current.y} posX={posX} posY={posY} />
+              )}
+            </div>
           </div>
         </div>
 
