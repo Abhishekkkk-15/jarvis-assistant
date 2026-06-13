@@ -356,11 +356,37 @@
 
 .anim-hide { animation: char-idle 1s infinite; opacity: 0.3; }
 
+/* Pendulum swing — slow at peaks, fast through center (cubic-bezier matches SHM velocity profile) */
 @keyframes char-hang {
-  0%, 100% { transform: rotate(-5deg); }
-  50% { transform: rotate(5deg); }
+  0%   { transform: rotate(-14deg); }
+  50%  { transform: rotate(14deg); }
+  100% { transform: rotate(-14deg); }
 }
-.anim-hang { animation: char-hang 1s ease-in-out infinite; transform-origin: top center; }
+.anim-hang {
+  animation: char-hang 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  transform-origin: top center;
+}
+
+/* Centripetal body compression at the bottom of the swing arc */
+@keyframes char-hang-body {
+  0%, 50%, 100% { transform: scaleX(1)    scaleY(1); }
+  25%, 75%      { transform: scaleX(0.95) scaleY(1.05); }
+}
+.anim-hang .body {
+  animation: char-hang-body 1.8s ease-in-out infinite;
+}
+
+/* Limbs lag behind the body (secondary pendulum — they dangle toward gravity) */
+@keyframes char-hang-limb {
+  0%   { transform: rotate(10deg); }
+  50%  { transform: rotate(-10deg); }
+  100% { transform: rotate(10deg); }
+}
+.anim-hang .limb-l,
+.anim-hang .limb-r {
+  animation: char-hang-limb 1.8s ease-in-out 0.18s infinite;
+  transform-origin: top center;
+}
 
 /* ═══════════════════════════════════════════════════════
    ALIVE CHARACTER ENHANCEMENTS
