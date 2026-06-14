@@ -4,7 +4,7 @@
 [![Version](https://img.shields.io/badge/Version-v1.0.0-emerald.svg)](https://github.com/Abhishekkkk-15/jarvis-assistant/releases/latest)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%2F11-brightgreen.svg)]()
 
-JARVIS (Just A Rather Very Intelligent System) is a sentient-like, multi-modal AI desktop assistant companion. It lives on your screen as an animated character with real physics and moods, hears your voice, sees your screen, and executes complex system actions via a LangGraph multi-agent system.
+JARVIS is a sentient-like, multi-modal AI desktop assistant companion. It lives on your screen as an animated character with real physics and moods, hears your voice, sees your screen, and executes complex system actions via a LangGraph multi-agent system.
 
 ---
 
