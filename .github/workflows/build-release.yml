@@ -34,7 +34,6 @@ jobs:
         run: pnpm install
         env:
           GYP_MSVS_VERSION: "2022"
-          npm_config_build_from_source: "true"
 
       - name: Generate API Schemas & Typings
         run: pnpm --filter @workspace/api-spec run codegen
