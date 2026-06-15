@@ -30,6 +30,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Setup MSVC (for node-gyp)
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install Dependencies
         run: pnpm install
         env:
