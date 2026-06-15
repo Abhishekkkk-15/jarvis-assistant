@@ -32,7 +32,9 @@
       "extract-file-icon",
       "node-window-manager",
       "better-sqlite3",
-      "esbuild"
+      "esbuild",
+      "sharp",
+      "sqlite-vec"
     ]
   }
 }
