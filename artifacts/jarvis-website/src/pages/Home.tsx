@@ -222,7 +222,7 @@ const STORY_CHAPTERS = [
   {
     tag: "Chapter 01",
     title: "Pick your companion.",
-    body: "Choose from 22 fully-animated characters — from a nano-robot to a space dragon. Each one has its own personality, emotions, and voice.",
+    body: "Choose from 22 fully-animated characters — from a nano-robot to a space dragon. Each one has its own personality, 37 emotion states, and voice.",
     Character: JarvisBot,
     anim: 'wave' as CharacterAnimation,
     accent: "text-blue-500",
@@ -334,7 +334,7 @@ export const StatsSection = () => (
   <section className="py-16 bg-secondary/40 border-y border-border">
     <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-10">
       <StatCounter value={22} label="Characters" suffix="+" />
-      <StatCounter value={38} label="Animations each" suffix="+" />
+      <StatCounter value={37} label="Animations each" suffix="+" />
       <StatCounter value={100} label="Runs locally" suffix="%" />
       <StatCounter value={0} label="Subscription" suffix="$" />
     </div>

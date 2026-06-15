@@ -190,7 +190,7 @@ export const DocsPage = () => {
               <H2>What JARVIS can do</H2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                 {[
-                  ['🎭', 'Animated character companions', '22 built-in characters with 38+ animations and full emotion systems'],
+                  ['🎭', 'Animated character companions', '22 built-in characters with 37+ animations and full emotion systems'],
                   ['🎙️', 'Wake word voice control', '"Hey JARVIS" — hands-free speech-to-text and text-to-speech'],
                   ['👁️', 'Screen vision', 'Reads your screen contents to understand what you\'re working on'],
                   ['✏️', 'Screen drawing', 'Annotates your display live with arrows and text'],
@@ -618,13 +618,13 @@ Ctrl+Shift+M  (Windows 10/11)
             {/* Relationship Engine */}
             <Section id="relationship">
               <H1>Relationship Engine</H1>
-              <P>JARVIS maintains a persistent <strong>affection score</strong> (0–100) stored locally across sessions. The score grows as you interact and degrades if you neglect JARVIS for more than 48 hours. This score is injected into every LLM message so the AI genuinely adjusts its tone based on your relationship.</P>
+              <P>JARVIS maintains a persistent <strong>affection score</strong> (20–100, starting at 50) stored locally across sessions. After <strong>24 hours</strong> without interaction the mood switches to Neglected; after <strong>48 hours</strong> the score itself decays by −5 (floor: 20). This score is injected into every LLM message so the AI genuinely adjusts its tone based on your relationship.</P>
 
               <H2>Mood levels</H2>
               <div className="grid grid-cols-2 gap-3 my-4">
                 {[
-                  ['Neglected', '0–39 after 24h+ absence', 'bg-slate-50 border-slate-200 text-slate-700'],
-                  ['Neutral', '0–39 score', 'bg-blue-50 border-blue-200 text-blue-700'],
+                  ['Neglected', 'Any score, 24h+ absence', 'bg-slate-50 border-slate-200 text-slate-700'],
+                  ['Neutral', '20–39 score', 'bg-blue-50 border-blue-200 text-blue-700'],
                   ['Friendly', '40–74 score', 'bg-green-50 border-green-200 text-green-700'],
                   ['Best Friends', '75–100 score', 'bg-purple-50 border-purple-200 text-purple-700'],
                 ].map(([mood, cond, cls]) => (
@@ -643,7 +643,7 @@ Ctrl+Shift+M  (Windows 10/11)
                   ['💬 Long detailed reply (50+ words)', '+3 affection per message'],
                   ['🐾 Petting the character in MiniMode', '+5 affection (vigorous mouse-over)'],
                   ['📁 Dropping a file onto the character', '+2 affection'],
-                  ['⏰ 48+ hours without interaction', '−5 affection (passive decay)'],
+                  ['⏰ 48+ hours without interaction', '−5 affection (passive decay, floor: 20)'],
                 ].map(([action, effect]) => (
                   <div key={action as string} className="flex justify-between text-sm p-2 rounded-lg bg-secondary/50 border border-border">
                     <span>{action}</span>
