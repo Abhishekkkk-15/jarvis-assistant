@@ -47,7 +47,23 @@ function createWindow() {
     mainWindow.loadURL(VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    mainWindow.loadFile(path.join(__dirname, '..', 'public', 'index.html'));
+    // In production, we MUST use a custom protocol because Chromium's fetch() 
+    // cannot read files (like vosk-model.zip) directly out of an ASAR archive.
+    const { protocol, net } = require('electron');
+    // We register this once
+    if (!protocol.isProtocolHandled('app')) {
+      protocol.handle('app', (request: any) => {
+        // request.url is something like "app://-/index.html" or "app://-/vosk-model.zip"
+        const urlPath = request.url.substring(7); // strips 'app://-/'
+        let filePath = path.join(__dirname, '..', 'public', urlPath);
+        // Fallback for SPA routing if file doesn't have an extension
+        if (!path.extname(filePath)) {
+          filePath = path.join(__dirname, '..', 'public', 'index.html');
+        }
+        return net.fetch('file://' + filePath);
+      });
+    }
+    mainWindow.loadURL('app://-/index.html');
   }
 
   // Auto-grant all permissions (like microphone for wake word) so it doesn't hang
@@ -95,7 +111,7 @@ function createQuickInputWindow() {
   if (isDev) {
     quickInputWindow.loadURL(`${VITE_DEV_SERVER_URL}/#/quick-input`);
   } else {
-    quickInputWindow.loadFile(path.join(__dirname, '..', 'public', 'index.html'), { hash: 'quick-input' });
+    quickInputWindow.loadURL('app://-/index.html#/quick-input');
   }
 
   quickInputWindow.on('blur', () => {
@@ -106,6 +122,11 @@ function createQuickInputWindow() {
     quickInputWindow = null;
   });
 }
+
+import { protocol } from 'electron';
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }
+]);
 
 app.whenReady().then(() => {
   createWindow();
@@ -250,7 +271,7 @@ ipcMain.on('update-overlay-rect', (event, rect) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return;
   overlayRect = rect;
-  
+
   if (rect && !ignoreMousePollingInterval) {
     overlayRectWinId = win.id;
     ignoreMousePollingInterval = setInterval(() => {
@@ -265,19 +286,19 @@ ipcMain.on('update-overlay-rect', (event, rect) => {
         ignoreMousePollingInterval = null;
         return;
       }
-      
+
       const mousePos = screen.getCursorScreenPoint();
       // Calculate intersection based on the screen position of the window
       const winBounds = targetWin.getBounds();
       // overlayRect is relative to the window, so we add winBounds.x and winBounds.y
       const globalRectX = winBounds.x + overlayRect.x;
       const globalRectY = winBounds.y + overlayRect.y;
-      
-      const isInside = mousePos.x >= globalRectX && 
-                       mousePos.x <= globalRectX + overlayRect.width &&
-                       mousePos.y >= globalRectY &&
-                       mousePos.y <= globalRectY + overlayRect.height;
-                       
+
+      const isInside = mousePos.x >= globalRectX &&
+        mousePos.x <= globalRectX + overlayRect.width &&
+        mousePos.y >= globalRectY &&
+        mousePos.y <= globalRectY + overlayRect.height;
+
       if (isInside) {
         targetWin.setIgnoreMouseEvents(false);
       } else {
@@ -431,6 +452,6 @@ app.on('will-quit', () => {
   if (psProcess) {
     try {
       psProcess.kill();
-    } catch (e) {}
+    } catch (e) { }
   }
 });
