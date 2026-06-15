@@ -1,23 +1,34 @@
 import { db, settingsTable } from '@workspace/db';
 import { TelegramIntegration } from './telegram.js';
+import { DiscordIntegration, type DiscordMessage } from './discord.js';
 import { broadcast, addBroadcastListener } from "../lib/wsManager.js";
 
 class IntegrationsManager {
   private telegram: TelegramIntegration | null = null;
+  private discord: DiscordIntegration | null = null;
   private checkInterval: NodeJS.Timeout | null = null;
   private conversationMap = new Map<number, number>();
+  private discordConversationMap = new Map<string, number>();
   private activeTelegramChatId: number | null = null;
+  private activeDiscordChannelId: string | null = null;
 
   constructor() {
     addBroadcastListener((event: any) => {
-      if (event.type === 'approval_needed' && this.activeTelegramChatId && this.telegram) {
-        // Send approval request to the active remote Telegram chat
-        this.telegram.sendMessage(this.activeTelegramChatId, `⚠️ **Approval Required**\n\n${event.reason}`, {
-          inline_keyboard: [[
-            { text: "✅ Approve", callback_data: `approve_${event.requestId}` },
-            { text: "❌ Deny", callback_data: `deny_${event.requestId}` }
-          ]]
-        });
+      if (event.type === 'approval_needed') {
+        if (this.activeTelegramChatId && this.telegram) {
+          this.telegram.sendMessage(this.activeTelegramChatId, `⚠️ **Approval Required**\n\n${event.reason}`, {
+            inline_keyboard: [[
+              { text: "✅ Approve", callback_data: `approve_${event.requestId}` },
+              { text: "❌ Deny", callback_data: `deny_${event.requestId}` }
+            ]]
+          });
+        }
+        if (this.activeDiscordChannelId && this.discord) {
+          this.discord.sendMessage(
+            this.activeDiscordChannelId,
+            `⚠️ **Approval Required**\n\n${event.reason}\n\nReply with \`!approve ${event.requestId}\` or \`!deny ${event.requestId}\``
+          );
+        }
       }
     });
   }
@@ -40,7 +51,7 @@ class IntegrationsManager {
       if (settings.telegramBotToken) {
         if (!this.telegram) {
           this.telegram = new TelegramIntegration(
-            settings.telegramBotToken, 
+            settings.telegramBotToken,
             this.handleTelegramMessage,
             this.handleTelegramCallback
           );
@@ -50,6 +61,19 @@ class IntegrationsManager {
         if (this.telegram) {
           this.telegram.stop();
           this.telegram = null;
+        }
+      }
+
+      // Handle Discord
+      if (settings.discordBotToken) {
+        if (!this.discord) {
+          this.discord = new DiscordIntegration(settings.discordBotToken, this.handleDiscordMessage);
+          this.discord.start();
+        }
+      } else {
+        if (this.discord) {
+          this.discord.stop();
+          this.discord = null;
         }
       }
 
@@ -65,11 +89,22 @@ class IntegrationsManager {
     return this.telegram;
   }
 
+  public getDiscord(): DiscordIntegration | null {
+    return this.discord;
+  }
+
   public getActiveTelegramChatId(): number | null {
     if (this.activeTelegramChatId) return this.activeTelegramChatId;
     if (this.conversationMap.size > 0) {
-      // return the most recent or any known chat ID
       return Array.from(this.conversationMap.keys())[0];
+    }
+    return null;
+  }
+
+  public getActiveDiscordChannelId(): string | null {
+    if (this.activeDiscordChannelId) return this.activeDiscordChannelId;
+    if (this.discordConversationMap.size > 0) {
+      return Array.from(this.discordConversationMap.keys())[0];
     }
     return null;
   }
@@ -122,6 +157,77 @@ class IntegrationsManager {
     } finally {
       clearInterval(typingInterval);
       this.activeTelegramChatId = null;
+    }
+  }
+
+  private handleDiscordMessage = async (msg: DiscordMessage) => {
+    broadcast({ type: 'system_notification', title: `Discord: ${msg.authorName}`, message: msg.message });
+
+    if (!this.discord) return;
+
+    const port = process.env.PORT || 4444;
+    this.activeDiscordChannelId = msg.channelId;
+
+    // Handle approval commands
+    const approvalMatch = msg.message.match(/^!(approve|deny)\s+(\S+)/i);
+    if (approvalMatch) {
+      const decision = approvalMatch[1].toLowerCase() === 'approve' ? 'approved' : 'denied';
+      const requestId = approvalMatch[2];
+      try {
+        await fetch(`http://localhost:${port}/api/commands/approval`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestId, decision })
+        });
+        await this.discord.sendMessage(msg.channelId, `Action was **${decision}**.`);
+      } catch (e: any) {
+        await this.discord.sendMessage(msg.channelId, `Failed to send approval: ${e.message}`);
+      }
+      this.activeDiscordChannelId = null;
+      return;
+    }
+
+    const conversationId = this.discordConversationMap.get(msg.channelId);
+
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: msg.message,
+          imageBase64: msg.imageBase64,
+          conversationId: conversationId || undefined
+        })
+      });
+
+      const text = await res.text();
+      let data: any = {};
+      try { data = JSON.parse(text); } catch { /* ignore */ }
+
+      if (!res.ok) {
+        await this.discord.sendMessage(msg.channelId, `JARVIS Error: ${data.error || res.statusText || 'Unknown server error'}`);
+        return;
+      }
+
+      if (data.reply) {
+        // Discord message limit is 2000 chars; split if needed
+        const reply: string = data.reply;
+        if (reply.length <= 2000) {
+          await this.discord.sendMessage(msg.channelId, reply);
+        } else {
+          for (let i = 0; i < reply.length; i += 2000) {
+            await this.discord.sendMessage(msg.channelId, reply.slice(i, i + 2000));
+          }
+        }
+      }
+      if (data.conversationId) {
+        this.discordConversationMap.set(msg.channelId, data.conversationId);
+      }
+    } catch (e: any) {
+      console.error('[Integrations] Discord remote control failed:', e);
+      await this.discord.sendMessage(msg.channelId, `Error connecting to local JARVIS API: ${e.message}`);
+    } finally {
+      this.activeDiscordChannelId = null;
     }
   }
 

@@ -746,7 +746,7 @@ Ctrl+Shift+M  (Windows 10/11)
               </div>
 
               <H2>Tools & automation capabilities</H2>
-              <P>Agents have access to 31 tool modules across 8 categories. Each tool call is displayed as an emoji accessory badge on the character overlay in real time.</P>
+              <P>Agents have access to 32 tool modules across 8 categories. Each tool call is displayed as an emoji accessory badge on the character overlay in real time.</P>
               <div className="space-y-4 my-4">
                 {[
                   {
@@ -818,6 +818,7 @@ Ctrl+Shift+M  (Windows 10/11)
                       ['github', 'Read repos, list issues/PRs, view files, and check commits'],
                       ['email', 'Send, read, and manage emails via IMAP/SMTP (Gmail, Outlook, custom)'],
                       ['send_telegram_message', 'Proactively send a text message or image/screenshot to your Telegram bot chat'],
+                      ['send_discord_message', 'Proactively send a text message or file to the active Discord channel'],
                     ]
                   },
                   {
@@ -874,12 +875,38 @@ Ctrl+Shift+M  (Windows 10/11)
               <Callout type="info">JARVIS can also proactively <strong>send you messages</strong> via the <code>send_telegram_message</code> tool — including images and screenshots from your desktop.</Callout>
 
               <H2>2. Discord Integration</H2>
-              <P>Control or receive notifications from your desktop assistant via a Discord bot client.</P>
+              <P>Full two-way remote control of JARVIS over Discord — send commands from your phone or any Discord client, receive AI replies, forward images to the vision model, and approve or deny actions remotely.</P>
               <Code lang="bash">{`# 1. Create a Discord Application
-#    Go to discord.com/developers/applications, create an App and add a Bot.
+#    Go to discord.com/developers/applications → New Application → Bot tab → Reset Token
+#    Copy the Bot Token.
 
-# 2. Save the Bot Token in JARVIS Settings
-#    Settings → Integrations → Discord Bot Token`}</Code>
+# 2. Enable Privileged Gateway Intents
+#    In the Bot tab, enable:
+#      • Server Members Intent
+#      • Message Content Intent  ← required to read message text in servers
+
+# 3. Invite the bot to your server
+#    OAuth2 → URL Generator → scopes: bot → permissions: Send Messages, Read Message History
+#    Open the generated URL and add the bot to your server.
+
+# 4. Add the token to JARVIS settings
+#    Settings → Integrations → Discord Bot Token → Save
+
+# 5. Chat with JARVIS
+#    DMs:     Send any message directly to the bot — it always replies.
+#    Servers: @mention the bot in any channel — it replies only when mentioned.
+
+# 6. Send images
+#    Attach an image to your message — it's forwarded to the vision model for analysis.
+
+# 7. Remote approvals
+#    When JARVIS needs to execute a high-risk action (shell command, file write, email),
+#    it sends a message to the active Discord channel:
+#      ⚠️ Approval Required
+#      Reply with: !approve <requestId>  or  !deny <requestId>
+#    Type the command to allow or block the action from anywhere.`}</Code>
+              <Callout type="info">JARVIS can also proactively <strong>send you messages</strong> via the <code>send_discord_message</code> tool — including files and screenshots from your desktop. Long replies are automatically split into 2000-character chunks to stay within Discord's message limit.</Callout>
+              <Callout type="warn">The <strong>Message Content Intent</strong> must be enabled in the Discord Developer Portal under Bot → Privileged Gateway Intents, otherwise the bot will not be able to read message text in server channels (DMs are always readable).</Callout>
 
               <H2>3. Notion Workspace</H2>
               <P>Allow JARVIS to query pages, search documents, and read page content directly from your Notion workspace.</P>
