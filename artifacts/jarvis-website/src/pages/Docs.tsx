@@ -190,7 +190,7 @@ export const DocsPage = () => {
               <H2>What JARVIS can do</H2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                 {[
-                  ['🎭', 'Animated character companions', '10 built-in characters with 30+ animations and full emotion systems'],
+                  ['🎭', 'Animated character companions', '22 built-in characters with 38+ animations and full emotion systems'],
                   ['🎙️', 'Wake word voice control', '"Hey JARVIS" — hands-free speech-to-text and text-to-speech'],
                   ['👁️', 'Screen vision', 'Reads your screen contents to understand what you\'re working on'],
                   ['✏️', 'Screen drawing', 'Annotates your display live with arrows and text'],
@@ -286,6 +286,7 @@ pnpm run electron:build`}</Code>
               <P>JARVIS runs with several global keyboard shortcuts to quickly manage layout modes:</P>
               <Code lang="text">{`Ctrl+Shift+Space  — Hide or Show JARVIS Main Window
 Ctrl+Shift+K      — Toggle Quick Command Input panel
+Ctrl+Shift+M      — Toggle MiniMode (enter/exit floating desktop overlay)
 F11               — Toggle application fullscreen mode`}</Code>
               <Callout type="info">Click the **Minimize** button in the sidebar. If Mini Mode is enabled in settings, the window will disappear and the companion will float freely on your desktop. If Mini Mode is disabled, the app will perform a standard minimize to your taskbar.</Callout>
             </Section>
@@ -299,17 +300,17 @@ F11               — Toggle application fullscreen mode`}</Code>
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="px-2.5 py-1 text-xs font-bold text-primary bg-primary/10 rounded-full">Core Orchestrator</span>
-                    <code className="text-sm font-semibold font-mono text-foreground">openai/gpt-oss-120b</code>
+                    <code className="text-sm font-semibold font-mono text-foreground">llama-3.3-70b-versatile</code>
                   </div>
-                  <P>This model drives the LangGraph multi-agent loop, handles standard chat messaging, decides which tools to call, and plans step-by-step actions to complete your requests.</P>
+                  <P>Default model running via Groq. Drives the LangGraph multi-agent loop, handles standard chat messaging, decides which tools to call, and plans step-by-step actions. Can be switched to NVIDIA-hosted models (e.g. <code>openai/gpt-oss-120b</code>) in Settings.</P>
                 </div>
 
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="px-2.5 py-1 text-xs font-bold text-green-700 bg-green-50 rounded-full">Screen Vision</span>
-                    <code className="text-sm font-semibold font-mono text-foreground">meta/llama-3.2-90b-vision-instruct</code>
+                    <code className="text-sm font-semibold font-mono text-foreground">llama-3.2-90b-vision-preview</code>
                   </div>
-                  <P>Used exclusively when you ask JARVIS to see or analyze your screen. This model is fine-tuned for visual instruction-following and accurately identifies elements on your desktop.</P>
+                  <P>Default vision model running via Groq. Used exclusively when you ask JARVIS to see or analyze your screen. Fine-tuned for visual instruction-following and accurately identifies elements on your desktop. Can be swapped to any NVIDIA vision model in Settings.</P>
                 </div>
 
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
@@ -424,9 +425,10 @@ F11               — Toggle application fullscreen mode`}</Code>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 my-4">
                 {[
                   ['idle', 'Gentle floating bob — default resting state'],
-                  ['walk', 'Limb swing, body tilt — triggered during movement'],
-                  ['run', 'Fast limb swing — dash movements'],
+                  ['walk', 'Limb swing, body tilt — triggered during roam movement'],
+                  ['run', 'Fast limb swing — sprint movements'],
                   ['wave', 'Arm wave — greeting or acknowledgement'],
+                  ['talk', 'Mouth opens and closes — active during TTS voice output'],
                   ['dance', 'Full-body bounce and rotation to music beat'],
                   ['excited', 'Jump with cyan glow — task complete or user excitement'],
                   ['happy', 'Bouncy jump, arc-eyed expression'],
@@ -434,6 +436,7 @@ F11               — Toggle application fullscreen mode`}</Code>
                   ['angry', 'Shake + red glow, furrowed brow'],
                   ['thinking', 'Slight tilt, purple glow, thought bubble'],
                   ['confused', 'Rotate, question mark overlay'],
+                  ['jealous', 'Side-eye glance, arms crossed'],
                   ['surprised', 'Jump + exclamation mark overlay'],
                   ['laughing', 'Rapid bounce, "ha ha" particles'],
                   ['love', 'Pulse with pink glow, floating hearts'],
@@ -443,10 +446,21 @@ F11               — Toggle application fullscreen mode`}</Code>
                   ['scared', 'Rapid shake, sweat drop, yellow glow'],
                   ['dizzy', 'Body spin, orbiting stars'],
                   ['bored', 'Droopy posture, "sigh…" text particle'],
-                  ['bounce', 'Rapid body bounce — physics collision'],
-                  ['spin', '360° rotation — cartwheel / teleport'],
+                  ['bounce', 'Decaying multi-bounce with squash/stretch physics'],
+                  ['spin', 'Eased 360° rotation with scale squash — used in teleport'],
+                  ['dash', 'Forward-lean sprint with rapid limb swing'],
+                  ['jump', 'Squash-and-stretch arc jump to a new position'],
+                  ['teleport', 'Instant warp — blur flash + spin + reappear'],
+                  ['zigzag', 'Erratic side-to-side path movement'],
+                  ['crawl', 'Low, slow ground crawl'],
+                  ['sneak', 'Crouched tiptoe — stealth approach'],
+                  ['cartwheel', 'Full sideways roll across the screen'],
                   ['hover', 'Float above ground — zero-gravity mode'],
+                  ['pace', 'Back-and-forth nervous walk on the spot'],
+                  ['hide', 'Fades to near-transparent — hiding mode'],
+                  ['hang', 'Pendulum swing from a ledge — physics-accurate arc'],
                   ['draw', 'Pencil prop appears, writing gesture'],
+                  ['courier', 'Sprint delivery run with a parcel prop'],
                 ].map(([anim, desc]) => (
                   <div key={anim} className="flex gap-2 p-2.5 rounded-lg bg-secondary/50 border border-border/80">
                     <code className="text-primary font-mono text-xs font-bold flex-shrink-0 mt-0.5">{anim}</code>
@@ -511,17 +525,20 @@ Ctrl+Shift+M  (Windows 10/11)
 
               <H2>Movement modes</H2>
               <P>In MiniMode, JARVIS autonomously roams using these movement types:</P>
-              <Code lang="typescript">{`type MovementArc =
-  | 'walk'       // standard walk to new position
-  | 'run'        // fast movement
-  | 'jump'       // arc jump to location
-  | 'bounce'     // multi-bounce path
-  | 'teleport'   // instant warp (blur effect)
-  | 'hover'      // float above floor
-  | 'zigzag'     // erratic path
-  | 'sneak'      // slow stealth crawl
-  | 'cartwheel'  // roll across screen
-  | 'pace';      // back-and-forth nervous walk`}</Code>
+              <Code lang="typescript">{`type MovementStyle =
+  | 'float'      // smooth glide to a new position (default)
+  | 'dash'       // fast sprint with forward lean
+  | 'jump'       // squash-and-stretch arc jump
+  | 'bounce'     // decaying multi-bounce path
+  | 'teleport'   // instant warp — blur flash + spin
+  | 'spin'       // 360° cartwheel roll across screen
+  | 'hover'      // float path above ground
+  | 'zigzag'     // erratic side-to-side path
+  | 'crawl'      // slow ground crawl
+  | 'sneak'      // crouched tiptoe stealth approach
+  | 'cartwheel'  // sideways roll
+  | 'pace'       // back-and-forth nervous walk
+  | 'hide';      // fades out, sneaks off screen edge`}</Code>
               <Callout type="info">Movement arcs are chosen automatically based on the destination distance and the character's current mood. Excited characters teleport; sad characters pace.</Callout>
             </Section>
 
@@ -560,21 +577,17 @@ Ctrl+Shift+M  (Windows 10/11)
               <H2>How it works</H2>
               <P>When you ask JARVIS to "look at your screen", it:</P>
               <Code lang="text">{`1. Captures a screenshot of the active window (or full screen)
-2. Compresses and crops to the relevant region
-3. Sends the image to your configured vision model (GPT-4o, Claude 3, etc.)
+2. Compresses the image and attaches it to the message
+3. Sends it to the configured vision model (default: llama-3.2-90b-vision-preview via Groq)
 4. The model returns a description, and JARVIS acts on it`}</Code>
 
               <H2>Configuration</H2>
+              <P>Vision model and provider are configured in <strong>Settings → Models</strong>. The defaults use Groq's vision endpoint:</P>
               <Code lang="json">{`{
-  "vision": {
-    "enabled": true,
-    "captureMode": "activeWindow",  // "activeWindow" | "fullScreen" | "region"
-    "model": "gpt-4o",
-    "maxTokens": 1000,
-    "redactPasswords": true          // blur password fields before capture
-  }
+  "visionProvider": "groq",                       // "groq" | "nvidia"
+  "visionModel":   "llama-3.2-90b-vision-preview" // any vision-capable model on the provider
 }`}</Code>
-              <Callout type="warn">Screen vision is opt-in. Enable it only if you trust your LLM provider with your screen contents, or use a local model like LLaVA.</Callout>
+              <Callout type="warn">Screen vision is opt-in per-prompt. JARVIS only captures your screen when you explicitly ask it to look at something — it does not continuously monitor your display.</Callout>
             </Section>
 
             {/* Drawing */}
@@ -729,7 +742,7 @@ Ctrl+Shift+M  (Windows 10/11)
               </div>
 
               <H2>Tools & automation capabilities</H2>
-              <P>Agents have access to 18 tool modules across 6 categories. Each tool call is displayed as an emoji accessory badge on the character overlay in real time.</P>
+              <P>Agents have access to 24 tool modules across 7 categories. Each tool call is displayed as an emoji accessory badge on the character overlay in real time.</P>
               <div className="space-y-4 my-4">
                 {[
                   {
@@ -786,6 +799,16 @@ Ctrl+Shift+M  (Windows 10/11)
                       ['notion', 'Search, read, and query your Notion workspace pages'],
                       ['spotify', 'Play, pause, skip, search tracks, and control Spotify playback'],
                       ['github', 'Read repos, list issues/PRs, view files, and check commits'],
+                      ['email', 'Send, read, and manage emails via IMAP/SMTP (Gmail, Outlook, custom)'],
+                      ['send_telegram_message', 'Push a notification or message to your Telegram bot'],
+                    ]
+                  },
+                  {
+                    category: '🤖 AI Delegation',
+                    badge: '🧠',
+                    tools: [
+                      ['spawn_claude', 'Open a terminal and launch Claude CLI (or Aider) in any directory with an optional starting prompt'],
+                      ['delegate_to_antigravity', 'Focus Antigravity IDE, open its AI chat, and send a coding task via clipboard paste'],
                     ]
                   },
                 ].map(({ category, tools }) => (
@@ -859,6 +882,18 @@ Ctrl+Shift+M  (Windows 10/11)
 
 # 2. Save token in JARVIS Settings
 #    Settings → Integrations → githubPat`}</Code>
+
+              <H2>6. Email</H2>
+              <P>Allow JARVIS to read and send emails via your IMAP/SMTP mailbox (Gmail, Outlook, or any custom provider).</P>
+              <Code lang="bash">{`# 1. Enable IMAP access on your email account
+#    Gmail: Settings → See all settings → Forwarding and POP/IMAP → Enable IMAP
+#    For Gmail, generate an App Password (not your normal password):
+#    Account → Security → 2-Step Verification → App Passwords
+
+# 2. Add credentials in JARVIS Settings
+#    Settings → Integrations → Email Address  (your full email)
+#                             → Email Password (your app password or SMTP password)
+#                             → Email Provider ("gmail" | "outlook" | "yahoo" | custom host)`}</Code>
             </Section>
 
             {/* Config */}
@@ -875,8 +910,12 @@ E:\\Jarvis-Assistant-Companionzip\\sqlite.db`}</Code>
               <P>When reading or modifying settings via the Drizzle settings schema or backend REST routes, the fields mapped are as follows (Groq and Nvidia API keys are both required, and models are pre-selected by default):</P>
               <Code lang="json">{`{
   "id": 1,
-  "groqApiKey": "gsk_...",              // Groq API Key (Required, masked on frontend)
-  "nvidiaApiKey": "nvapi-...",          // Nvidia API Key (Required, masked on frontend)
+  "groqApiKey": "gsk_...",              // Groq API Key (masked on frontend)
+  "nvidiaApiKey": "nvapi-...",          // NVIDIA API Key (masked on frontend)
+  "selectedProvider": "groq",           // "groq" | "nvidia"
+  "selectedModel": "llama-3.3-70b-versatile",
+  "visionProvider": "groq",
+  "visionModel": "llama-3.2-90b-vision-preview",
   "wakeWord": "hey jarvis",
   "voiceEnabled": true,
   "selectedCharacterId": "jarvis-bot",
@@ -886,7 +925,10 @@ E:\\Jarvis-Assistant-Companionzip\\sqlite.db`}</Code>
   "notionApiKey": "secret_...",         // Notion workspace integration key
   "spotifyClientId": "4a...",           // Spotify Developer API key
   "spotifyClientSecret": "e7...",       // Spotify Client Secret key
-  "githubPat": "ghp_..."                // GitHub Personal Access Token
+  "githubPat": "ghp_...",               // GitHub Personal Access Token
+  "emailAddress": "you@gmail.com",      // Email integration address
+  "emailPassword": "app-password",      // IMAP/SMTP app password
+  "emailProvider": "gmail"              // "gmail" | "outlook" | "yahoo" | custom SMTP host
 }`}</Code>
               <Callout type="tip">API keys are securely stored server-side. The Settings endpoints (`GET /api/settings`) automatically mask these keys for security before returning settings to the React frontend.</Callout>
 

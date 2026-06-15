@@ -219,7 +219,7 @@ const STORY_CHAPTERS = [
   {
     tag: "Chapter 01",
     title: "Pick your companion.",
-    body: "Choose from 10 fully-animated characters — from a nano-robot to a space dragon. Each one has its own personality, emotions, and voice.",
+    body: "Choose from 22 fully-animated characters — from a nano-robot to a space dragon. Each one has its own personality, emotions, and voice.",
     Character: JarvisBot,
     anim: 'wave' as CharacterAnimation,
     accent: "text-blue-500",
@@ -330,8 +330,8 @@ export const ScrollStory = () => (
 export const StatsSection = () => (
   <section className="py-16 bg-secondary/40 border-y border-border">
     <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-10">
-      <StatCounter value={10} label="Characters" suffix="+" />
-      <StatCounter value={30} label="Animations each" suffix="+" />
+      <StatCounter value={22} label="Characters" suffix="+" />
+      <StatCounter value={38} label="Animations each" suffix="+" />
       <StatCounter value={100} label="Runs locally" suffix="%" />
       <StatCounter value={0} label="Subscription" suffix="$" />
     </div>
@@ -595,7 +595,7 @@ export const MeetTheCast = () => (
     <div className="max-w-6xl mx-auto">
       <div className="text-center mb-14">
         <h2 className="text-3xl md:text-5xl font-extrabold mb-4">Meet the cast.</h2>
-        <p className="text-lg text-muted-foreground max-w-xl mx-auto">10 companions, each with their own look, voice, and emotional range. Hover to see them come alive.</p>
+        <p className="text-lg text-muted-foreground max-w-xl mx-auto">22 companions, each with their own look, voice, and emotional range. Hover to see them come alive.</p>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         {CAST.map(({ C, name, tag }, i) => (
