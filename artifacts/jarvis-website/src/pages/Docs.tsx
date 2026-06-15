@@ -294,7 +294,7 @@ F11               — Toggle application fullscreen mode`}</Code>
             {/* Models */}
             <Section id="models">
               <H1>Supported Models</H1>
-              <P>JARVIS uses specialized, pre-selected AI models optimized for low-latency reasoning, tool orchestration, and computer vision tasks. These models are configured automatically on the backend and run through your API keys.</P>
+              <P>JARVIS routes each request to the appropriate model automatically — text prompts go to the core orchestrator, image prompts go to the vision model. The core and vision models are user-configurable in Settings → Models. STT and TTS run on fixed Groq endpoints and are not switchable.</P>
 
               <div className="space-y-4 my-6">
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
@@ -302,7 +302,7 @@ F11               — Toggle application fullscreen mode`}</Code>
                     <span className="px-2.5 py-1 text-xs font-bold text-primary bg-primary/10 rounded-full">Core Orchestrator</span>
                     <code className="text-sm font-semibold font-mono text-foreground">llama-3.3-70b-versatile</code>
                   </div>
-                  <P>Default model running via Groq. Drives the LangGraph multi-agent loop, handles standard chat messaging, decides which tools to call, and plans step-by-step actions. Can be switched to NVIDIA-hosted models (e.g. <code>openai/gpt-oss-120b</code>) in Settings.</P>
+                  <P>Default text model running via Groq. Drives the LangGraph multi-agent loop, handles standard chat messaging, decides which tools to call, and plans step-by-step actions. The provider can be switched to NVIDIA and the model name overridden in Settings → Models. If the configured provider has no API key, JARVIS automatically falls back to the other provider.</P>
                 </div>
 
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
@@ -310,7 +310,7 @@ F11               — Toggle application fullscreen mode`}</Code>
                     <span className="px-2.5 py-1 text-xs font-bold text-green-700 bg-green-50 rounded-full">Screen Vision</span>
                     <code className="text-sm font-semibold font-mono text-foreground">llama-3.2-90b-vision-preview</code>
                   </div>
-                  <P>Default vision model running via Groq. Used exclusively when you ask JARVIS to see or analyze your screen. Fine-tuned for visual instruction-following and accurately identifies elements on your desktop. Can be swapped to any NVIDIA vision model in Settings.</P>
+                  <P>Default vision model running via Groq. Activated automatically when a prompt includes an image or screen capture. The vision provider and model are independently configurable in Settings → Models (separate from the text model), and also support NVIDIA-hosted vision models.</P>
                 </div>
 
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
@@ -318,7 +318,7 @@ F11               — Toggle application fullscreen mode`}</Code>
                     <span className="px-2.5 py-1 text-xs font-bold text-orange-700 bg-orange-50 rounded-full">Speech-To-Text (STT)</span>
                     <code className="text-sm font-semibold font-mono text-foreground">whisper-large-v3</code>
                   </div>
-                  <P>Transcribes your spoken voice inputs. Once you stop speaking, your audio is captured using local Voice Activity Detection (VAD) and transcribed instantly via Groq's Whisper endpoint.</P>
+                  <P>Transcribes your spoken voice inputs. Once you stop speaking, your audio is captured using local Voice Activity Detection (VAD) and sent to Groq's Whisper endpoint for transcription. This model and provider are hardcoded — STT always uses Groq and is not user-switchable.</P>
                 </div>
 
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
@@ -334,7 +334,7 @@ F11               — Toggle application fullscreen mode`}</Code>
                     <span className="px-2.5 py-1 text-xs font-bold text-purple-700 bg-purple-50 rounded-full">Text-To-Speech (TTS)</span>
                     <code className="text-sm font-semibold font-mono text-foreground">canopylabs/orpheus-v1-english</code>
                   </div>
-                  <P>Powers natural, highly expressive speech synthesis for hands-free audio response delivery. Available voice types and profiles include:</P>
+                  <P>Powers natural, highly expressive speech synthesis via Groq's audio speech endpoint. This model and provider are hardcoded — TTS always uses Groq and is not user-switchable. Available voices:</P>
                   <div className="grid grid-cols-2 gap-2 mt-2 font-mono text-xs">
                     <div className="bg-secondary/40 p-2 rounded border border-border/60">
                       <strong>autumn</strong>
@@ -365,7 +365,7 @@ F11               — Toggle application fullscreen mode`}</Code>
                 </div>
               </div>
 
-              <Callout type="info">Models are automatically selected by the system depending on the context of your prompt (text-only vs vision inputs) to optimize performance and token usage.</Callout>
+              <Callout type="info">JARVIS automatically routes text-only prompts to the core orchestrator and image-containing prompts to the vision model. If your configured provider is missing an API key, JARVIS silently falls back to the other available provider so requests never fail unnecessarily.</Callout>
             </Section>
 
             {/* Characters */}
@@ -725,11 +725,15 @@ Ctrl+Shift+M  (Windows 10/11)
               <H2>Agent types</H2>
               <div className="space-y-3 my-4">
                 {[
-                  ['Planner', 'Creates the step-by-step execution plan based on the objective and system context.'],
+                  ['Init', 'Extracts the user objective from the first message and seeds the graph state.'],
+                  ['Supervisor', 'Central router — inspects graph state after every node and decides which agent runs next or signals FINISH.'],
+                  ['Planner', 'Creates the step-by-step execution plan based on the objective and available tools.'],
+                  ['PlanValidator', 'Risk-assesses each planned step before execution begins; triggers human approval for HIGH-risk steps.'],
                   ['Executor', 'Executes the current step by invoking the appropriate local or system tool.'],
                   ['Observer', 'Inspects tool outputs and collects evidence of what changed.'],
                   ['Verifier', 'Compares actual observations against expected outcomes to check step success.'],
                   ['Replanner', 'Re-evaluates and revises the plan from the failure point if steps keep failing.'],
+                  ['NextStep', 'Increments the step counter and passes control back to Supervisor for the next iteration.'],
                   ['Synthesizer', 'Combines all step execution results and observations into a conversational final answer.'],
                 ].map(([name, desc]) => (
                   <div key={name as string} className="p-3 rounded-xl border border-border bg-white">
@@ -742,9 +746,19 @@ Ctrl+Shift+M  (Windows 10/11)
               </div>
 
               <H2>Tools & automation capabilities</H2>
-              <P>Agents have access to 27 tool modules across 7 categories. Each tool call is displayed as an emoji accessory badge on the character overlay in real time.</P>
+              <P>Agents have access to 31 tool modules across 8 categories. Each tool call is displayed as an emoji accessory badge on the character overlay in real time.</P>
               <div className="space-y-4 my-4">
                 {[
+                  {
+                    category: '⚡ Built-in Utilities',
+                    badge: '',
+                    tools: [
+                      ['get_current_datetime', 'Returns the current date, time, and timezone'],
+                      ['calculate', 'Evaluates a mathematical expression and returns the numeric result'],
+                      ['get_weather', 'Fetches current weather conditions for any city or location'],
+                      ['open_app', 'Launches any application on Windows by name or executable'],
+                    ]
+                  },
                   {
                     category: '🌐 Web & Browsing',
                     badge: '🔍',
