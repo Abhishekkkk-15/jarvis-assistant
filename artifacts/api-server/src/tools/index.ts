@@ -21,6 +21,7 @@ import { settingsTools } from "./settings.js";
 import { sendTelegramMessageTool } from "./telegram.js";
 import { antigravityTools } from "./antigravity.js";
 import { claudeTools } from "./claude_cli.js";
+import { visionTools } from "./vision.js";
 
 export const allTools = [
   ...browserTools,
@@ -44,6 +45,7 @@ export const allTools = [
   ...settingsTools,
   ...antigravityTools,
   ...claudeTools,
+  ...visionTools,
   sendTelegramMessageTool,
   read_jarvis_manual,
 ];
