@@ -195,7 +195,7 @@ export const DocsPage = () => {
                   ['👁️', 'Screen vision', 'Reads your screen contents to understand what you\'re working on'],
                   ['✏️', 'Screen drawing', 'Annotates your display live with arrows and text'],
                   ['🤖', 'Autonomous agents', 'LangGraph-powered agents that browse, edit files, and execute tasks'],
-                  ['📱', 'Telegram sync', 'Send notification alerts directly to your desktop assistant remotely'],
+                  ['📱', 'Telegram remote control', 'Full two-way control from your phone — chat with JARVIS, send images, and approve high-risk actions via inline buttons'],
                   ['🖥️', 'MiniMode physics', 'Characters with gravity that roam your real desktop'],
                   ['🔒', 'Native Desktop App', 'No user registration or companion subscriptions required'],
                 ].map(([icon, title, desc]) => (
@@ -803,7 +803,7 @@ Ctrl+Shift+M  (Windows 10/11)
                       ['spotify', 'Play, pause, skip, search tracks, and control Spotify playback'],
                       ['github', 'Read repos, list issues/PRs, view files, and check commits'],
                       ['email', 'Send, read, and manage emails via IMAP/SMTP (Gmail, Outlook, custom)'],
-                      ['send_telegram_message', 'Push a notification or message to your Telegram bot'],
+                      ['send_telegram_message', 'Proactively send a text message or image/screenshot to your Telegram bot chat'],
                     ]
                   },
                   {
@@ -836,17 +836,28 @@ Ctrl+Shift+M  (Windows 10/11)
               <H1>Integrations</H1>
               <P>JARVIS features native integrations with popular apps and platforms, enabling remote control, productivity syncing, and media playback control.</P>
 
-              <H2>1. Telegram Sync</H2>
-              <P>Send notification messages to your desktop companion remotely via a Telegram bot.</P>
+              <H2>1. Telegram Remote Control</H2>
+              <P>Telegram gives you <strong>full two-way remote control</strong> of JARVIS from your phone. Every message you send to the bot is routed through JARVIS's complete LangGraph agent loop — it can execute tasks, browse the web, run shell commands, and reply back to you on Telegram, all while you're away from your PC.</P>
               <Code lang="bash">{`# 1. Create a Telegram bot via @BotFather
 #    Send: /newbot  →  follow prompts  →  copy the API token
 
 # 2. Add the token to JARVIS settings
-#    Settings → Integrations → Telegram → Paste token
+#    Settings → Integrations → Telegram → Paste token → Save
 
-# 3. Message the bot
-#    Open your Telegram bot and send any text message. It will be immediately 
-#    forwarded and broadcast as a system notification on your desktop assistant.`}</Code>
+# 3. Start chatting from your phone
+#    Any message you send to the bot is processed by the full JARVIS AI agent.
+#    JARVIS replies back to Telegram with its response.
+
+# 4. Send images
+#    Photos you send are forwarded to the vision model for analysis —
+#    ask JARVIS to describe or explain what's in the image.
+
+# 5. Remote approvals
+#    When JARVIS needs to execute a high-risk action (shell command, file write, email),
+#    it sends an inline keyboard message to your Telegram chat:
+#      ✅ Approve   ❌ Deny
+#    Tap to allow or block the action — from anywhere.`}</Code>
+              <Callout type="info">JARVIS can also proactively <strong>send you messages</strong> via the <code>send_telegram_message</code> tool — including images and screenshots from your desktop.</Callout>
 
               <H2>2. Discord Integration</H2>
               <P>Control or receive notifications from your desktop assistant via a Discord bot client.</P>
