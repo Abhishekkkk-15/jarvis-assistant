@@ -39,8 +39,8 @@ export const useWakeWord = (wakeWord: string = 'jarvis') => {
 
     const startVosk = async () => {
       try {
-        // Load the Vosk model from the public directory as a .zip archive
-        const model = await createModel('/vosk-model.zip');
+        // Load the Vosk model using a relative path so it resolves correctly in production file:// URLs
+        const model = await createModel('vosk-model.zip');
         if (!isActive) {
           model.terminate();
           return;

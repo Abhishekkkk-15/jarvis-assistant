@@ -8,6 +8,8 @@ let quickInputWindow: BrowserWindow | null = null;
 
 // Bypass Chrome's autoplay policy so the background AudioContext (for Wake Word) starts immediately
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+// Bypass CORS for file:// protocol so the Vosk Web Worker and model can be loaded in production
+app.commandLine.appendSwitch('allow-file-access-from-files');
 
 function createWindow() {
   mainWindow = new BrowserWindow({
