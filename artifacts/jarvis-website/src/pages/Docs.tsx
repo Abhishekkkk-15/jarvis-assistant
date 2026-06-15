@@ -269,15 +269,15 @@ pnpm run electron:build`}</Code>
               <P>Once JARVIS is installed and running, you'll land on the main chat window with JARVIS Bot as your default companion. Here's how to get up and running in under 2 minutes.</P>
 
               <H2>Step 1 — Choose a character</H2>
-              <P>Click the character icon in the sidebar to open the Character Selector. Pick from 10 built-in companions or create your own in Custom Studio.</P>
+              <P>Click the character icon in the sidebar to open the Character Selector. Pick from 22 built-in companions or create your own in Custom Studio.</P>
 
               <H2>Step 2 — Connect LLMs</H2>
-              <P>JARVIS requires API keys for both <strong>Groq</strong> and <strong>NVIDIA</strong> to power its local and cloud hybrid orchestrator. Models are pre-selected by default and cannot be modified on the frontend. Open <strong>Settings</strong> and enter both API keys:</P>
+              <P>JARVIS uses <strong>Groq</strong> as the default LLM provider. Open <strong>Settings</strong> and enter your Groq API key to get started. Optionally add an NVIDIA API key to switch to NVIDIA-hosted models:</P>
               <Code lang="json">{`{
-  "groqApiKey": "gsk-...",
-  "nvidiaApiKey": "nvapi-..."
+  "groqApiKey": "gsk-...",      // Required for default operation
+  "nvidiaApiKey": "nvapi-..."   // Optional — enables NVIDIA-hosted models
 }`}</Code>
-              <Callout type="tip">Both Groq and NVIDIA API keys must be entered and saved in Settings to enable the full orchestrator capabilities.</Callout>
+              <Callout type="tip">A Groq API key is all you need to get started. The NVIDIA API key is optional — add it only if you want to switch to NVIDIA-hosted models via Settings → Models.</Callout>
 
               <H2>Step 3 — Say hello</H2>
               <P>Type in the chat box or press the microphone button and say "Hey JARVIS, what can you do?" Your companion will introduce itself and demonstrate its capabilities.</P>
@@ -316,7 +316,7 @@ F11               — Toggle application fullscreen mode`}</Code>
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="px-2.5 py-1 text-xs font-bold text-orange-700 bg-orange-50 rounded-full">Speech-To-Text (STT)</span>
-                    <code className="text-sm font-semibold font-mono text-foreground">groq/whisper-large-v3</code>
+                    <code className="text-sm font-semibold font-mono text-foreground">whisper-large-v3</code>
                   </div>
                   <P>Transcribes your spoken voice inputs. Once you stop speaking, your audio is captured using local Voice Activity Detection (VAD) and transcribed instantly via Groq's Whisper endpoint.</P>
                 </div>
@@ -514,7 +514,7 @@ Ctrl+Shift+M  (Windows 10/11)
                   ['Bounce', 'Collides with window title bars and bounces off them'],
                   ['Drag', 'Click and drag to throw the character across the screen'],
                   ['Window awareness', 'Detects active window bounds and sits on top of them'],
-                  ['Sleep', 'After 10 min idle the character enters sleep mode on the floor'],
+                  ['Sleep', 'After 5 minutes idle (10 seconds at night) the character enters sleep mode on the floor'],
                 ].map(([title, desc]) => (
                   <div key={title as string} className="flex gap-3 p-3 rounded-xl border border-border bg-white">
                     <ChevronRight className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
@@ -742,7 +742,7 @@ Ctrl+Shift+M  (Windows 10/11)
               </div>
 
               <H2>Tools & automation capabilities</H2>
-              <P>Agents have access to 24 tool modules across 7 categories. Each tool call is displayed as an emoji accessory badge on the character overlay in real time.</P>
+              <P>Agents have access to 27 tool modules across 7 categories. Each tool call is displayed as an emoji accessory badge on the character overlay in real time.</P>
               <div className="space-y-4 my-4">
                 {[
                   {
@@ -782,6 +782,8 @@ Ctrl+Shift+M  (Windows 10/11)
                     tools: [
                       ['memory', 'Persistent vector memory — store and recall facts about you across sessions'],
                       ['cron', 'Schedule tasks to run at a specific time or on a recurring interval'],
+                      ['check_configured_settings', 'Returns which integrations and API keys the user has configured (email, Notion, Spotify, Telegram, etc.)'],
+                      ['read_jarvis_manual', 'Reads the JARVIS self-knowledge manual — architecture, capabilities, and configuration details'],
                     ]
                   },
                   {
@@ -790,6 +792,7 @@ Ctrl+Shift+M  (Windows 10/11)
                     tools: [
                       ['drawing', 'Draw arrows, circles, text, and highlights on a screen overlay'],
                       ['notify', 'Send a native OS desktop notification with title and body'],
+                      ['describe_image', 'Analyze any image (local file path or URL) using the configured vision model'],
                     ]
                   },
                   {
@@ -907,7 +910,7 @@ Ctrl+Shift+M  (Windows 10/11)
 E:\\Jarvis-Assistant-Companionzip\\sqlite.db`}</Code>
 
               <H2>Settings Table Schema</H2>
-              <P>When reading or modifying settings via the Drizzle settings schema or backend REST routes, the fields mapped are as follows (Groq and Nvidia API keys are both required, and models are pre-selected by default):</P>
+              <P>When reading or modifying settings via the Drizzle settings schema or backend REST routes, the fields mapped are as follows (only a Groq or NVIDIA key is required — not both; models are pre-selected by default):</P>
               <Code lang="json">{`{
   "id": 1,
   "groqApiKey": "gsk_...",              // Groq API Key (masked on frontend)
