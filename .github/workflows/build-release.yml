@@ -38,6 +38,11 @@ jobs:
         env:
           GYP_MSVS_VERSION: "2022"
 
+      - name: Rebuild Native Dependencies (Except better-sqlite3)
+        run: pnpm rebuild sharp sqlite-vec esbuild extract-file-icon node-window-manager
+        env:
+          GYP_MSVS_VERSION: "2022"
+
       - name: Generate API Schemas & Typings
         run: pnpm --filter @workspace/api-spec run codegen
 
