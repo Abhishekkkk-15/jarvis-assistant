@@ -64,6 +64,9 @@ export const SettingsPage: React.FC = () => {
     if (!payload.spotifyClientId) delete payload.spotifyClientId;
     if (!payload.spotifyClientSecret) delete payload.spotifyClientSecret;
     if (!payload.githubPat) delete payload.githubPat;
+    if (!payload.emailPassword) delete payload.emailPassword;
+    if (!payload.telegramBotToken) delete payload.telegramBotToken;
+    if (!payload.discordBotToken) delete payload.discordBotToken;
     updateSettings.mutate({ data: payload }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
