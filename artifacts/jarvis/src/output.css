@@ -1824,6 +1824,9 @@
   .pr-8 {
     padding-right: calc(var(--spacing) * 8);
   }
+  .pr-14 {
+    padding-right: calc(var(--spacing) * 14);
+  }
   .pr-28 {
     padding-right: calc(var(--spacing) * 28);
   }
@@ -1856,6 +1859,9 @@
   }
   .pl-8 {
     padding-left: calc(var(--spacing) * 8);
+  }
+  .pl-10 {
+    padding-left: calc(var(--spacing) * 10);
   }
   .pl-12 {
     padding-left: calc(var(--spacing) * 12);
@@ -3934,6 +3940,11 @@
       bottom: 0;
     }
   }
+  .sm\:left-4 {
+    @media (width >= 40rem) {
+      left: calc(var(--spacing) * 4);
+    }
+  }
   .sm\:mt-0 {
     @media (width >= 40rem) {
       margin-top: 0;
@@ -3993,9 +4004,34 @@
       border-radius: var(--radius);
     }
   }
+  .sm\:p-4 {
+    @media (width >= 40rem) {
+      padding: calc(var(--spacing) * 4);
+    }
+  }
+  .sm\:py-4 {
+    @media (width >= 40rem) {
+      padding-block: calc(var(--spacing) * 4);
+    }
+  }
+  .sm\:pr-28 {
+    @media (width >= 40rem) {
+      padding-right: calc(var(--spacing) * 28);
+    }
+  }
+  .sm\:pl-12 {
+    @media (width >= 40rem) {
+      padding-left: calc(var(--spacing) * 12);
+    }
+  }
   .sm\:text-left {
     @media (width >= 40rem) {
       text-align: left;
+    }
+  }
+  .sm\:text-\[15px\] {
+    @media (width >= 40rem) {
+      font-size: 15px;
     }
   }
   .md\:absolute {

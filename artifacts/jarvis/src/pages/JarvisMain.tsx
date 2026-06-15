@@ -542,7 +542,7 @@ export const JarvisMain: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-4 border-t border-border bg-white/50 backdrop-blur-xl shrink-0">
+            <div className="p-3 sm:p-4 border-t border-border bg-white/50 backdrop-blur-xl shrink-0">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -555,14 +555,14 @@ export const JarvisMain: React.FC = () => {
                 }}
                 className="relative flex items-center shadow-sm rounded-2xl group"
               >
-                <div className="absolute left-4 text-muted-foreground group-focus-within:text-primary transition-colors">
+                <div className="absolute left-3 sm:left-4 text-muted-foreground group-focus-within:text-primary transition-colors">
                   <Zap size={18} />
                 </div>
                 <input
                   name="manualInput"
                   type="text"
                   placeholder="Ask JARVIS or type a command..."
-                  className="w-full bg-slate-50/80 hover:bg-slate-100/80 border border-slate-200 rounded-2xl pl-12 pr-28 py-4 text-[15px] text-foreground focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary/50 transition-all placeholder:text-muted-foreground/70 shadow-inner"
+                  className="w-full bg-slate-50/80 hover:bg-slate-100/80 border border-slate-200 rounded-2xl pl-10 sm:pl-12 pr-14 sm:pr-28 py-3 sm:py-4 text-sm sm:text-[15px] text-foreground focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary/50 transition-all placeholder:text-muted-foreground/70 shadow-inner"
                   data-testid="input-manual-chat"
                 />
                 <div className="absolute right-2 flex items-center gap-2">
