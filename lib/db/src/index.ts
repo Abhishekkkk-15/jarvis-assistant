@@ -73,6 +73,8 @@ export function setupDb() {
       nvidia_api_key TEXT,
       selected_model TEXT NOT NULL DEFAULT 'llama-3.3-70b-versatile',
       selected_provider TEXT NOT NULL DEFAULT 'groq',
+      vision_model TEXT NOT NULL DEFAULT 'llama-3.2-90b-vision-preview',
+      vision_provider TEXT NOT NULL DEFAULT 'nvidia',
       wake_word TEXT NOT NULL DEFAULT 'hey jarvis',
       voice_enabled INTEGER NOT NULL DEFAULT 1,
       selected_character_id TEXT NOT NULL DEFAULT 'jarvis-bot',
@@ -100,6 +102,8 @@ export function setupDb() {
     "ALTER TABLE settings ADD COLUMN email_password TEXT;",
     "ALTER TABLE settings ADD COLUMN email_provider TEXT;",
     "ALTER TABLE messages ADD COLUMN tokens_used INTEGER NOT NULL DEFAULT 0;",
+    "ALTER TABLE settings ADD COLUMN vision_model TEXT NOT NULL DEFAULT 'llama-3.2-90b-vision-preview';",
+    "ALTER TABLE settings ADD COLUMN vision_provider TEXT NOT NULL DEFAULT 'nvidia';",
   ];
 
   for (const query of migrations) {

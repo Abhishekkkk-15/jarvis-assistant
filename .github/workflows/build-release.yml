@@ -34,7 +34,7 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Install Dependencies
-        run: pnpm install
+        run: pnpm install --ignore-scripts
         env:
           GYP_MSVS_VERSION: "2022"
 
