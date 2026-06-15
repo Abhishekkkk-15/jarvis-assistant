@@ -48,6 +48,19 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '..', 'public', 'index.html'));
   }
 
+  // Auto-grant all permissions (like microphone for wake word) so it doesn't hang
+  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'media') {
+      callback(true);
+    } else {
+      callback(true);
+    }
+  });
+
+  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission) => {
+    return true;
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
     app.quit();
