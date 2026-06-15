@@ -1,6 +1,7 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import * as child_process from "child_process";
+import * as fs from "fs";
 import * as os from "os";
 
 export const claudeTools = [
@@ -13,27 +14,35 @@ export const claudeTools = [
       cwd: z.string().describe("The absolute path to the directory where the agent should run.")
     }),
     func: async ({ command, message, cwd }) => {
+      // Verify the target directory exists before opening a terminal
+      if (!fs.existsSync(cwd)) {
+        return `Error: Directory does not exist: ${cwd}`;
+      }
+
       try {
         let fullCommand = command;
         if (message) {
-           fullCommand += ` -m "${message.replace(/"/g, '\\"')}"`;
+          // --message is the correct long-form flag for both Claude CLI and Aider
+          fullCommand += ` --message "${message.replace(/"/g, '\\"')}"`;
         }
 
+        let execCmd: string;
         if (os.platform() === "win32") {
-          // Pops open a new Command Prompt window, changes to the target directory, and runs the command
-          child_process.exec(`start cmd.exe /K "cd /d \\"${cwd}\\" && ${fullCommand}"`, { cwd });
-          return `Successfully opened a new terminal window running ${command} in ${cwd}. You can now interact with it directly on your screen.`;
+          // /D sets the startup directory directly — avoids cd quoting issues
+          execCmd = `start cmd.exe /D "${cwd}" /K ${fullCommand}`;
         } else if (os.platform() === "darwin") {
-          // Mac: opens a new terminal window
-          child_process.exec(`osascript -e 'tell application "Terminal" to do script "cd \\"${cwd}\\" && ${fullCommand}"'`);
-          return `Successfully opened a new terminal window running ${command} in ${cwd}.`;
+          execCmd = `osascript -e 'tell application "Terminal" to do script "cd \\"${cwd}\\" && ${fullCommand}"'`;
         } else {
-          // Linux (GNOME terminal by default)
-          child_process.exec(`gnome-terminal -- working-directory="${cwd}" -- bash -c "${fullCommand}; exec bash"`);
-          return `Successfully opened a new terminal window running ${command} in ${cwd}.`;
+          execCmd = `gnome-terminal --working-directory="${cwd}" -- bash -c "${fullCommand}; exec bash"`;
         }
+
+        child_process.exec(execCmd, (err) => {
+          if (err) console.error(`[spawn_claude] Failed to open terminal: ${err.message}`);
+        });
+
+        return `Successfully opened a new terminal running '${command}' in ${cwd}.`;
       } catch (e: any) {
-        return `Failed to spawn ${command} in a new window: ${e.message}`;
+        return `Failed to spawn ${command}: ${e.message}`;
       }
     },
   })

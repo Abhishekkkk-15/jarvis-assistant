@@ -3,10 +3,64 @@ import { z } from "zod";
 import robot from "@hurdlegroup/robotjs";
 import { windowManager } from "node-window-manager";
 import * as child_process from "child_process";
-import * as path from "path";
+import * as fs from "fs";
+import * as os from "os";
 
-// Helper to delay execution
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Sets the system clipboard via a temp file to handle any text,
+// including special characters, backticks, quotes, and non-ASCII.
+const setClipboard = async (text: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (process.platform === "win32") {
+      const tmp = `${os.tmpdir()}\\jarvis_clip_${Date.now()}.txt`;
+      try {
+        fs.writeFileSync(tmp, text, "utf8");
+      } catch (err: any) {
+        return reject(new Error(`Failed to write clipboard temp file: ${err.message}`));
+      }
+      child_process.exec(
+        `powershell -NoProfile -NonInteractive -Command "Get-Content -Path '${tmp}' -Raw | Set-Clipboard"`,
+        (err) => {
+          try { fs.unlinkSync(tmp); } catch {}
+          err ? reject(new Error(`Clipboard failed: ${err.message}`)) : resolve();
+        }
+      );
+    } else if (process.platform === "darwin") {
+      const proc = child_process.spawn("pbcopy");
+      if (!proc.stdin) return reject(new Error("pbcopy stdin unavailable"));
+      proc.stdin.write(text, "utf8");
+      proc.stdin.end();
+      proc.on("close", (code) => code === 0 ? resolve() : reject(new Error(`pbcopy exited ${code}`)));
+      proc.on("error", reject);
+    } else {
+      const proc = child_process.spawn("xclip", ["-selection", "clipboard"]);
+      if (!proc.stdin) return reject(new Error("xclip stdin unavailable"));
+      proc.stdin.write(text, "utf8");
+      proc.stdin.end();
+      proc.on("close", (code) => code === 0 ? resolve() : reject(new Error(`xclip exited ${code}`)));
+      proc.on("error", reject);
+    }
+  });
+};
+
+// Polls for the Antigravity IDE window by title AND exe path,
+// giving it up to maxWaitMs to appear (useful after a cold launch).
+const findIdeWindow = async (maxWaitMs: number) => {
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    const windows = windowManager.getWindows();
+    const found = windows.find(w => {
+      if (!w.isVisible()) return false;
+      const title = w.getTitle().toLowerCase();
+      const exePath = ((w as any).path ?? "").toLowerCase();
+      return title.includes("antigravity") || exePath.includes("antigravity");
+    });
+    if (found) return found;
+    await delay(500);
+  }
+  return null;
+};
 
 export const antigravityTools = [
   new DynamicStructuredTool({
@@ -19,43 +73,38 @@ export const antigravityTools = [
     }),
     func: async ({ prompt, workspacePath, shortcut }) => {
       try {
-        // Step 1: Open or Focus Antigravity IDE
+        // Step 1: Launch Antigravity IDE if a workspace path was provided
         if (workspacePath) {
-          child_process.exec(`antigravity-ide "${workspacePath}"`);
-          // Wait for Antigravity IDE to launch and open the folder
-          await delay(4000);
+          child_process.exec(`antigravity-ide "${workspacePath}"`, (err) => {
+            if (err) console.error(`[antigravity] Launch error: ${err.message}`);
+          });
         }
 
         windowManager.requestAccessibility();
-        const windows = windowManager.getWindows();
-        
-        // Find Antigravity IDE window
-        const ideWindows = windows.filter(w => w.isVisible() && w.getTitle().toLowerCase().includes("antigravity ide"));
-        
-        if (ideWindows.length > 0) {
-          // Bring the first matched window to front
-          ideWindows[0].bringToTop();
-          await delay(1000); // Wait for focus to settle
-        } else if (!workspacePath) {
-          return "Error: Could not find an open Antigravity IDE window, and no workspacePath was provided to launch it.";
+
+        // Step 2: Poll for the IDE window — 10 s after a cold launch, 3 s if already open
+        const ideWindow = await findIdeWindow(workspacePath ? 10000 : 3000);
+        if (!ideWindow) {
+          return workspacePath
+            ? "Error: Antigravity IDE did not open within 10 seconds."
+            : "Error: Could not find an open Antigravity IDE window. Provide a workspacePath to launch it.";
         }
 
-        // Step 2: Trigger Antigravity Chat Shortcut
-        // Defaulting to Ctrl+L (common for AI IDEs like Cursor/Antigravity) unless specified
+        // Step 3: Bring to front and let focus settle
+        ideWindow.bringToTop();
+        await delay(800);
+
+        // Step 4: Trigger the AI chat shortcut (Ctrl+L by default)
         const modifier = process.platform === "darwin" ? "command" : "control";
-        
-        // If the shortcut is a single character like 'l', press ctrl+l
-        // If it requires shift, we'll assume it's passed as 'l' and we add shift if needed.
         robot.keyTap(shortcut.toLowerCase(), [modifier as any]);
-        
-        await delay(1500); // Wait for chat panel to open and focus input
+        await delay(1200);
 
-        // Step 3: Type the prompt
-        robot.typeString(prompt);
+        // Step 5: Write prompt to clipboard then paste — 100% accurate for any text
+        await setClipboard(prompt);
+        robot.keyTap("v", [modifier as any]);
+        await delay(400);
 
-        await delay(500);
-
-        // Step 4: Submit
+        // Step 6: Submit
         robot.keyTap("enter");
 
         return `Successfully delegated task to Antigravity IDE. Prompt sent: "${prompt}"`;
