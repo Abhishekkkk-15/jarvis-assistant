@@ -9,7 +9,10 @@ import {
 } from "lucide-react";
 import {
   JarvisBot, PixelFox, SpaceCat, FireDrake, Ninja, Wizard,
-  CyberPunk, MinionBob, AlienDude, Astronaut, type CharacterAnimation
+  CyberPunk, MinionBob, AlienDude, Astronaut, SpaceBean,
+  SpiderMan, IronHero, ElectricMouse, DarkKnight, NinjaTurtle,
+  PirateCaptain, ZombieGuy, CyberBot, VampireLord, GhostBoo,
+  SamuraiWarrior, type CharacterAnimation
 } from "../characters/CharacterRenderer";
 
 // ─── Animated Character helper ───────────────────────────────────────────────
@@ -365,6 +368,12 @@ const CHAR_PICKS = [
   { name: 'Fire Drake', C: FireDrake },
   { name: 'Ninja', C: Ninja },
   { name: 'Wizard', C: Wizard },
+  { name: 'Cyberpunk', C: CyberPunk },
+  { name: 'Minion', C: MinionBob },
+  { name: 'Alien', C: AlienDude },
+  { name: 'Astronaut', C: Astronaut },
+  { name: 'Spider-Man', C: SpiderMan },
+  { name: 'Iron Hero', C: IronHero },
 ];
 
 export const EmotionPlayground = () => {
@@ -437,7 +446,7 @@ const FEATURES = [
   { icon: Monitor, title: "MiniMode", body: "Characters with real physics on your desktop.", C: PixelFox, anim: 'bounce' as CharacterAnimation },
   { icon: Eye, title: "Screen Vision", body: "Reads your screen, understands your context.", C: SpaceCat, anim: 'thinking' as CharacterAnimation },
   { icon: PenTool, title: "Draw on Screen", body: "Annotates your display live with arrows & text.", C: CyberPunk, anim: 'draw' as CharacterAnimation },
-  { icon: Network, title: "LangGraph AI", body: "Multi-agent loop: plan → browse → code → execute.", C: AlienDude, anim: 'excited' as CharacterAnimation },
+  { icon: Network, title: "LangGraph AI", body: "Multi-agent loop: plan → validate → execute → verify → synthesize.", C: AlienDude, anim: 'excited' as CharacterAnimation },
   { icon: MessageSquare, title: "Telegram Sync", body: "Control your desktop agent remotely via Telegram.", C: Astronaut, anim: 'wave' as CharacterAnimation },
 ];
 
@@ -559,6 +568,18 @@ const CAST = [
   { C: MinionBob, name: "Minion Bob", tag: "The Goofball" },
   { C: AlienDude, name: "Alien Dude", tag: "The Oddball" },
   { C: Astronaut, name: "Astronaut", tag: "The Drifter" },
+  { C: SpaceBean, name: "Space Bean", tag: "The Wanderer" },
+  { C: SpiderMan, name: "Spider-Man", tag: "The Wall-Crawler" },
+  { C: IronHero, name: "Iron Hero", tag: "The Titan" },
+  { C: ElectricMouse, name: "Electric Mouse", tag: "The Spark" },
+  { C: DarkKnight, name: "Dark Knight", tag: "The Vigilante" },
+  { C: NinjaTurtle, name: "Ninja Turtle", tag: "The Radical" },
+  { C: PirateCaptain, name: "Pirate Captain", tag: "The Seafarer" },
+  { C: ZombieGuy, name: "Zombie Guy", tag: "The Undead" },
+  { C: CyberBot, name: "Cyber Bot", tag: "The Machine" },
+  { C: VampireLord, name: "Vampire Lord", tag: "The Immortal" },
+  { C: GhostBoo, name: "Ghost Boo", tag: "The Phantom" },
+  { C: SamuraiWarrior, name: "Samurai", tag: "The Blade" },
 ];
 
 const HOVER_ANIMS: CharacterAnimation[] = ['wave', 'dance', 'excited', 'happy', 'love', 'cool', 'laughing', 'shy', 'surprised', 'thinking'];
