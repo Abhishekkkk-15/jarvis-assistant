@@ -11,45 +11,46 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export const antigravityTools = [
   new DynamicStructuredTool({
     name: "delegate_to_antigravity",
-    description: "Delegates a coding task to the Antigravity IDE (VS Code extension). It opens VS Code, focuses the Antigravity chat, and types the prompt.",
+    description: "Delegates a coding task to the standalone Antigravity IDE. It opens the Antigravity IDE, focuses its AI chat, and types the prompt. Do NOT use this if the user specifically asked for Claude or another tool.",
     schema: z.object({
-      prompt: z.string().describe("The instruction to send to Antigravity (e.g., 'add a new login module')."),
-      workspacePath: z.string().optional().describe("Optional path to the project directory to open in VS Code."),
-      shortcut: z.string().default("l").describe("The key to press along with Ctrl+Shift (or Cmd+Shift on Mac) to open Antigravity chat. Defaults to 'l' (Ctrl+Shift+L)."),
+      prompt: z.string().describe("The instruction to send to Antigravity IDE (e.g., 'add a new login module')."),
+      workspacePath: z.string().optional().describe("Optional path to the project directory to open in Antigravity IDE."),
+      shortcut: z.string().default("l").describe("The key to press along with Ctrl (or Cmd on Mac) to open Antigravity chat. Defaults to 'l' (Ctrl+L)."),
     }),
     func: async ({ prompt, workspacePath, shortcut }) => {
       try {
-        // Step 1: Open or Focus VS Code
+        // Step 1: Open or Focus Antigravity IDE
         if (workspacePath) {
-          child_process.exec(`code "${workspacePath}"`);
-          // Wait for VS code to launch and open the folder
+          child_process.exec(`antigravity-ide "${workspacePath}"`);
+          // Wait for Antigravity IDE to launch and open the folder
           await delay(4000);
         }
 
         windowManager.requestAccessibility();
         const windows = windowManager.getWindows();
         
-        // Find VS Code window (title usually ends with "- Visual Studio Code")
-        const vsCodeWindows = windows.filter(w => w.isVisible() && w.getTitle().toLowerCase().includes("visual studio code"));
+        // Find Antigravity IDE window
+        const ideWindows = windows.filter(w => w.isVisible() && w.getTitle().toLowerCase().includes("antigravity ide"));
         
-        if (vsCodeWindows.length > 0) {
+        if (ideWindows.length > 0) {
           // Bring the first matched window to front
-          vsCodeWindows[0].bringToTop();
+          ideWindows[0].bringToTop();
           await delay(1000); // Wait for focus to settle
         } else if (!workspacePath) {
-          return "Error: Could not find an open Visual Studio Code window, and no workspacePath was provided to launch it.";
+          return "Error: Could not find an open Antigravity IDE window, and no workspacePath was provided to launch it.";
         }
 
         // Step 2: Trigger Antigravity Chat Shortcut
-        // We assume the default shortcut is Ctrl + Shift + L (or Cmd + Shift + L on Mac)
+        // Defaulting to Ctrl+L (common for AI IDEs like Cursor/Antigravity) unless specified
         const modifier = process.platform === "darwin" ? "command" : "control";
-        robot.keyTap(shortcut.toLowerCase(), [modifier as any, "shift"]);
+        
+        // If the shortcut is a single character like 'l', press ctrl+l
+        // If it requires shift, we'll assume it's passed as 'l' and we add shift if needed.
+        robot.keyTap(shortcut.toLowerCase(), [modifier as any]);
         
         await delay(1500); // Wait for chat panel to open and focus input
 
         // Step 3: Type the prompt
-        // robot.typeString can be slow for long prompts, so we might want to use clipboard, 
-        // but typing is safer for chat boxes to trigger input events.
         robot.typeString(prompt);
 
         await delay(500);
@@ -57,7 +58,7 @@ export const antigravityTools = [
         // Step 4: Submit
         robot.keyTap("enter");
 
-        return `Successfully delegated task to Antigravity in VS Code. Prompt sent: "${prompt}"`;
+        return `Successfully delegated task to Antigravity IDE. Prompt sent: "${prompt}"`;
       } catch (err: any) {
         return `Error executing delegate_to_antigravity: ${err.message}`;
       }
