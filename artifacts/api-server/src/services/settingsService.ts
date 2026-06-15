@@ -18,6 +18,8 @@ export function toResponse(s: typeof settingsTable.$inferSelect) {
     nvidiaApiKeySet: !!s.nvidiaApiKey,
     selectedModel: s.selectedModel,
     selectedProvider: s.selectedProvider,
+    visionModel: s.visionModel,
+    visionProvider: s.visionProvider,
     wakeWord: s.wakeWord,
     voiceEnabled: s.voiceEnabled,
     selectedCharacterId: s.selectedCharacterId,
@@ -48,6 +50,8 @@ export async function updateSettings(parsedData: any) {
   if (d.nvidiaApiKey != null) updates.nvidiaApiKey = d.nvidiaApiKey;
   if (d.selectedModel != null) updates.selectedModel = d.selectedModel;
   if (d.selectedProvider != null) updates.selectedProvider = d.selectedProvider;
+  if (d.visionModel != null) updates.visionModel = d.visionModel;
+  if (d.visionProvider != null) updates.visionProvider = d.visionProvider;
   if (d.wakeWord != null) updates.wakeWord = d.wakeWord;
   if (d.voiceEnabled != null) updates.voiceEnabled = d.voiceEnabled;
   if (d.selectedCharacterId != null) updates.selectedCharacterId = d.selectedCharacterId;

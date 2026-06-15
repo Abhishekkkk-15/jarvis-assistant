@@ -239,11 +239,15 @@ export async function processChatRequest(parsedData: any) {
 
   const hasImage = !!parsedData.imageBase64;
 
-  // Provider and model switching is currently in progress
-  let provider = parsedData.provider || settings.selectedProvider || "groq";
+  let provider = hasImage
+    ? (parsedData.provider || settings.visionProvider || "groq")
+    : (parsedData.provider || settings.selectedProvider || "groq");
+
   let isFallback = false;
-  let modelName = hasImage ? "moonshotai/kimi-k2.6" : "minimaxai/minimax-m3";
-  // let modelName = "minimaxai/minimax-m3";
+
+  let modelName = hasImage
+    ? (settings.visionModel || "llama-3.2-90b-vision-preview")
+    : (settings.selectedModel || "llama-3.3-70b-versatile");
 
   if (provider === "groq" && !settings.groqApiKey && settings.nvidiaApiKey) {
     provider = "nvidia";
@@ -257,13 +261,14 @@ export async function processChatRequest(parsedData: any) {
     isFallback = true;
   }
 
-  const apiKey = settings.nvidiaApiKey;
+  const apiKey = provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
   if (!apiKey) {
     throw new Error(`No ${provider.toUpperCase()} API key configured. Please add your API key in Settings.`);
   }
 
-  // const endpoint = "https://api.groq.com/openai/v1";
-  const endpoint = "https://integrate.api.nvidia.com/v1";
+  const endpoint = provider === "nvidia"
+    ? "https://integrate.api.nvidia.com/v1"
+    : "https://api.groq.com/openai/v1";
 
   const llm = new ChatOpenAI({
     modelName,

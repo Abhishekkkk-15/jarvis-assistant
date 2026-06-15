@@ -8,6 +8,8 @@ export const settingsTable = sqliteTable("settings", {
   nvidiaApiKey: text("nvidia_api_key"),
   selectedModel: text("selected_model").notNull().default("llama-3.3-70b-versatile"),
   selectedProvider: text("selected_provider").notNull().default("groq"),
+  visionModel: text("vision_model").notNull().default("llama-3.2-90b-vision-preview"),
+  visionProvider: text("vision_provider").notNull().default("groq"),
   wakeWord: text("wake_word").notNull().default("hey jarvis"),
   voiceEnabled: integer("voice_enabled", { mode: "boolean" }).notNull().default(true),
   selectedCharacterId: text("selected_character_id").notNull().default("jarvis-bot"),

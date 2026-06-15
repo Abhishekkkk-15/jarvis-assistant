@@ -71,6 +71,8 @@ export interface Settings {
   nvidiaApiKeySet?: boolean;
   selectedModel: string;
   selectedProvider: string;
+  visionModel: string;
+  visionProvider: string;
   wakeWord: string;
   voiceEnabled: boolean;
   selectedCharacterId: string;
@@ -104,6 +106,10 @@ export interface SettingsInput {
   selectedModel?: string | null;
   /** @nullable */
   selectedProvider?: string | null;
+  /** @nullable */
+  visionModel?: string | null;
+  /** @nullable */
+  visionProvider?: string | null;
   /** @nullable */
   wakeWord?: string | null;
   /** @nullable */

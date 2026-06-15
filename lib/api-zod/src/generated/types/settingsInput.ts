@@ -16,6 +16,10 @@ export interface SettingsInput {
   /** @nullable */
   selectedProvider?: string | null;
   /** @nullable */
+  visionModel?: string | null;
+  /** @nullable */
+  visionProvider?: string | null;
+  /** @nullable */
   wakeWord?: string | null;
   /** @nullable */
   voiceEnabled?: boolean | null;

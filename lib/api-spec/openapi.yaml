@@ -375,7 +375,7 @@ components:
 
     Settings:
       type: object
-      required: [id, selectedModel, selectedProvider, wakeWord, voiceEnabled, selectedCharacterId, miniModeEnabled]
+      required: [id, selectedModel, selectedProvider, visionModel, visionProvider, wakeWord, voiceEnabled, selectedCharacterId, miniModeEnabled]
       properties:
         id:
           type: integer
@@ -386,6 +386,10 @@ components:
         selectedModel:
           type: string
         selectedProvider:
+          type: string
+        visionModel:
+          type: string
+        visionProvider:
           type: string
         wakeWord:
           type: string
@@ -424,6 +428,10 @@ components:
         selectedModel:
           type: ["string", "null"]
         selectedProvider:
+          type: ["string", "null"]
+        visionModel:
+          type: ["string", "null"]
+        visionProvider:
           type: ["string", "null"]
         wakeWord:
           type: ["string", "null"]

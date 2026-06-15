@@ -12,6 +12,8 @@ export interface Settings {
   nvidiaApiKeySet?: boolean;
   selectedModel: string;
   selectedProvider: string;
+  visionModel: string;
+  visionProvider: string;
   wakeWord: string;
   voiceEnabled: boolean;
   selectedCharacterId: string;

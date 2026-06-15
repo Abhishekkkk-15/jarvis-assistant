@@ -26,10 +26,12 @@ export const SettingsPage: React.FC = () => {
   const form = useForm({
     defaultValues: {
       nvidiaApiKey: '',
-      groqApiKey: '',
       wakeWord: 'jarvis',
       voiceEnabled: true,
-
+      selectedProvider: 'groq',
+      selectedModel: 'llama-3.3-70b-versatile',
+      visionProvider: 'groq',
+      visionModel: 'llama-3.2-90b-vision-preview',
     }
   });
 
@@ -43,10 +45,13 @@ export const SettingsPage: React.FC = () => {
         spotifyClientSecret: '',
         githubPat: '',
         wakeWord: settings.wakeWord || 'jarvis',
-        voiceEnabled: settings.voiceEnabled ?? true,
         emailAddress: settings.emailAddress || '',
         emailPassword: '',
         emailProvider: settings.emailProvider || 'gmail',
+        selectedProvider: settings.selectedProvider || 'groq',
+        selectedModel: settings.selectedModel || 'llama-3.3-70b-versatile',
+        visionProvider: settings.visionProvider || 'groq',
+        visionModel: settings.visionModel || 'llama-3.2-90b-vision-preview',
       });
     }
   }, [settings, form]);
@@ -78,6 +83,9 @@ export const SettingsPage: React.FC = () => {
   const sectionClass = "rounded-xl border border-border bg-white p-6 space-y-5";
   const sectionHeadingClass = "text-sm font-semibold text-foreground flex items-center gap-2 pb-4 border-b border-border";
 
+  console.log("DEBUG: settings loaded:", settings);
+  console.log("DEBUG: form values:", form.getValues());
+
   return (
     <div className="h-full flex flex-col p-5 md:p-8 max-w-4xl mx-auto w-full overflow-y-auto">
       <header className="mb-6 shrink-0">
@@ -87,7 +95,6 @@ export const SettingsPage: React.FC = () => {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pb-24">
-
           {/* API Keys */}
           <section className={sectionClass}>
             <h3 className={sectionHeadingClass}>
@@ -152,6 +159,99 @@ export const SettingsPage: React.FC = () => {
               />
             </div>
           </section>
+
+          {/* Model Selection */}
+          <section className={sectionClass}>
+            <h3 className={sectionHeadingClass}>
+              <Cpu size={15} className="text-primary" /> Model Configuration
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              
+              {/* Text / Agent Model */}
+              <div className="space-y-5">
+                <h4 className="text-sm font-semibold text-foreground">Agent Model (Text)</h4>
+                <FormField
+                  control={form.control}
+                  name="selectedProvider"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Agent Provider</FormLabel>
+                      <Select key={field.value} value={field.value} defaultValue={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select provider" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="groq">Groq</SelectItem>
+                          <SelectItem value="nvidia">NVIDIA NIM</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="selectedModel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Agent Model Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. llama-3.3-70b-versatile" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormDescription className="text-xs">The model JARVIS uses to think and orchestrate tools.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Vision Model */}
+              <div className="space-y-5">
+                <h4 className="text-sm font-semibold text-foreground">Vision Model</h4>
+                <FormField
+                  control={form.control}
+                  name="visionProvider"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Vision Provider</FormLabel>
+                      <Select key={field.value} value={field.value} defaultValue={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select provider" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="groq">Groq</SelectItem>
+                          <SelectItem value="nvidia">NVIDIA NIM</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="visionModel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Vision Model Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. microsoft/phi-4-multimodal-instruct" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormDescription className="text-xs">The model used to extract descriptions from uploaded images.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+            </div>
+          </section>
+
 
           {/* Voice & Behavior */}
           <section className={sectionClass}>
