@@ -36,4 +36,7 @@ export interface Settings {
   emailPassword?: string | null;
   /** @nullable */
   emailProvider?: string | null;
+  googleClientIdSet?: boolean;
+  googleClientSecretSet?: boolean;
+  googleRefreshTokenSet?: boolean;
 }

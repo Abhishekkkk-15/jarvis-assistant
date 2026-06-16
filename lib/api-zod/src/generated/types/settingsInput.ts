@@ -45,4 +45,10 @@ export interface SettingsInput {
   emailPassword?: string | null;
   /** @nullable */
   emailProvider?: string | null;
+  /** @nullable */
+  googleClientId?: string | null;
+  /** @nullable */
+  googleClientSecret?: string | null;
+  /** @nullable */
+  googleRefreshToken?: string | null;
 }

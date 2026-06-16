@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSendChat, useGetSettings, getGetSettingsQueryKey, useGetStats, getGetStatsQueryKey, useGetCommandSuggestions, getGetCommandSuggestionsQueryKey, useTranscribeAudio } from '@workspace/api-client-react';
+import { useGetSettings, getGetSettingsQueryKey, useGetStats, getGetStatsQueryKey, useGetCommandSuggestions, getGetCommandSuggestionsQueryKey, useTranscribeAudio } from '@workspace/api-client-react';
 import { Mic, MicOff, Volume2, VolumeX, Send, Activity, Zap, Square } from 'lucide-react';
 import { AudioVisualizer } from '../components/AudioVisualizer';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +20,10 @@ export const JarvisMain: React.FC = () => {
   const [transcript, setTranscript] = useState('');
   const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
+  const [streamStatus, setStreamStatus] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const { data: settings } = useGetSettings({ query: { queryKey: getGetSettingsQueryKey() } });
   const { data: stats } = useGetStats({ query: { queryKey: getGetStatsQueryKey() } });
@@ -29,7 +33,6 @@ export const JarvisMain: React.FC = () => {
   const tts = useTTS();
   const muted = !tts.isEnabled;
 
-  const sendChat = useSendChat();
   const { toast } = useToast();
 
   const transcribeAudio = useTranscribeAudio();
@@ -46,10 +49,10 @@ export const JarvisMain: React.FC = () => {
 
   const { activeApproval, agentQuestion, resolveApproval, clearQuestion } = useWebSocket();
 
-  // Sync API pending state to local storage for the character overlay
+  // Sync streaming state to local storage for the character overlay
   useEffect(() => {
-    setIsProcessing(sendChat.isPending);
-  }, [sendChat.isPending, setIsProcessing]);
+    setIsProcessing(isStreaming);
+  }, [isStreaming, setIsProcessing]);
 
   // Watch for agent_question to start listening
   useEffect(() => {
@@ -212,79 +215,112 @@ export const JarvisMain: React.FC = () => {
     }
   }, [isListening]);
 
-  const handleSendMessage = (text: string, imageBase64?: string) => {
-    if (!text.trim()) return;
+  const NODE_LABELS: Record<string, string> = {
+    Init: 'Starting…', Supervisor: 'Planning…', Planner: 'Creating plan…',
+    PlanValidator: 'Validating plan…', Executor: 'Executing…', Observer: 'Observing…',
+    Verifier: 'Verifying…', Replanner: 'Adjusting plan…', NextStep: 'Next step…',
+    Synthesizer: 'Generating response…',
+  };
 
-    // If we're answering an agent question, clear it now
+  const handleSendMessage = async (text: string, imageBase64?: string) => {
+    if (!text.trim() || isStreaming) return;
+
     if (agentQuestion) clearQuestion();
 
     setMessages(prev => [...prev, { role: 'user', content: text }]);
-    setToolsUsed([]); // Clear tools when starting a new message
-    sendChat.mutate({
-      data: {
-        message: `[System Note - Your Relationship with User: ${mood} (Affection Score: ${Math.round(affectionScore)}/100)]\n\n${text}`,
-        conversationId: activeConversationId || undefined,
-        model: settings?.selectedModel,
-        provider: settings?.selectedProvider,
-        imageBase64
+    setToolsUsed([]);
+    setStreamingContent('');
+    setStreamStatus('Starting…');
+    setIsStreaming(true);
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const response = await fetch('http://localhost:4444/api/chat/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `[System Note - Your Relationship with User: ${mood} (Affection Score: ${Math.round(affectionScore)}/100)]\n\n${text}`,
+          conversationId: activeConversationId || undefined,
+          model: settings?.selectedModel,
+          provider: settings?.selectedProvider,
+          imageBase64,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error(`HTTP ${response.status}`);
       }
-    }, {
-      onSuccess: (data) => {
-        if (data.conversationId) setActiveConversationId(data.conversationId);
 
-        // Boost affection on every successful interaction — longer replies give slightly more
-        const wordCount = (data.reply || '').split(/\s+/).length;
-        const boost = wordCount > 50 ? 3 : wordCount > 20 ? 2 : 1;
-        interact(boost);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let accumulatedText = '';
 
-        let finalReply = data.reply;
-        let animTag = '';
-        const animMatch = finalReply.match(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i);
-        if (animMatch) {
-          animTag = animMatch[1];
-          finalReply = finalReply.replace(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i, '').trim();
-        }
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
 
-        let drawPath = '';
-        const drawMatch = finalReply.match(/\[draw:\s*(.+?)\]/i);
-        if (drawMatch) {
-          drawPath = drawMatch[1].trim();
-          finalReply = finalReply.replace(/\[draw:\s*(.+?)\]/i, '').trim();
-        }
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === 'started' && event.conversationId) {
+              setActiveConversationId(event.conversationId);
+            } else if (event.type === 'status') {
+              setStreamStatus(NODE_LABELS[event.node] ?? `${event.node}…`);
+            } else if (event.type === 'token') {
+              accumulatedText += event.text;
+              setStreamingContent(accumulatedText);
+            } else if (event.type === 'done') {
+              const wordCount = (accumulatedText || '').split(/\s+/).length;
+              const boost = wordCount > 50 ? 3 : wordCount > 20 ? 2 : 1;
+              interact(boost);
 
-        setMessages(prev => [...prev, { role: 'assistant', content: finalReply }]);
-        setLastReply(finalReply);
+              let finalReply = accumulatedText.replace(/\[Orchestrator\]:/g, '').trim();
+              let animTag = '';
+              const animMatch = finalReply.match(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i);
+              if (animMatch) { animTag = animMatch[1]; finalReply = finalReply.replace(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i, '').trim(); }
+              let drawPath = '';
+              const drawMatch = finalReply.match(/\[draw:\s*(.+?)\]/i);
+              if (drawMatch) { drawPath = drawMatch[1].trim(); finalReply = finalReply.replace(/\[draw:\s*(.+?)\]/i, '').trim(); }
 
-        if (animTag) {
-          window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: animTag.toLowerCase() } }));
+              setMessages(prev => [...prev, { role: 'assistant', content: finalReply }]);
+              setLastReply(finalReply);
+              if (animTag) window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: animTag.toLowerCase() } }));
+              if (drawPath) window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: 'draw', path: drawPath } }));
+              if (event.toolsUsed?.length) setToolsUsed(event.toolsUsed);
+              if (!muted && settings?.voiceEnabled !== false) {
+                tts.speak(finalReply);
+                setTimeout(() => setToolsUsed([]), Math.max(3000, wordCount * 350));
+              } else {
+                setTimeout(() => setToolsUsed([]), 5000);
+              }
+            } else if (event.type === 'error') {
+              toast({ title: "Error", description: event.message || "AI error.", variant: "destructive" });
+            }
+          } catch { }
         }
-        if (drawPath) {
-          window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: 'draw', path: drawPath } }));
-        }
-
-        if (data.toolsUsed && data.toolsUsed.length > 0) {
-          setToolsUsed(data.toolsUsed);
-        }
-        if (!muted && settings?.voiceEnabled !== false) {
-          tts.speak(finalReply);
-          // Clear tools badge after speaking finishes (estimated)
-          const wordCount = finalReply.split(/\s+/).length;
-          setTimeout(() => setToolsUsed([]), Math.max(3000, wordCount * 350));
-        } else {
-          // If muted, clear accessories after 5 seconds so they don't stay forever
-          setTimeout(() => {
-            setToolsUsed([]);
-          }, 5000);
-        }
-      },
-      onError: () => {
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
         toast({ title: "Error", description: "Failed to reach the AI.", variant: "destructive" });
-        setLastReply("Oops! Failed to connect to the brain.");
       }
-    });
+    } finally {
+      setIsStreaming(false);
+      setStreamingContent('');
+      setStreamStatus(null);
+      abortControllerRef.current = null;
+    }
   };
 
   const handleStop = async () => {
+    abortControllerRef.current?.abort();
     if (activeConversationId) {
       try {
         await fetch('http://localhost:4444/api/chat/stop', {
@@ -292,11 +328,9 @@ export const JarvisMain: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ conversationId: activeConversationId })
         });
-        toast({ title: "Stopped", description: "Execution aborted by user." });
-      } catch (err) {
-        console.error(err);
-      }
+      } catch { }
     }
+    toast({ title: "Stopped", description: "Execution aborted by user." });
   };
 
   const handleMessageWithScreenshot = async (message: string, imageBase64?: string) => {
@@ -539,6 +573,32 @@ export const JarvisMain: React.FC = () => {
                   </div>
                 ))
               )}
+              {isStreaming && (
+                <div className="flex justify-start">
+                  <div className="max-w-[85%] px-4 py-2.5 rounded-xl text-sm leading-relaxed bg-slate-100 text-foreground rounded-bl-sm">
+                    <p className="text-[10px] font-semibold opacity-60 mb-1 uppercase tracking-wide">JARVIS</p>
+                    {streamingContent ? (
+                      <div className="whitespace-pre-wrap">
+                        <ReactMarkdown
+                          components={{
+                            p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                            ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2" {...props} />,
+                            ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2" {...props} />,
+                            li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                            code: ({ node, ...props }) => <code className="bg-black/10 px-1.5 py-0.5 rounded text-xs" {...props} />,
+                            pre: ({ node, ...props }) => <pre className="bg-slate-800 text-slate-100 p-3 rounded-lg text-xs overflow-x-auto mb-2" {...props} />,
+                            a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline" {...props} />,
+                          }}
+                        >
+                          {streamingContent}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground animate-pulse">{streamStatus || 'Thinking…'}</p>
+                    )}
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
@@ -569,7 +629,7 @@ export const JarvisMain: React.FC = () => {
                   <kbd className="hidden sm:inline-flex h-6 items-center gap-1 rounded border bg-muted px-2 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
                     <span className="text-xs">↵</span> Enter
                   </kbd>
-                  {sendChat.isPending ? (
+                  {isStreaming ? (
                     <button
                       type="button"
                       onClick={handleStop}
@@ -581,7 +641,7 @@ export const JarvisMain: React.FC = () => {
                   ) : (
                     <button
                       type="submit"
-                      disabled={sendChat.isPending}
+                      disabled={isStreaming}
                       className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-md shadow-primary/20"
                       data-testid="button-send-chat"
                       title="Send message"

@@ -44,6 +44,8 @@ export const SettingsPage: React.FC = () => {
         spotifyClientId: '',
         spotifyClientSecret: '',
         githubPat: '',
+        googleClientId: '',
+        googleClientSecret: '',
         wakeWord: settings.wakeWord || 'jarvis',
         emailAddress: settings.emailAddress || '',
         emailPassword: '',
@@ -67,6 +69,8 @@ export const SettingsPage: React.FC = () => {
     if (!payload.emailPassword) delete payload.emailPassword;
     if (!payload.telegramBotToken) delete payload.telegramBotToken;
     if (!payload.discordBotToken) delete payload.discordBotToken;
+    if (!payload.googleClientId) delete payload.googleClientId;
+    if (!payload.googleClientSecret) delete payload.googleClientSecret;
     updateSettings.mutate({ data: payload }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
@@ -412,6 +416,88 @@ export const SettingsPage: React.FC = () => {
                   </FormItem>
                 )}
               />
+            </div>
+          </section>
+
+          {/* Google Calendar */}
+          <section className={sectionClass}>
+            <h3 className={sectionHeadingClass}>
+              <Cpu size={15} className="text-primary" /> Google Calendar
+            </h3>
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="googleClientId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Google Client ID</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder={settings?.googleClientIdSet ? "Already set — enter new ID to update" : "Enter your Google OAuth2 Client ID"}
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">From Google Cloud Console → APIs & Services → Credentials</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="googleClientSecret"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Google Client Secret</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder={settings?.googleClientSecretSet ? "Already set — enter new secret to update" : "Enter your Google OAuth2 Client Secret"}
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Connection Status</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {settings?.googleRefreshTokenSet
+                      ? "✅ Connected — JARVIS can read and write your calendar"
+                      : "Not connected — save your Client ID & Secret first, then click Connect"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const resp = await fetch('http://localhost:4444/api/auth/google/url');
+                      if (!resp.ok) {
+                        const err = await resp.json();
+                        alert(err.error || 'Failed to get authorization URL');
+                        return;
+                      }
+                      const { url } = await resp.json();
+                      window.open(url, '_blank');
+                    } catch (e: any) {
+                      alert('Could not connect to server: ' + e.message);
+                    }
+                  }}
+                  className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors whitespace-nowrap"
+                >
+                  Connect Google Calendar
+                </button>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Add <code className="bg-muted px-1 rounded">http://localhost:4444/api/auth/google/callback</code> as an authorized redirect URI in your Google Cloud Console OAuth2 app.
+              </p>
             </div>
           </section>
 

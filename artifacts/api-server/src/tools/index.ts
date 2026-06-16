@@ -23,6 +23,7 @@ import { sendDiscordMessageTool } from "./discord.js";
 import { antigravityTools } from "./antigravity.js";
 import { claudeTools } from "./claude_cli.js";
 import { visionTools } from "./vision.js";
+import { calendarTools } from "./calendar.js";
 
 export const allTools = [
   ...browserTools,
@@ -47,6 +48,7 @@ export const allTools = [
   ...antigravityTools,
   ...claudeTools,
   ...visionTools,
+  ...calendarTools,
   sendTelegramMessageTool,
   sendDiscordMessageTool,
   read_jarvis_manual,

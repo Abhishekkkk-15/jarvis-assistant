@@ -23,6 +23,9 @@ export const settingsTable = sqliteTable("settings", {
   emailAddress: text("email_address"),
   emailPassword: text("email_password"),
   emailProvider: text("email_provider"),
+  googleClientId: text("google_client_id"),
+  googleClientSecret: text("google_client_secret"),
+  googleRefreshToken: text("google_refresh_token"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()).$onUpdate(() => new Date()),
 });

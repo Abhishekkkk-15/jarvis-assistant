@@ -8,6 +8,7 @@ import ttsRouter from "./tts";
 import commandsRouter from "./commands";
 import statsRouter from "./stats";
 import { autonomousRouter } from "./autonomous";
+import authRouter from "./auth";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(ttsRouter);
 router.use(commandsRouter);
 router.use(statsRouter);
 router.use("/autonomous", autonomousRouter);
+router.use("/auth", authRouter);
 
 export default router;

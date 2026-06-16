@@ -95,6 +95,9 @@ export interface Settings {
   emailPassword?: string | null;
   /** @nullable */
   emailProvider?: string | null;
+  googleClientIdSet?: boolean;
+  googleClientSecretSet?: boolean;
+  googleRefreshTokenSet?: boolean;
 }
 
 export interface SettingsInput {
@@ -136,6 +139,12 @@ export interface SettingsInput {
   emailPassword?: string | null;
   /** @nullable */
   emailProvider?: string | null;
+  /** @nullable */
+  googleClientId?: string | null;
+  /** @nullable */
+  googleClientSecret?: string | null;
+  /** @nullable */
+  googleRefreshToken?: string | null;
 }
 
 export interface Message {

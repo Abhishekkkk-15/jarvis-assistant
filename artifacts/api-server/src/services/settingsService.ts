@@ -33,6 +33,9 @@ export function toResponse(s: typeof settingsTable.$inferSelect) {
     emailAddress: s.emailAddress,
     emailProvider: s.emailProvider,
     emailPasswordSet: !!s.emailPassword,
+    googleClientIdSet: !!s.googleClientId,
+    googleClientSecretSet: !!s.googleClientSecret,
+    googleRefreshTokenSet: !!s.googleRefreshToken,
   };
 }
 
@@ -65,6 +68,9 @@ export async function updateSettings(parsedData: any) {
   if (d.emailAddress !== undefined) updates.emailAddress = d.emailAddress;
   if (d.emailPassword !== undefined) updates.emailPassword = d.emailPassword;
   if (d.emailProvider !== undefined) updates.emailProvider = d.emailProvider;
+  if (d.googleClientId !== undefined) updates.googleClientId = d.googleClientId;
+  if (d.googleClientSecret !== undefined) updates.googleClientSecret = d.googleClientSecret;
+  if (d.googleRefreshToken !== undefined) updates.googleRefreshToken = d.googleRefreshToken;
 
   const [updated] = await db
     .update(settingsTable)

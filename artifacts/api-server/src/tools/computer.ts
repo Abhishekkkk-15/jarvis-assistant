@@ -245,6 +245,30 @@ export const computerTools = [
   }),
 
   // ──────────────────────────────────────────────────────────────
+  // OCR IMAGE — extract text from an image file using Tesseract
+  // ──────────────────────────────────────────────────────────────
+  new DynamicStructuredTool({
+    name: "ocr_image",
+    description: "Extract text from any image file (PNG, JPG, BMP, TIFF, etc.) using OCR (Tesseract). Returns all recognized text from the file.",
+    schema: z.object({
+      file_path: z.string().describe("Absolute path to the image file to read"),
+      language: z.string().default("eng").describe("OCR language code (eng, fra, deu, spa, etc.) — default is English"),
+    }),
+    func: async ({ file_path, language }) => {
+      try {
+        await fs.stat(file_path);
+        const { createWorker } = await import("tesseract.js");
+        const worker = await createWorker(language);
+        const { data } = await worker.recognize(file_path);
+        await worker.terminate();
+        return data.text.trim() || "No text found in image.";
+      } catch (err: any) {
+        return `OCR error: ${err.message}`;
+      }
+    },
+  }),
+
+  // ──────────────────────────────────────────────────────────────
   // WINDOW MANAGEMENT — node-window-manager implementation
   // ──────────────────────────────────────────────────────────────
   new DynamicStructuredTool({

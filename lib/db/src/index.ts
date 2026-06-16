@@ -104,6 +104,9 @@ export function setupDb() {
     "ALTER TABLE messages ADD COLUMN tokens_used INTEGER NOT NULL DEFAULT 0;",
     "ALTER TABLE settings ADD COLUMN vision_model TEXT NOT NULL DEFAULT 'llama-3.2-90b-vision-preview';",
     "ALTER TABLE settings ADD COLUMN vision_provider TEXT NOT NULL DEFAULT 'nvidia';",
+    "ALTER TABLE settings ADD COLUMN google_client_id TEXT;",
+    "ALTER TABLE settings ADD COLUMN google_client_secret TEXT;",
+    "ALTER TABLE settings ADD COLUMN google_refresh_token TEXT;",
   ];
 
   for (const query of migrations) {

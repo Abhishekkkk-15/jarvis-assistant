@@ -87,7 +87,10 @@ export const GetSettingsResponse = zod.object({
   "spotifyClientSecret": zod.string().nullish(),
   "emailAddress": zod.string().nullish(),
   "emailPassword": zod.string().nullish(),
-  "emailProvider": zod.string().nullish()
+  "emailProvider": zod.string().nullish(),
+  "googleClientIdSet": zod.boolean().optional(),
+  "googleClientSecretSet": zod.boolean().optional(),
+  "googleRefreshTokenSet": zod.boolean().optional()
 })
 
 
@@ -113,7 +116,10 @@ export const UpdateSettingsBody = zod.object({
   "spotifyClientSecret": zod.string().nullish(),
   "emailAddress": zod.string().nullish(),
   "emailPassword": zod.string().nullish(),
-  "emailProvider": zod.string().nullish()
+  "emailProvider": zod.string().nullish(),
+  "googleClientId": zod.string().nullish(),
+  "googleClientSecret": zod.string().nullish(),
+  "googleRefreshToken": zod.string().nullish()
 })
 
 export const UpdateSettingsResponse = zod.object({
@@ -136,7 +142,10 @@ export const UpdateSettingsResponse = zod.object({
   "spotifyClientSecret": zod.string().nullish(),
   "emailAddress": zod.string().nullish(),
   "emailPassword": zod.string().nullish(),
-  "emailProvider": zod.string().nullish()
+  "emailProvider": zod.string().nullish(),
+  "googleClientIdSet": zod.boolean().optional(),
+  "googleClientSecretSet": zod.boolean().optional(),
+  "googleRefreshTokenSet": zod.boolean().optional()
 })
 
 

@@ -417,6 +417,12 @@ components:
           type: ["string", "null"]
         emailProvider:
           type: ["string", "null"]
+        googleClientIdSet:
+          type: boolean
+        googleClientSecretSet:
+          type: boolean
+        googleRefreshTokenSet:
+          type: boolean
 
     SettingsInput:
       type: object
@@ -458,6 +464,12 @@ components:
         emailPassword:
           type: ["string", "null"]
         emailProvider:
+          type: ["string", "null"]
+        googleClientId:
+          type: ["string", "null"]
+        googleClientSecret:
+          type: ["string", "null"]
+        googleRefreshToken:
           type: ["string", "null"]
 
     Message:

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { SendChatBody } from "@workspace/api-zod";
-import { processChatRequest } from "../services/chatService.js";
+import { processChatRequest, processChatRequestStream, abortChatRequest } from "../services/chatService.js";
 
 const router = Router();
 
@@ -25,6 +25,49 @@ router.post("/chat", async (req, res) => {
   }
 });
 
+router.post("/chat/stream", async (req, res) => {
+  const parsed = SendChatBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body" });
+    return;
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
+  req.setTimeout(300_000);
+  res.setTimeout(300_000);
+
+  let conversationId: number | null = parsed.data.conversationId ?? null;
+  let clientClosed = false;
+
+  req.on("close", () => {
+    clientClosed = true;
+    if (conversationId) abortChatRequest(conversationId);
+  });
+
+  try {
+    const stream = processChatRequestStream(parsed.data);
+    for await (const event of stream) {
+      if (clientClosed) break;
+      const payload = event as any;
+      if (payload.type === "started" && payload.conversationId) {
+        conversationId = payload.conversationId;
+      }
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    }
+  } catch (err: any) {
+    if (!clientClosed) {
+      res.write(`data: ${JSON.stringify({ type: "error", message: err.message })}\n\n`);
+    }
+  } finally {
+    if (!clientClosed) res.end();
+  }
+});
+
 router.post("/chat/stop", async (req, res) => {
   try {
     const { conversationId } = req.body;
@@ -32,7 +75,6 @@ router.post("/chat/stop", async (req, res) => {
       res.status(400).json({ error: "Invalid conversationId" });
       return;
     }
-    const { abortChatRequest } = await import("../services/chatService.js");
     const stopped = abortChatRequest(conversationId);
     if (stopped) {
       res.json({ message: "Execution stopped successfully" });
