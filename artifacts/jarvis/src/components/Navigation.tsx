@@ -26,7 +26,7 @@ export const Navigation: React.FC<NavigationProps> = ({ onMinimize }) => {
     <nav className="w-16 md:w-56 border-r border-border bg-slate-50 flex flex-col h-full shrink-0">
       {/* Logo */}
       <div className="p-4 md:p-5 flex items-center gap-3 border-b border-border select-none" style={{ WebkitAppRegion: 'drag' } as any}>
-        <img src="/jarvis_icon_minimal.png" alt="JARVIS Logo" className="w-8 h-8 rounded-lg object-contain shrink-0" />
+        <img src="/icon.png" alt="JARVIS Logo" className="w-8 h-8 rounded-lg object-contain shrink-0" />
         <div className="hidden md:block">
           <h1 className="text-base font-semibold text-foreground tracking-tight">JARVIS</h1>
           <div className="flex items-center gap-1.5 mt-0.5">
