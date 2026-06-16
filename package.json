@@ -8,6 +8,7 @@
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "dev": "turbo dev",
     "dev:desktop": "npx concurrently -n \"API,ELECTRON\" -c \"bgBlue.bold,bgMagenta.bold\" \"pnpm --filter @workspace/api-server dev\" \"pnpm --filter @workspace/jarvis electron:dev\"",
+    "rebuild:dev": "npx node-gyp rebuild --directory=node_modules/.pnpm/better-sqlite3@12.10.0/node_modules/better-sqlite3",
     "build": "turbo build",
     "test": "turbo test",
     "lint": "turbo lint",
