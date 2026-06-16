@@ -13,10 +13,10 @@ app.commandLine.appendSwitch('allow-file-access-from-files');
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1080,
-    height: 600,
-    minWidth: 800,
-    minHeight: 500,
+    width: 1280,
+    height: 800,
+    minWidth: 1024,
+    minHeight: 768,
     title: 'JARVIS',
     transparent: true,
     frame: false,
