@@ -125,13 +125,14 @@
   "dependencies": {
     "@emotion/is-prop-valid": "^1.4.0",
     "@hurdlegroup/robotjs": "^0.12.3",
+    "@img/sharp-win32-x64": "^0.33.5",
     "better-sqlite3": "^12.1.0",
     "extract-file-icon": "^0.3.2",
+    "googleapis": "^144.0.0",
     "node-window-manager": "^2.2.4",
     "puppeteer": "^25.1.0",
     "react-markdown": "^9.0.1",
     "sharp": "^0.33.5",
-    "@img/sharp-win32-x64": "^0.33.5",
     "sqlite-vec": "^0.1.9",
     "vosk-browser": "^0.0.8"
   }

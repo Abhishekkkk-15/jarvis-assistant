@@ -37,6 +37,8 @@ router.post("/chat/stream", async (req, res) => {
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
+  // Write immediately — Electron/Chromium drops SSE connections if no bytes arrive after headers
+  res.write(": connected\n\n");
 
   req.setTimeout(300_000);
   res.setTimeout(300_000);
@@ -44,7 +46,7 @@ router.post("/chat/stream", async (req, res) => {
   let conversationId: number | null = parsed.data.conversationId ?? null;
   let clientClosed = false;
 
-  req.on("close", () => {
+  res.on("close", () => {
     clientClosed = true;
     if (conversationId) abortChatRequest(conversationId);
   });
@@ -52,8 +54,8 @@ router.post("/chat/stream", async (req, res) => {
   try {
     const stream = processChatRequestStream(parsed.data);
     for await (const event of stream) {
-      if (clientClosed) break;
       const payload = event as any;
+      if (clientClosed) break;
       if (payload.type === "started" && payload.conversationId) {
         conversationId = payload.conversationId;
       }

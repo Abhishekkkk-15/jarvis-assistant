@@ -278,11 +278,13 @@ export const JarvisMain: React.FC = () => {
               accumulatedText += event.text;
               setStreamingContent(accumulatedText);
             } else if (event.type === 'done') {
-              const wordCount = (accumulatedText || '').split(/\s+/).length;
+              // accumulatedText has tokens if Synthesizer ran; event.reply is the fallback for Planner-direct responses
+              const finalText = accumulatedText || event.reply || '';
+              const wordCount = (finalText || '').split(/\s+/).length;
               const boost = wordCount > 50 ? 3 : wordCount > 20 ? 2 : 1;
               interact(boost);
 
-              let finalReply = accumulatedText.replace(/\[Orchestrator\]:/g, '').trim();
+              let finalReply = finalText.replace(/\[Orchestrator\]:/g, '').trim();
               let animTag = '';
               const animMatch = finalReply.match(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i);
               if (animMatch) { animTag = animMatch[1]; finalReply = finalReply.replace(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i, '').trim(); }
@@ -290,7 +292,7 @@ export const JarvisMain: React.FC = () => {
               const drawMatch = finalReply.match(/\[draw:\s*(.+?)\]/i);
               if (drawMatch) { drawPath = drawMatch[1].trim(); finalReply = finalReply.replace(/\[draw:\s*(.+?)\]/i, '').trim(); }
 
-              setMessages(prev => [...prev, { role: 'assistant', content: finalReply }]);
+              if (finalReply) setMessages(prev => [...prev, { role: 'assistant', content: finalReply }]);
               setLastReply(finalReply);
               if (animTag) window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: animTag.toLowerCase() } }));
               if (drawPath) window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: 'draw', path: drawPath } }));
@@ -594,7 +596,15 @@ export const JarvisMain: React.FC = () => {
                         </ReactMarkdown>
                       </div>
                     ) : (
-                      <p className="text-muted-foreground animate-pulse">{streamStatus || 'Thinking…'}</p>
+                      <div className="flex items-center gap-1 py-1">
+                        {[0, 150, 300].map((delay) => (
+                          <span
+                            key={delay}
+                            className="w-2 h-2 rounded-full bg-primary/60 animate-bounce"
+                            style={{ animationDelay: `${delay}ms` }}
+                          />
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>

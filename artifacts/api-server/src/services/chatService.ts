@@ -727,13 +727,15 @@ export async function* processChatRequestStream(parsedData: any): AsyncGenerator
       { version: "v2", recursionLimit: 200, signal: controller.signal },
     );
 
+    // Tracks the most recent messages array seen in any on_chain_end — last one wins
+    let latestChainMessages: any[] | null = null;
+
     for await (const event of eventStream) {
       if (event.event === "on_chain_start" && KNOWN_NODES.has(event.name)) {
         yield { type: "status", node: event.name };
-      } else if (
-        event.event === "on_chat_model_stream" &&
-        event.metadata?.langgraph_node === "Synthesizer"
-      ) {
+
+      } else if (event.event === "on_chat_model_stream" && event.metadata?.langgraph_node === "Synthesizer") {
+        // Streaming tokens (Groq and other streaming-capable APIs)
         const content = event.data?.chunk?.content;
         if (typeof content === "string" && content) {
           agentResponse += content;
@@ -749,10 +751,43 @@ export async function* processChatRequestStream(parsedData: any): AsyncGenerator
             }
           }
         }
+
+      } else if (event.event === "on_chat_model_end" && event.metadata?.langgraph_node === "Synthesizer" && !agentResponse) {
+        // Non-streaming APIs (e.g. NVIDIA): the full response arrives at once in on_chat_model_end
+        const out = event.data?.output;
+        const raw = out?.content ?? out?.text ?? out?.generations?.[0]?.[0]?.text ?? "";
+        const text = typeof raw === "string" ? raw :
+          Array.isArray(raw) ? raw.map((c: any) => (typeof c === "string" ? c : c.text || "")).join("") : "";
+        if (text) {
+          agentResponse = text;
+          yield { type: "token", text };
+        }
+
       } else if (event.event === "on_tool_start" && event.name) {
         if (!toolsUsed.includes(event.name)) toolsUsed.push(event.name);
+
+      } else if (event.event === "on_chain_end" && Array.isArray(event.data?.output?.messages)) {
+        // Keep the latest messages snapshot — will be the full graph state by the time the loop ends
+        latestChainMessages = event.data.output.messages;
       }
     }
+
+    // Fallback: Planner responded directly (no Synthesizer) OR API didn't stream at all
+    if (!agentResponse && latestChainMessages) {
+      for (let i = latestChainMessages.length - 1; i >= 0; i--) {
+        const msg = latestChainMessages[i];
+        const content = typeof msg.content === "string"
+          ? msg.content
+          : Array.isArray(msg.content)
+            ? msg.content.map((c: any) => (typeof c === "string" ? c : c.text || "")).join("")
+            : "";
+        if (content) {
+          agentResponse = content;
+          break;
+        }
+      }
+    }
+
   } catch (err: any) {
     if (err.name !== "AbortError" && err.message !== "Stopped by user") {
       logger.error({ err }, "Streaming agent loop error");
@@ -777,5 +812,5 @@ export async function* processChatRequestStream(parsedData: any): AsyncGenerator
 
   activeExecutions.delete(conversationId!);
 
-  yield { type: "done", conversationId, messageId: assistantMsg.id, model: modelName, tokensUsed: 0, toolsUsed };
+  yield { type: "done", conversationId, messageId: assistantMsg.id, model: modelName, tokensUsed: 0, toolsUsed, reply: agentResponse };
 }

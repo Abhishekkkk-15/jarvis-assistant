@@ -260,6 +260,9 @@ importers:
       extract-file-icon:
         specifier: ^0.3.2
         version: 0.3.2
+      googleapis:
+        specifier: ^144.0.0
+        version: 144.0.0
       node-window-manager:
         specifier: ^2.2.4
         version: 2.2.4
@@ -9269,7 +9272,7 @@ snapshots:
       google-auth-library: 9.15.1
       qs: 6.15.2
       url-template: 2.0.8
-      uuid: 9.0.0
+      uuid: 9.0.1
     transitivePeerDependencies:
       - encoding
       - supports-color
