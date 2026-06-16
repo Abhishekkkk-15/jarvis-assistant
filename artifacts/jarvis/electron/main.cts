@@ -364,6 +364,17 @@ ipcMain.on('hide-quick-input', () => {
   }
 });
 
+ipcMain.on('set-startup-launch', (event, enable) => {
+  app.setLoginItemSettings({
+    openAtLogin: enable,
+    path: app.getPath('exe'),
+  });
+});
+
+ipcMain.handle('get-startup-launch', () => {
+  return app.getLoginItemSettings().openAtLogin;
+});
+
 ipcMain.on('send-to-main', (event, msg) => {
   let win = mainWindow;
   if (win) {

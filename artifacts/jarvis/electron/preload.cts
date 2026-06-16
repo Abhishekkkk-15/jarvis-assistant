@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   hideQuickInput: () => ipcRenderer.send('hide-quick-input'),
   sendToMain: (msg: string) => ipcRenderer.send('send-to-main', msg),
   updateOverlayRect: (rect: { x: number, y: number, width: number, height: number } | null) => ipcRenderer.send('update-overlay-rect', rect),
+  setStartupLaunch: (enable: boolean) => ipcRenderer.send('set-startup-launch', enable),
+  getStartupLaunch: () => ipcRenderer.invoke('get-startup-launch'),
 });
 
 ipcRenderer.on('message-from-quick-input', (event, message) => {

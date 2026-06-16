@@ -23,6 +23,22 @@ export const SettingsPage: React.FC = () => {
   const [autonomousMode, setAutonomousMode] = useLocalStorage('jarvisAutonomousMode', false);
   const [persona, setPersona] = useLocalStorage('jarvisPersona', 'Friendly');
   const [muteCharacterNotifications, setMuteCharacterNotifications] = useLocalStorage('muteCharacterNotifications', false);
+  const [startupLaunchEnabled, setStartupLaunchEnabled] = React.useState(false);
+
+  useEffect(() => {
+    if (window.electronAPI?.getStartupLaunch) {
+      window.electronAPI.getStartupLaunch().then((enabled: boolean) => {
+        setStartupLaunchEnabled(enabled);
+      });
+    }
+  }, []);
+
+  const handleToggleStartupLaunch = (val: boolean) => {
+    setStartupLaunchEnabled(val);
+    if (window.electronAPI?.setStartupLaunch) {
+      window.electronAPI.setStartupLaunch(val);
+    }
+  };
 
   const form = useForm({
     defaultValues: {
@@ -321,6 +337,16 @@ export const SettingsPage: React.FC = () => {
                   </div>
                   <Switch checked={muteCharacterNotifications} onCheckedChange={setMuteCharacterNotifications} />
                 </div>
+
+                {window.electronAPI && (
+                  <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Launch on Startup</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Automatically open JARVIS when your computer starts up</p>
+                    </div>
+                    <Switch checked={startupLaunchEnabled} onCheckedChange={handleToggleStartupLaunch} />
+                  </div>
+                )}
 
                 {autonomousMode && (
                   <div className="space-y-1.5">
