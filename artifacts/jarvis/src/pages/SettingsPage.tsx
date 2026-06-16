@@ -22,6 +22,7 @@ export const SettingsPage: React.FC = () => {
   const [miniModeEnabled, setMiniModeEnabled] = useLocalStorage('miniModeEnabled', true);
   const [autonomousMode, setAutonomousMode] = useLocalStorage('jarvisAutonomousMode', false);
   const [persona, setPersona] = useLocalStorage('jarvisPersona', 'Friendly');
+  const [muteCharacterNotifications, setMuteCharacterNotifications] = useLocalStorage('muteCharacterNotifications', false);
 
   const form = useForm({
     defaultValues: {
@@ -311,6 +312,14 @@ export const SettingsPage: React.FC = () => {
                     <p className="text-xs text-muted-foreground mt-0.5">Character actively watches your active windows and reacts to your tasks</p>
                   </div>
                   <Switch checked={autonomousMode} onCheckedChange={setAutonomousMode} />
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Mute Character Notifications</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Do not display or read aloud incoming notifications (like Telegram/Discord messages) on the character</p>
+                  </div>
+                  <Switch checked={muteCharacterNotifications} onCheckedChange={setMuteCharacterNotifications} />
                 </div>
 
                 {autonomousMode && (

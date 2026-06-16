@@ -77,6 +77,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [posX, setPosX] = useLocalStorage('characterPositionX', window.innerWidth - 150);
   const [posY, setPosY] = useLocalStorage('characterPositionY', window.innerHeight - 145);
   const [autonomousMode] = useLocalStorage('jarvisAutonomousMode', false);
+  const [muteCharacterNotifications] = useLocalStorage('muteCharacterNotifications', false);
 
   // JARVIS global state
   const [isListening] = useLocalStorage('jarvisIsListening', false);
@@ -207,6 +208,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   // System Notifications
   useEffect(() => {
     const handleSystemNotification = (e: any) => {
+      if (muteCharacterNotifications) return;
       const data = e.detail;
       setNotificationMsg(data);
       setIsPhysicsActive(false);
@@ -241,7 +243,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       window.removeEventListener('jarvis-system-notification', handleSystemNotification);
       window.removeEventListener('jarvis-autonomous-speech', handleAutonomousSpeech);
     };
-  }, [autonomousMode, personality]);
+  }, [autonomousMode, personality, muteCharacterNotifications]);
 
   // Show restore hint briefly when minimized
   useEffect(() => {
