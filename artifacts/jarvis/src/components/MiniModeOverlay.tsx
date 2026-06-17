@@ -999,13 +999,14 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
 
-    // Check if it's likely a text/code file
-    // Some files have empty type but are text (e.g. .md, .ts)
-    // We'll just try to read it as text. If it fails or is massive, we can handle it.
-    if (file.size > 2 * 1024 * 1024) { // 2MB limit
-      setBaseAnimation('confused');
-      setReplyBubble("Whoa, that file is too big for me to eat right now!");
-      const timer = setTimeout(() => setReplyBubble(''), 4000);
+    const filePath = (file as any).path || '';
+
+    if (file.name.toLowerCase().endsWith('.pdf')) {
+      setBaseAnimation('jump');
+      window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text: "Ooh, a PDF document! Let me read that." } }));
+      interact(2);
+      const message = `Please read and summarize this PDF file: "${filePath || file.name}"`;
+      window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message } }));
       return;
     }
 
@@ -1056,26 +1057,17 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
     if (file.type.startsWith('video/') || file.type.startsWith('audio/')) {
       setBaseAnimation('confused');
-      setReplyBubble("I can't eat video or audio files yet! Try dropping an image or text file on me.");
+      setReplyBubble("I can't eat video or audio files yet! Try dropping an image, PDF, or text file on me.");
       const timer = setTimeout(() => setReplyBubble(''), 4000);
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      if (content) {
-        setBaseAnimation('happy');
-        const message = `I just dropped a file named \`${file.name}\`. Here are the contents:\n\n\`\`\`\n${content}\n\`\`\``;
-        window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message } }));
-      } else {
-        setBaseAnimation('confused');
-      }
-    };
-    reader.onerror = () => {
-      setBaseAnimation('confused');
-    };
-    reader.readAsText(file);
+    // Treat other files as text/code files
+    setBaseAnimation('happy');
+    window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text: `Let me analyze the file: ${file.name}` } }));
+    interact(1);
+    const message = `Please read and analyze this file: "${filePath || file.name}"`;
+    window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message } }));
   };
 
   if (!enabled) return null;

@@ -401,7 +401,11 @@ export const JarvisMain: React.FC = () => {
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
 
-    if (file.type.startsWith('image/')) {
+    const filePath = (file as any).path || '';
+
+    if (file.name.toLowerCase().endsWith('.pdf')) {
+      handleSendMessage(`Please read and summarize this PDF file: "${filePath || file.name}"`);
+    } else if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const rawBase64 = event.target?.result as string;
@@ -438,7 +442,8 @@ export const JarvisMain: React.FC = () => {
       };
       reader.readAsDataURL(file);
     } else {
-      toast({ title: "Unsupported File", description: "Please drop an image file.", variant: "destructive" });
+      // Treat other files as text/code files
+      handleSendMessage(`Please read and analyze this file: "${filePath || file.name}"`);
     }
   };
 
@@ -458,8 +463,8 @@ export const JarvisMain: React.FC = () => {
       {isDraggingOver && (
         <div className="absolute inset-0 z-50 bg-primary/10 backdrop-blur-sm border-4 border-dashed border-primary rounded-xl flex items-center justify-center pointer-events-none">
           <div className="bg-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-3">
-            <span className="text-2xl animate-bounce">🖼️</span>
-            <span className="text-lg font-bold text-primary">Drop image for JARVIS to see</span>
+            <span className="text-2xl animate-bounce">📁</span>
+            <span className="text-lg font-bold text-primary">Drop image, PDF, or text file for JARVIS</span>
           </div>
         </div>
       )}

@@ -3,13 +3,23 @@ import { z } from "zod";
 import * as fs from "fs/promises";
 import * as path from "path";
 
+// @ts-ignore
+import * as pdf from "pdf-parse";
+
 export const fsTools = [
   new DynamicStructuredTool({
     name: "read_file",
-    description: "Read the contents of a file.",
+    description: "Read the contents of a file. Automatically parses text from PDF documents if the file ends with .pdf.",
     schema: z.object({ file_path: z.string() }),
     func: async ({ file_path }) => {
       try {
+        if (file_path.toLowerCase().endsWith(".pdf")) {
+          const buffer = await fs.readFile(file_path);
+          // @ts-ignore
+          const parsePdf = pdf.default || pdf;
+          const data = await parsePdf(buffer);
+          return `Content of PDF file ${file_path}:\n${data.text}`;
+        }
         const content = await fs.readFile(file_path, "utf-8");
         return `Content of ${file_path}:\n${content}`;
       } catch (e: any) { return `Error reading file: ${e.message}`; }
