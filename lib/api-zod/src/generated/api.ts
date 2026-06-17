@@ -249,3 +249,32 @@ export const StopChatBody = zod.object({
 })
 
 
+/**
+ * @summary List all scheduled tasks (including agent-created ones)
+ */
+export const ListScheduledTasksResponseItem = zod.object({
+  "id": zod.number(),
+  "cronExpression": zod.string(),
+  "taskDescription": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListScheduledTasksResponse = zod.array(ListScheduledTasksResponseItem)
+
+
+/**
+ * @summary Create and schedule a new background task
+ */
+export const CreateScheduledTaskBody = zod.object({
+  "cronExpression": zod.string(),
+  "taskDescription": zod.string()
+})
+
+
+/**
+ * @summary Delete and cancel a scheduled task
+ */
+export const DeleteScheduledTaskParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+

@@ -19,6 +19,8 @@ tags:
     description: Conversation history management
   - name: commands
     description: System command execution
+  - name: cron
+    description: Background scheduled task management
 
 paths:
   /healthz:
@@ -284,6 +286,53 @@ paths:
       responses:
         "200":
           description: Execution stopped successfully
+
+  /cron:
+    get:
+      operationId: listScheduledTasks
+      tags: [cron]
+      summary: List all scheduled tasks (including agent-created ones)
+      responses:
+        "200":
+          description: List of scheduled tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScheduledTask"
+    post:
+      operationId: createScheduledTask
+      tags: [cron]
+      summary: Create and schedule a new background task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduledTaskInput"
+      responses:
+        "201":
+          description: Created task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduledTask"
+
+  /cron/{id}:
+    delete:
+      operationId: deleteScheduledTask
+      tags: [cron]
+      summary: Delete and cancel a scheduled task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Task deleted and stopped successfully
 
 components:
   schemas:
@@ -597,3 +646,27 @@ components:
         conversationId:
           type: integer
           description: The ID of the conversation to stop.
+
+    ScheduledTask:
+      type: object
+      required: [id, cronExpression, taskDescription, createdAt]
+      properties:
+        id:
+          type: integer
+        cronExpression:
+          type: string
+        taskDescription:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ScheduledTaskInput:
+      type: object
+      required: [cronExpression, taskDescription]
+      properties:
+        cronExpression:
+          type: string
+        taskDescription:
+          type: string
+

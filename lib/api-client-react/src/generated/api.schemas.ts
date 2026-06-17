@@ -220,3 +220,15 @@ export interface StopChatInput {
   conversationId: number;
 }
 
+export interface ScheduledTask {
+  id: number;
+  cronExpression: string;
+  taskDescription: string;
+  createdAt: string;
+}
+
+export interface ScheduledTaskInput {
+  cronExpression: string;
+  taskDescription: string;
+}
+

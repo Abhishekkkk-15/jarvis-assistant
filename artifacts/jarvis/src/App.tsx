@@ -12,6 +12,7 @@ import { CharactersPage } from "@/pages/CharactersPage";
 import { ConversationsPage } from "@/pages/ConversationsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { QuickInputPage } from "@/pages/QuickInputPage";
+import { SchedulerPage } from "@/pages/SchedulerPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,6 +33,7 @@ function Router() {
             <Route path="/" component={JarvisMain} />
             <Route path="/characters" component={CharactersPage} />
             <Route path="/conversations" component={ConversationsPage} />
+            <Route path="/scheduler" component={SchedulerPage} />
             <Route path="/settings" component={SettingsPage} />
             <Route component={NotFound} />
           </Switch>

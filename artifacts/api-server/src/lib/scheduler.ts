@@ -32,11 +32,9 @@ export function scheduleTaskInMemory(
       return;
     }
 
-    // Provider and model switching is currently in progress
     let provider = settings.selectedProvider || "groq";
     let isFallback = false;
 
-    // Fallback if the selected provider lacks a key but the other one has it
     if (provider === "groq" && !settings.groqApiKey && settings.nvidiaApiKey) {
       provider = "nvidia";
       isFallback = true;
@@ -49,23 +47,22 @@ export function scheduleTaskInMemory(
       isFallback = true;
     }
 
-    const apiKey = settings.nvidiaApiKey
+    const apiKey = provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
     if (!apiKey) {
-      console.error(
-        `[Cron] Task ${id} failed: Missing API key for provider ${provider}`,
-      );
-      return;
+      throw new Error(`No ${provider.toUpperCase()} API key configured. Please add your API key in Settings.`);
     }
 
-    const baseURL = "https://integrate.api.nvidia.com/v1";
+    const endpoint = provider === "nvidia"
+      ? "https://integrate.api.nvidia.com/v1"
+      : "https://api.groq.com/openai/v1";
 
-    const modelName = "openai/gpt-oss-120b"
+    const modelName = settings.selectedModel
 
     const llm = new ChatOpenAI({
       modelName: modelName,
       temperature: 0,
       apiKey: apiKey,
-      configuration: { baseURL },
+      configuration: { baseURL: endpoint },
       maxTokens: 4096,
     });
 

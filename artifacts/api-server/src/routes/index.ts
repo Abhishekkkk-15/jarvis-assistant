@@ -9,6 +9,7 @@ import commandsRouter from "./commands";
 import statsRouter from "./stats";
 import { autonomousRouter } from "./autonomous";
 import authRouter from "./auth";
+import cronRouter from "./cron";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(commandsRouter);
 router.use(statsRouter);
 router.use("/autonomous", autonomousRouter);
 router.use("/auth", authRouter);
+router.use(cronRouter);
 
 export default router;

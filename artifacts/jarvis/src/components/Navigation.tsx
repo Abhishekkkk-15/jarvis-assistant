@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home, Users, MessageSquare, Settings, ShieldAlert, Wifi, WifiOff, Minimize2 } from 'lucide-react';
+import { Home, Users, MessageSquare, Settings, ShieldAlert, Wifi, WifiOff, Minimize2, CalendarRange } from 'lucide-react';
 import { useGetSettings, getGetSettingsQueryKey, useHealthCheck, getHealthCheckQueryKey } from '@workspace/api-client-react';
 
 interface NavigationProps {
@@ -16,6 +16,7 @@ export const Navigation: React.FC<NavigationProps> = ({ onMinimize }) => {
     { href: '/', label: 'Assistant', icon: Home },
     { href: '/characters', label: 'Characters', icon: Users },
     { href: '/conversations', label: 'History', icon: MessageSquare },
+    { href: '/scheduler', label: 'Scheduler', icon: CalendarRange },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
 

@@ -31,6 +31,8 @@ import type {
   ConversationDetail,
   ConversationInput,
   HealthStatus,
+  ScheduledTask,
+  ScheduledTaskInput,
   Settings,
   SettingsInput,
   Stats,
@@ -1071,5 +1073,222 @@ export const useStopChat = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getStopChatMutationOptions(options));
+    }
+
+export const getListScheduledTasksUrl = () => {
+
+
+
+
+  return `/api/cron`
+}
+
+/**
+ * @summary List all scheduled tasks (including agent-created ones)
+ */
+export const listScheduledTasks = async ( options?: RequestInit): Promise<ScheduledTask[]> => {
+
+  return customFetch<ScheduledTask[]>(getListScheduledTasksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListScheduledTasksQueryKey = () => {
+    return [
+    `/api/cron`
+    ] as const;
+    }
+
+
+export const getListScheduledTasksQueryOptions = <TData = Awaited<ReturnType<typeof listScheduledTasks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listScheduledTasks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListScheduledTasksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listScheduledTasks>>> = ({ signal }) => listScheduledTasks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listScheduledTasks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListScheduledTasksQueryResult = NonNullable<Awaited<ReturnType<typeof listScheduledTasks>>>
+export type ListScheduledTasksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all scheduled tasks (including agent-created ones)
+ */
+
+export function useListScheduledTasks<TData = Awaited<ReturnType<typeof listScheduledTasks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listScheduledTasks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListScheduledTasksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateScheduledTaskUrl = () => {
+
+
+
+
+  return `/api/cron`
+}
+
+/**
+ * @summary Create and schedule a new background task
+ */
+export const createScheduledTask = async (scheduledTaskInput: ScheduledTaskInput, options?: RequestInit): Promise<ScheduledTask> => {
+
+  return customFetch<ScheduledTask>(getCreateScheduledTaskUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(scheduledTaskInput)
+  }
+);}
+
+
+
+
+export const getCreateScheduledTaskMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createScheduledTask>>, TError,{data: BodyType<ScheduledTaskInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createScheduledTask>>, TError,{data: BodyType<ScheduledTaskInput>}, TContext> => {
+
+const mutationKey = ['createScheduledTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createScheduledTask>>, {data: BodyType<ScheduledTaskInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createScheduledTask(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateScheduledTaskMutationResult = NonNullable<Awaited<ReturnType<typeof createScheduledTask>>>
+    export type CreateScheduledTaskMutationBody = BodyType<ScheduledTaskInput>
+    export type CreateScheduledTaskMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create and schedule a new background task
+ */
+export const useCreateScheduledTask = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createScheduledTask>>, TError,{data: BodyType<ScheduledTaskInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createScheduledTask>>,
+        TError,
+        {data: BodyType<ScheduledTaskInput>},
+        TContext
+      > => {
+      return useMutation(getCreateScheduledTaskMutationOptions(options));
+    }
+
+export const getDeleteScheduledTaskUrl = (id: number,) => {
+
+
+
+
+  return `/api/cron/${id}`
+}
+
+/**
+ * @summary Delete and cancel a scheduled task
+ */
+export const deleteScheduledTask = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteScheduledTaskUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteScheduledTaskMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteScheduledTask>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteScheduledTask>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteScheduledTask'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteScheduledTask>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteScheduledTask(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteScheduledTaskMutationResult = NonNullable<Awaited<ReturnType<typeof deleteScheduledTask>>>
+
+    export type DeleteScheduledTaskMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete and cancel a scheduled task
+ */
+export const useDeleteScheduledTask = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteScheduledTask>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteScheduledTask>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteScheduledTaskMutationOptions(options));
     }
 
