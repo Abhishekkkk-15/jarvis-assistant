@@ -402,8 +402,8 @@ export const EmotionPlayground = () => {
           </p>
         </motion.div>
 
-        <div className="flex flex-col lg:flex-row items-center gap-10">
-          <div className="flex-shrink-0 flex flex-col items-center gap-5">
+        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-10">
+          <div className="w-full lg:w-80 flex-shrink-0 flex flex-col items-center gap-5">
             <div className="relative w-60 h-60 rounded-3xl bg-gradient-to-br from-secondary to-secondary/40 border border-border flex items-center justify-center shadow-inner">
               <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_50%_60%,hsl(239_84%_67%/0.07),transparent_70%)]" />
               <AnimatePresence mode="wait">
@@ -425,7 +425,7 @@ export const EmotionPlayground = () => {
             </div>
           </div>
 
-          <div className="flex-1 grid grid-cols-4 gap-2">
+          <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
             {EMOTIONS.map(({ anim, emoji, label, color }) => (
               <motion.button key={anim} whileTap={{ scale: 0.92 }} onClick={() => pick(anim)}
                 className={`flex flex-col items-center gap-1 py-3 px-2 rounded-xl border text-xs font-bold cursor-pointer transition-all ${color} ${sel === anim ? 'ring-2 ring-primary ring-offset-1 shadow-md scale-105' : 'hover:scale-102'}`}>
