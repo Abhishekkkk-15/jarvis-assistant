@@ -15,8 +15,8 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 1024,
-    minHeight: 768,
+    minWidth: 800,
+    minHeight: 600,
     title: 'JARVIS',
     transparent: true,
     frame: false,
