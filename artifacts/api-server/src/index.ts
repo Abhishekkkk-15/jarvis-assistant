@@ -1,3 +1,4 @@
+import "./polyfill.js";
 import http from "http";
 import { WebSocketServer } from "ws";
 import app from "./app";
