@@ -4,7 +4,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 
 // @ts-ignore
-import * as pdf from "pdf-parse";
+import pdf = require("pdf-parse");
 
 export const fsTools = [
   new DynamicStructuredTool({
@@ -15,9 +15,7 @@ export const fsTools = [
       try {
         if (file_path.toLowerCase().endsWith(".pdf")) {
           const buffer = await fs.readFile(file_path);
-          // @ts-ignore
-          const parsePdf = pdf.default || pdf;
-          const data = await parsePdf(buffer);
+          const data = await pdf(buffer);
           return `Content of PDF file ${file_path}:\n${data.text}`;
         }
         const content = await fs.readFile(file_path, "utf-8");
