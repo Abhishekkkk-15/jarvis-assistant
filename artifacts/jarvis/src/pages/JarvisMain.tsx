@@ -669,12 +669,12 @@ export const JarvisMain: React.FC = () => {
         <div className="flex flex-col gap-4">
           <div className="rounded-xl border border-border bg-white p-5">
             <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Activity size={15} className="text-primary" /> Usage
+              <Activity size={15} className="text-primary" /> Today's Usage
             </h3>
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="p-3 bg-slate-50 rounded-lg text-center">
                 <p className="text-2xl font-bold text-primary">{stats?.todayMessages || 0}</p>
-                <p className="text-[11px] text-muted-foreground mt-1">Today</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Messages</p>
               </div>
               <div className="p-3 bg-slate-50 rounded-lg text-center">
                 <p className="text-2xl font-bold text-primary">{stats?.totalTokens || 0}</p>

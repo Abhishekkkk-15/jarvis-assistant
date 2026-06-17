@@ -24,7 +24,15 @@ export async function getStats() {
         .groupBy(commandLogsTable.commandType)
         .orderBy(desc(count()))
         .limit(5),
-      db.select({ totalTokens: sql<number>`COALESCE(SUM(${messagesTable.tokensUsed}), 0)`.mapWith(Number) }).from(messagesTable),
+      db
+        .select({ totalTokens: sql<number>`COALESCE(SUM(${messagesTable.tokensUsed}), 0)`.mapWith(Number) })
+        .from(messagesTable)
+        .where(
+          gte(
+            messagesTable.createdAt,
+            new Date(new Date().setHours(0, 0, 0, 0))
+          )
+        ),
     ]);
 
   return {
