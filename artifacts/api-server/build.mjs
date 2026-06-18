@@ -103,6 +103,8 @@ async function buildAll() {
       "puppeteer-core",
       "@hurdlegroup/robotjs",
       "node-window-manager",
+      "@langchain/anthropic",
+      "pdf-parse",
     ],
     sourcemap: "linked",
     plugins: [

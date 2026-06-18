@@ -272,13 +272,13 @@ pnpm run electron:build`}</Code>
               <P>Click the character icon in the sidebar to open the Character Selector. Pick from 22 built-in companions or create your own in Custom Studio.</P>
 
               <H2>Step 2 — Connect LLMs</H2>
-              <P>JARVIS supports multiple providers including <strong>Groq, NVIDIA, OpenAI, Anthropic, Gemini, Mistral, OpenRouter, and Custom endpoints</strong>. Open <strong>Settings</strong> and enter an API key for your preferred provider.</P>
+              <P>A <strong>Groq API key</strong> is mandatory because JARVIS uses Groq's high-speed Whisper and Orpheus models for Speech-To-Text (STT) and Text-To-Speech (TTS). However, for the core text and vision AI, JARVIS supports multiple providers including <strong>Groq, NVIDIA, OpenAI, Anthropic, Gemini, Mistral, OpenRouter, and Custom endpoints</strong>. Open <strong>Settings</strong> to configure your keys.</P>
               <Code lang="json">{`{
-  "groqApiKey": "gsk-...",      // e.g. Groq
-  "openaiApiKey": "sk-...",     // e.g. OpenAI
+  "groqApiKey": "gsk-...",      // Mandatory for Speech (STT/TTS)
+  "openaiApiKey": "sk-...",     // Optional (e.g. for Core/Vision)
   // ... and others
 }`}</Code>
-              <Callout type="tip">A single API key for any supported provider is all you need to get started. You can mix and match providers for text and vision models via Settings → Model Configuration.</Callout>
+              <Callout type="tip">A Groq API key is required to enable voice features. Once added, you can mix and match any supported provider for your text and vision models via Settings → Model Configuration.</Callout>
 
               <H2>Step 3 — Say hello</H2>
               <P>Type in the chat box or press the microphone button and say "Hey JARVIS, what can you do?" Your companion will introduce itself and demonstrate its capabilities.</P>
@@ -963,7 +963,7 @@ Ctrl+Shift+M  (Windows 10/11)
 E:\\Jarvis-Assistant-Companionzip\\sqlite.db`}</Code>
 
               <H2>Settings Table Schema</H2>
-              <P>When reading or modifying settings via the Drizzle settings schema or backend REST routes, the fields mapped are as follows (only one API key from any supported provider is required; models are pre-selected by default):</P>
+              <P>When reading or modifying settings via the Drizzle settings schema or backend REST routes, the fields mapped are as follows (A Groq API key is mandatory for STT/TTS; models are pre-selected by default):</P>
               <Code lang="json">{`{
   "id": 1,
   "groqApiKey": "gsk_...",              // Groq API Key (masked on frontend)
