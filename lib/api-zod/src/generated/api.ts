@@ -266,6 +266,7 @@ export const GetStatsResponse = zod.object({
   "totalConversations": zod.number(),
   "totalMessages": zod.number(),
   "todayMessages": zod.number(),
+  "totalTokens": zod.number(),
   "topCommands": zod.array(zod.object({
   "command": zod.string(),
   "count": zod.number()

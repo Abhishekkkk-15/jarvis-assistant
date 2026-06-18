@@ -43,7 +43,7 @@ export const useAudioReactivity = (threshold = 30) => {
 
         const checkAudio = () => {
           if (!analyserRef.current || !dataArrayRef.current) return;
-          analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+          analyserRef.current.getByteFrequencyData(dataArrayRef.current as any);
 
           let sum = 0;
           for (let i = 0; i < dataArrayRef.current.length; i++) {

@@ -662,13 +662,15 @@ components:
 
     Stats:
       type: object
-      required: [totalConversations, totalMessages, todayMessages, topCommands]
+      required: [totalConversations, totalMessages, todayMessages, totalTokens, topCommands]
       properties:
         totalConversations:
           type: integer
         totalMessages:
           type: integer
         todayMessages:
+          type: integer
+        totalTokens:
           type: integer
         topCommands:
           type: array
