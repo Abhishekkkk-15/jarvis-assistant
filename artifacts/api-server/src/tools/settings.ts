@@ -18,6 +18,13 @@ export const settingsTools = [
           spotifyConfigured: !!(s.spotifyClientId && s.spotifyClientSecret),
           groqApiKeySet: !!s.groqApiKey,
           nvidiaApiKeySet: !!s.nvidiaApiKey,
+          openaiApiKeySet: !!s.openaiApiKey,
+          anthropicApiKeySet: !!s.anthropicApiKey,
+          mistralApiKeySet: !!s.mistralApiKey,
+          openrouterApiKeySet: !!s.openrouterApiKey,
+          geminiApiKeySet: !!s.geminiApiKey,
+          customTextApiKeySet: !!s.customTextApiKey,
+          customVisionApiKeySet: !!s.customVisionApiKey,
           voiceEnabled: s.voiceEnabled,
         }, null, 2);
       } catch (err: any) {

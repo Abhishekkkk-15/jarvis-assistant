@@ -69,6 +69,17 @@ export interface Settings {
   id: number;
   groqApiKeySet?: boolean;
   nvidiaApiKeySet?: boolean;
+  openaiApiKeySet?: boolean;
+  anthropicApiKeySet?: boolean;
+  mistralApiKeySet?: boolean;
+  openrouterApiKeySet?: boolean;
+  geminiApiKeySet?: boolean;
+  /** @nullable */
+  customTextApiUrl?: string | null;
+  customTextApiKeySet?: boolean;
+  /** @nullable */
+  customVisionApiUrl?: string | null;
+  customVisionApiKeySet?: boolean;
   selectedModel: string;
   selectedProvider: string;
   visionModel: string;
@@ -93,8 +104,10 @@ export interface Settings {
   emailAddress?: string | null;
   /** @nullable */
   emailPassword?: string | null;
+  emailPasswordSet?: boolean;
   /** @nullable */
   emailProvider?: string | null;
+  githubPatSet?: boolean;
   googleClientIdSet?: boolean;
   googleClientSecretSet?: boolean;
   googleRefreshTokenSet?: boolean;
@@ -105,6 +118,26 @@ export interface SettingsInput {
   groqApiKey?: string | null;
   /** @nullable */
   nvidiaApiKey?: string | null;
+  /** @nullable */
+  openaiApiKey?: string | null;
+  /** @nullable */
+  anthropicApiKey?: string | null;
+  /** @nullable */
+  mistralApiKey?: string | null;
+  /** @nullable */
+  openrouterApiKey?: string | null;
+  /** @nullable */
+  geminiApiKey?: string | null;
+  /** @nullable */
+  githubPat?: string | null;
+  /** @nullable */
+  customTextApiUrl?: string | null;
+  /** @nullable */
+  customTextApiKey?: string | null;
+  /** @nullable */
+  customVisionApiUrl?: string | null;
+  /** @nullable */
+  customVisionApiKey?: string | null;
   /** @nullable */
   selectedModel?: string | null;
   /** @nullable */

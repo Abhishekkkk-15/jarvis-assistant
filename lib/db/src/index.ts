@@ -107,6 +107,15 @@ export function setupDb() {
     "ALTER TABLE settings ADD COLUMN google_client_id TEXT;",
     "ALTER TABLE settings ADD COLUMN google_client_secret TEXT;",
     "ALTER TABLE settings ADD COLUMN google_refresh_token TEXT;",
+    "ALTER TABLE settings ADD COLUMN openai_api_key TEXT;",
+    "ALTER TABLE settings ADD COLUMN anthropic_api_key TEXT;",
+    "ALTER TABLE settings ADD COLUMN mistral_api_key TEXT;",
+    "ALTER TABLE settings ADD COLUMN openrouter_api_key TEXT;",
+    "ALTER TABLE settings ADD COLUMN gemini_api_key TEXT;",
+    "ALTER TABLE settings ADD COLUMN custom_text_api_url TEXT;",
+    "ALTER TABLE settings ADD COLUMN custom_text_api_key TEXT;",
+    "ALTER TABLE settings ADD COLUMN custom_vision_api_url TEXT;",
+    "ALTER TABLE settings ADD COLUMN custom_vision_api_key TEXT;",
   ];
 
   for (const query of migrations) {

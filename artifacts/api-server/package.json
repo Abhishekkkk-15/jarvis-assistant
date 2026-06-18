@@ -12,6 +12,7 @@
   "dependencies": {
     "@hurdlegroup/robotjs": "^0.12.3",
     "@img/sharp-win32-x64": "^0.33.5",
+    "@langchain/anthropic": "^1.4.1",
     "@langchain/community": "^1.1.29",
     "@langchain/core": "^1.1.48",
     "@langchain/groq": "^1.2.1",

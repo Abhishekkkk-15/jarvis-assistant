@@ -402,9 +402,14 @@ export const JarvisMain: React.FC = () => {
     if (!file) return;
 
     const filePath = (file as any).path || '';
+    const isAbsolutePath = filePath && (filePath.includes('\\') || filePath.includes('/'));
 
     if (file.name.toLowerCase().endsWith('.pdf')) {
-      handleSendMessage(`Please read and summarize this PDF file: "${filePath || file.name}"`);
+      if (isAbsolutePath) {
+        handleSendMessage(`Please read and summarize this PDF file: "${filePath}"`);
+      } else {
+        handleSendMessage(`Please find and then read/summarize the PDF file: "${file.name}". Search for it using search_everything first since I dragged and dropped it but the browser sandbox hid its path.`);
+      }
     } else if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -443,7 +448,11 @@ export const JarvisMain: React.FC = () => {
       reader.readAsDataURL(file);
     } else {
       // Treat other files as text/code files
-      handleSendMessage(`Please read and analyze this file: "${filePath || file.name}"`);
+      if (isAbsolutePath) {
+        handleSendMessage(`Please read and analyze this file: "${filePath}"`);
+      } else {
+        handleSendMessage(`Please find and then read/analyze this file: "${file.name}". Search for it using search_everything first since I dragged and dropped it but the browser sandbox hid its path.`);
+      }
     }
   };
 

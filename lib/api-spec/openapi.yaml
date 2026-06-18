@@ -432,6 +432,24 @@ components:
           type: boolean
         nvidiaApiKeySet:
           type: boolean
+        openaiApiKeySet:
+          type: boolean
+        anthropicApiKeySet:
+          type: boolean
+        mistralApiKeySet:
+          type: boolean
+        openrouterApiKeySet:
+          type: boolean
+        geminiApiKeySet:
+          type: boolean
+        customTextApiUrl:
+          type: ["string", "null"]
+        customTextApiKeySet:
+          type: boolean
+        customVisionApiUrl:
+          type: ["string", "null"]
+        customVisionApiKeySet:
+          type: boolean
         selectedModel:
           type: string
         selectedProvider:
@@ -464,8 +482,12 @@ components:
           type: ["string", "null"]
         emailPassword:
           type: ["string", "null"]
+        emailPasswordSet:
+          type: boolean
         emailProvider:
           type: ["string", "null"]
+        githubPatSet:
+          type: boolean
         googleClientIdSet:
           type: boolean
         googleClientSecretSet:
@@ -479,6 +501,26 @@ components:
         groqApiKey:
           type: ["string", "null"]
         nvidiaApiKey:
+          type: ["string", "null"]
+        openaiApiKey:
+          type: ["string", "null"]
+        anthropicApiKey:
+          type: ["string", "null"]
+        mistralApiKey:
+          type: ["string", "null"]
+        openrouterApiKey:
+          type: ["string", "null"]
+        geminiApiKey:
+          type: ["string", "null"]
+        githubPat:
+          type: ["string", "null"]
+        customTextApiUrl:
+          type: ["string", "null"]
+        customTextApiKey:
+          type: ["string", "null"]
+        customVisionApiUrl:
+          type: ["string", "null"]
+        customVisionApiKey:
           type: ["string", "null"]
         selectedModel:
           type: ["string", "null"]

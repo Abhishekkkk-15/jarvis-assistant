@@ -10,6 +10,17 @@ export interface Settings {
   id: number;
   groqApiKeySet?: boolean;
   nvidiaApiKeySet?: boolean;
+  openaiApiKeySet?: boolean;
+  anthropicApiKeySet?: boolean;
+  mistralApiKeySet?: boolean;
+  openrouterApiKeySet?: boolean;
+  geminiApiKeySet?: boolean;
+  /** @nullable */
+  customTextApiUrl?: string | null;
+  customTextApiKeySet?: boolean;
+  /** @nullable */
+  customVisionApiUrl?: string | null;
+  customVisionApiKeySet?: boolean;
   selectedModel: string;
   selectedProvider: string;
   visionModel: string;
@@ -34,8 +45,10 @@ export interface Settings {
   emailAddress?: string | null;
   /** @nullable */
   emailPassword?: string | null;
+  emailPasswordSet?: boolean;
   /** @nullable */
   emailProvider?: string | null;
+  githubPatSet?: boolean;
   googleClientIdSet?: boolean;
   googleClientSecretSet?: boolean;
   googleRefreshTokenSet?: boolean;

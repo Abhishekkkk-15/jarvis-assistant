@@ -4,7 +4,7 @@ import { scheduledTasksTable } from "@workspace/db/schema";
 import { HumanMessage } from "@langchain/core/messages";
 import { createJarvisGraph } from "./multiagent.js";
 import { allTools } from "../tools/index.js";
-import { ChatOpenAI } from "@langchain/openai";
+import { createLLM } from "./llmFactory.js";
 import { getWss } from "../index.js";
 import WebSocket from "ws";
 
@@ -35,35 +35,59 @@ export function scheduleTaskInMemory(
     let provider = settings.selectedProvider || "groq";
     let isFallback = false;
 
-    if (provider === "groq" && !settings.groqApiKey && settings.nvidiaApiKey) {
-      provider = "nvidia";
-      isFallback = true;
-    } else if (
-      provider === "nvidia" &&
-      !settings.nvidiaApiKey &&
-      settings.groqApiKey
-    ) {
-      provider = "groq";
-      isFallback = true;
-    }
+    const getApiKey = (p: string) => {
+      switch (p) {
+        case "groq": return settings.groqApiKey;
+        case "nvidia": return settings.nvidiaApiKey;
+        case "openai": return settings.openaiApiKey;
+        case "anthropic": return settings.anthropicApiKey;
+        case "mistral": return settings.mistralApiKey;
+        case "openrouter": return settings.openrouterApiKey;
+        case "gemini": return settings.geminiApiKey;
+        case "custom": return settings.customTextApiKey;
+        default: return null;
+      }
+    };
 
-    const apiKey = provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
+    let apiKey = getApiKey(provider);
     if (!apiKey) {
-      throw new Error(`No ${provider.toUpperCase()} API key configured. Please add your API key in Settings.`);
+      const providersList = ["groq", "nvidia", "openai", "anthropic", "mistral", "openrouter", "gemini", "custom"];
+      for (const p of providersList) {
+        const key = getApiKey(p);
+        if (key) {
+          provider = p;
+          apiKey = key;
+          isFallback = true;
+          break;
+        }
+      }
     }
 
-    const endpoint = provider === "nvidia"
-      ? "https://integrate.api.nvidia.com/v1"
-      : "https://api.groq.com/openai/v1";
+    if (!apiKey) {
+      throw new Error(`No API key configured for provider ${provider.toUpperCase()}`);
+    }
 
-    const modelName = settings.selectedModel
+    let modelName = settings.selectedModel;
 
-    const llm = new ChatOpenAI({
-      modelName: modelName,
-      temperature: 0,
-      apiKey: apiKey,
-      configuration: { baseURL: endpoint },
-      maxTokens: 4096,
+    const getDefaultModel = (p: string) => {
+      if (p === "groq") return "llama-3.3-70b-versatile";
+      if (p === "nvidia") return "nvidia/llama-3.1-405b-instruct";
+      if (p === "openai") return "gpt-4o";
+      if (p === "anthropic") return "claude-3-5-sonnet-20241022";
+      if (p === "gemini") return "gemini-1.5-flash";
+      if (p === "mistral") return "mistral-large-latest";
+      return "llama-3.3-70b-versatile";
+    };
+
+    if (isFallback || !modelName) {
+      modelName = getDefaultModel(provider);
+    }
+
+    const llm = createLLM({
+      provider,
+      apiKey,
+      modelName,
+      customApiUrl: settings.customTextApiUrl,
     });
 
     const agent = createJarvisGraph(llm as any, allTools);

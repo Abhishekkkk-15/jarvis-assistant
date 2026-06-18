@@ -2,7 +2,7 @@ import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import * as fs from "fs/promises";
 import { ensureSettings } from "../services/settingsService.js";
-import { ChatOpenAI } from "@langchain/openai";
+import { createLLM } from "../lib/llmFactory.js";
 import { HumanMessage } from "@langchain/core/messages";
 import mime from "mime-types";
 import path from "path";
@@ -36,29 +36,59 @@ export const describeImageTool = new DynamicStructuredTool({
       const settings = await ensureSettings();
       let provider = settings.visionProvider || "groq";
       let modelName = settings.visionModel || "llama-3.2-90b-vision-preview";
+      let isFallback = false;
 
-      // Fallback logic for API keys
-      if (provider === "groq" && !settings.groqApiKey && settings.nvidiaApiKey) {
-        provider = "nvidia";
-      } else if (provider === "nvidia" && !settings.nvidiaApiKey && settings.groqApiKey) {
-        provider = "groq";
-      }
+      const getApiKey = (p: string) => {
+        switch (p) {
+          case "groq": return settings.groqApiKey;
+          case "nvidia": return settings.nvidiaApiKey;
+          case "openai": return settings.openaiApiKey;
+          case "anthropic": return settings.anthropicApiKey;
+          case "mistral": return settings.mistralApiKey;
+          case "openrouter": return settings.openrouterApiKey;
+          case "gemini": return settings.geminiApiKey;
+          case "custom": return settings.customVisionApiKey;
+          default: return null;
+        }
+      };
 
-      const apiKey = provider === "nvidia" ? settings.nvidiaApiKey : settings.groqApiKey;
+      let apiKey = getApiKey(provider);
       if (!apiKey) {
-        return `Error: No ${provider.toUpperCase()} API key configured.`;
+        const providersList = ["groq", "nvidia", "openai", "anthropic", "mistral", "openrouter", "gemini", "custom"];
+        for (const p of providersList) {
+          const key = getApiKey(p);
+          if (key) {
+            provider = p;
+            apiKey = key;
+            isFallback = true;
+            break;
+          }
+        }
       }
 
-      const endpoint = provider === "nvidia"
-        ? "https://integrate.api.nvidia.com/v1"
-        : "https://api.groq.com/openai/v1";
+      if (!apiKey) {
+        return `Error: No API key configured for ${provider.toUpperCase()}.`;
+      }
 
-      const llm = new ChatOpenAI({
-        modelName,
+      const getDefaultModel = (p: string) => {
+        if (p === "groq") return "llama-3.2-90b-vision-preview";
+        if (p === "nvidia") return "nvidia/llama-3.2-11b-vision-instruct";
+        if (p === "openai") return "gpt-4o";
+        if (p === "anthropic") return "claude-3-5-sonnet-20241022";
+        if (p === "gemini") return "gemini-1.5-flash";
+        if (p === "mistral") return "pixtral-12b";
+        return "gpt-4o";
+      };
+
+      if (isFallback) {
+        modelName = getDefaultModel(provider);
+      }
+
+      const llm = createLLM({
+        provider,
         apiKey,
-        configuration: { baseURL: endpoint },
-        temperature: 0,
-        maxTokens: 4092,
+        modelName,
+        customApiUrl: settings.customVisionApiUrl,
       });
 
       const messageContent = [

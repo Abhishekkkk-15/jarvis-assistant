@@ -12,6 +12,26 @@ export interface SettingsInput {
   /** @nullable */
   nvidiaApiKey?: string | null;
   /** @nullable */
+  openaiApiKey?: string | null;
+  /** @nullable */
+  anthropicApiKey?: string | null;
+  /** @nullable */
+  mistralApiKey?: string | null;
+  /** @nullable */
+  openrouterApiKey?: string | null;
+  /** @nullable */
+  geminiApiKey?: string | null;
+  /** @nullable */
+  githubPat?: string | null;
+  /** @nullable */
+  customTextApiUrl?: string | null;
+  /** @nullable */
+  customTextApiKey?: string | null;
+  /** @nullable */
+  customVisionApiUrl?: string | null;
+  /** @nullable */
+  customVisionApiKey?: string | null;
+  /** @nullable */
   selectedModel?: string | null;
   /** @nullable */
   selectedProvider?: string | null;

@@ -96,6 +96,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       }, 4000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [toolsUsed, setToolsUsed]);
 
   const [baseAnimation, setBaseAnimation] = useState<CharacterAnimation>('idle');
@@ -1000,12 +1001,15 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     if (!file) return;
 
     const filePath = (file as any).path || '';
+    const isAbsolutePath = filePath && (filePath.includes('\\') || filePath.includes('/'));
 
     if (file.name.toLowerCase().endsWith('.pdf')) {
       setBaseAnimation('jump');
       window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text: "Ooh, a PDF document! Let me read that." } }));
       interact(2);
-      const message = `Please read and summarize this PDF file: "${filePath || file.name}"`;
+      const message = isAbsolutePath
+        ? `Please read and summarize this PDF file: "${filePath}"`
+        : `Please find and then read/summarize the PDF file: "${file.name}". Search for it using search_everything first since I dragged and dropped it but the browser sandbox hid its path.`;
       window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message } }));
       return;
     }
@@ -1066,7 +1070,9 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     setBaseAnimation('happy');
     window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text: `Let me analyze the file: ${file.name}` } }));
     interact(1);
-    const message = `Please read and analyze this file: "${filePath || file.name}"`;
+    const message = isAbsolutePath
+      ? `Please read and analyze this file: "${filePath}"`
+      : `Please find and then read/analyze this file: "${file.name}". Search for it using search_everything first since I dragged and dropped it but the browser sandbox hid its path.`;
     window.dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message } }));
   };
 

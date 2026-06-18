@@ -43,12 +43,33 @@ export const SettingsPage: React.FC = () => {
   const form = useForm({
     defaultValues: {
       nvidiaApiKey: '',
+      groqApiKey: '',
+      openaiApiKey: '',
+      anthropicApiKey: '',
+      mistralApiKey: '',
+      openrouterApiKey: '',
+      geminiApiKey: '',
+      customTextApiUrl: '',
+      customTextApiKey: '',
+      customVisionApiUrl: '',
+      customVisionApiKey: '',
       wakeWord: 'jarvis',
       voiceEnabled: true,
       selectedProvider: 'groq',
       selectedModel: 'llama-3.3-70b-versatile',
       visionProvider: 'groq',
       visionModel: 'llama-3.2-90b-vision-preview',
+      telegramBotToken: '',
+      discordBotToken: '',
+      notionApiKey: '',
+      spotifyClientId: '',
+      spotifyClientSecret: '',
+      githubPat: '',
+      googleClientId: '',
+      googleClientSecret: '',
+      emailAddress: '',
+      emailPassword: '',
+      emailProvider: 'gmail',
     }
   });
 
@@ -57,9 +78,20 @@ export const SettingsPage: React.FC = () => {
       form.reset({
         nvidiaApiKey: '',
         groqApiKey: '',
-        notionApiKey: '',
-        spotifyClientId: '',
-        spotifyClientSecret: '',
+        openaiApiKey: '',
+        anthropicApiKey: '',
+        mistralApiKey: '',
+        openrouterApiKey: '',
+        geminiApiKey: '',
+        customTextApiUrl: settings.customTextApiUrl || '',
+        customTextApiKey: '',
+        customVisionApiUrl: settings.customVisionApiUrl || '',
+        customVisionApiKey: '',
+        telegramBotToken: settings.telegramBotToken || '',
+        discordBotToken: settings.discordBotToken || '',
+        notionApiKey: settings.notionApiKey || '',
+        spotifyClientId: settings.spotifyClientId || '',
+        spotifyClientSecret: settings.spotifyClientSecret || '',
         githubPat: '',
         googleClientId: '',
         googleClientSecret: '',
@@ -77,22 +109,26 @@ export const SettingsPage: React.FC = () => {
 
   const onSubmit = (values: any) => {
     const payload = { ...values };
-    if (!payload.nvidiaApiKey) delete payload.nvidiaApiKey;
-    if (!payload.groqApiKey) delete payload.groqApiKey;
-    if (!payload.notionApiKey) delete payload.notionApiKey;
-    if (!payload.spotifyClientId) delete payload.spotifyClientId;
-    if (!payload.spotifyClientSecret) delete payload.spotifyClientSecret;
-    if (!payload.githubPat) delete payload.githubPat;
-    if (!payload.emailPassword) delete payload.emailPassword;
-    if (!payload.telegramBotToken) delete payload.telegramBotToken;
-    if (!payload.discordBotToken) delete payload.discordBotToken;
-    if (!payload.googleClientId) delete payload.googleClientId;
-    if (!payload.googleClientSecret) delete payload.googleClientSecret;
+    const keysToDelete = [
+      'nvidiaApiKey', 'groqApiKey', 'openaiApiKey', 'anthropicApiKey',
+      'mistralApiKey', 'openrouterApiKey', 'geminiApiKey',
+      'customTextApiKey', 'customVisionApiKey', 'notionApiKey',
+      'spotifyClientId', 'spotifyClientSecret', 'githubPat',
+      'emailPassword', 'telegramBotToken', 'discordBotToken',
+      'googleClientId', 'googleClientSecret'
+    ];
+    keysToDelete.forEach(k => {
+      if (!payload[k]) delete payload[k];
+    });
     updateSettings.mutate({ data: payload }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
         toast({ title: "Settings saved" });
-        form.reset({ ...values, nvidiaApiKey: '', groqApiKey: '', emailPassword: '' });
+        const resetObj: any = { ...values };
+        keysToDelete.forEach(k => {
+          resetObj[k] = '';
+        });
+        form.reset(resetObj);
       },
       onError: () => {
         toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
@@ -107,8 +143,88 @@ export const SettingsPage: React.FC = () => {
   const sectionClass = "rounded-xl border border-border bg-white p-6 space-y-5";
   const sectionHeadingClass = "text-sm font-semibold text-foreground flex items-center gap-2 pb-4 border-b border-border";
 
-  console.log("DEBUG: settings loaded:", settings);
-  console.log("DEBUG: form values:", form.getValues());
+
+  const renderProviderApiKeyField = (provider: string) => {
+    if (!provider || provider === 'custom') return null;
+
+    const keyMap: Record<string, { label: string; name: string; placeholderSet: string; placeholderUnset: string; desc: string }> = {
+      groq: {
+        label: "Groq API Key",
+        name: "groqApiKey",
+        placeholderSet: "Already set — enter new key to update",
+        placeholderUnset: "Enter your Groq API key",
+        desc: "Used for ultra-fast LPU inference"
+      },
+      nvidia: {
+        label: "NVIDIA API Key",
+        name: "nvidiaApiKey",
+        placeholderSet: "Already set — enter new key to update",
+        placeholderUnset: "Enter your NVIDIA API key",
+        desc: "Used for LLaMA 3.1 & Nemotron models"
+      },
+      openai: {
+        label: "OpenAI API Key",
+        name: "openaiApiKey",
+        placeholderSet: "Already set — enter new key to update",
+        placeholderUnset: "Enter your OpenAI API key",
+        desc: "Used for GPT-4o and text embeddings"
+      },
+      anthropic: {
+        label: "Anthropic API Key",
+        name: "anthropicApiKey",
+        placeholderSet: "Already set — enter new key to update",
+        placeholderUnset: "Enter your Anthropic API key",
+        desc: "Used for Claude 3.5 Sonnet & Claude 3 Opus"
+      },
+      gemini: {
+        label: "Gemini API Key",
+        name: "geminiApiKey",
+        placeholderSet: "Already set — enter new key to update",
+        placeholderUnset: "Enter your Gemini API key",
+        desc: "Used for Gemini 1.5 & Gemini 2.0 models"
+      },
+      mistral: {
+        label: "Mistral API Key",
+        name: "mistralApiKey",
+        placeholderSet: "Already set — enter new key to update",
+        placeholderUnset: "Enter your Mistral API key",
+        desc: "Used for Mistral Large & Pixtral models"
+      },
+      openrouter: {
+        label: "OpenRouter API Key",
+        name: "openrouterApiKey",
+        placeholderSet: "Already set — enter new key to update",
+        placeholderUnset: "Enter your OpenRouter API key",
+        desc: "Access unified open-source and proprietary models"
+      }
+    };
+
+    const config = keyMap[provider];
+    if (!config) return null;
+
+    const isSet = settings ? (settings as any)[`${config.name}Set`] : false;
+
+    return (
+      <FormField
+        control={form.control}
+        name={config.name as any}
+        render={({ field }) => (
+          <FormItem className="animate-in fade-in slide-in-from-top-1 duration-200">
+            <FormLabel className="text-sm">{config.label}</FormLabel>
+            <FormControl>
+              <Input
+                type="password"
+                placeholder={isSet ? config.placeholderSet : config.placeholderUnset}
+                {...field}
+              />
+            </FormControl>
+            <FormDescription className="text-xs">{config.desc}</FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  };
 
   return (
     <div className="h-full flex flex-col p-5 md:p-8 max-w-4xl mx-auto w-full overflow-y-auto">
@@ -119,78 +235,13 @@ export const SettingsPage: React.FC = () => {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pb-24">
-          {/* API Keys */}
-          <section className={sectionClass}>
-            <h3 className={sectionHeadingClass}>
-              <Key size={15} className="text-primary" /> API Keys
-            </h3>
-            <div className="grid grid-cols-1 gap-5">
-              <FormField
-                control={form.control}
-                name="nvidiaApiKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">NVIDIA API Key</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder={settings?.nvidiaApiKeySet ? "Already set — enter new key to update" : "Enter your NVIDIA API key"}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription className="text-xs">Used for LLaMA 3.1 & Nemotron models</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="groqApiKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Groq API Key</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder={settings?.groqApiKeySet ? "Already set — enter new key to update" : "Enter your Groq API key"}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription className="text-xs">Used for ultra-fast inference (LPU)</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="githubPat"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">GitHub Personal Access Token</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder={settings?.githubPatSet ? "Already set — enter new key to update" : "Enter your GitHub PAT"}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription className="text-xs">Required for reading repos, issues, and opening PRs</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </section>
-
           {/* Model Selection */}
           <section className={sectionClass}>
             <h3 className={sectionHeadingClass}>
               <Cpu size={15} className="text-primary" /> Model Configuration
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              
+
               {/* Text / Agent Model */}
               <div className="space-y-5">
                 <h4 className="text-sm font-semibold text-foreground">Agent Model (Text)</h4>
@@ -209,12 +260,58 @@ export const SettingsPage: React.FC = () => {
                         <SelectContent>
                           <SelectItem value="groq">Groq</SelectItem>
                           <SelectItem value="nvidia">NVIDIA NIM</SelectItem>
+                          <SelectItem value="openai">OpenAI</SelectItem>
+                          <SelectItem value="anthropic">Anthropic</SelectItem>
+                          <SelectItem value="gemini">Google Gemini</SelectItem>
+                          <SelectItem value="mistral">Mistral AI</SelectItem>
+                          <SelectItem value="openrouter">OpenRouter</SelectItem>
+                          <SelectItem value="custom">Custom Endpoint</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                {renderProviderApiKeyField(form.watch('selectedProvider'))}
+
+                {form.watch('selectedProvider') === 'custom' && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="customTextApiUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm">Custom API Base URL</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. http://localhost:11434/v1" {...field} />
+                          </FormControl>
+                          <FormDescription className="text-xs">The custom OpenAI-compatible API base URL</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="customTextApiKey"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm">Custom API Key</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="password"
+                              placeholder={settings?.customTextApiKeySet ? "Already set — enter new key to update" : "Enter Custom API Key"}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription className="text-xs">Optional custom API key</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
 
                 <FormField
                   control={form.control}
@@ -250,12 +347,58 @@ export const SettingsPage: React.FC = () => {
                         <SelectContent>
                           <SelectItem value="groq">Groq</SelectItem>
                           <SelectItem value="nvidia">NVIDIA NIM</SelectItem>
+                          <SelectItem value="openai">OpenAI</SelectItem>
+                          <SelectItem value="anthropic">Anthropic</SelectItem>
+                          <SelectItem value="gemini">Google Gemini</SelectItem>
+                          <SelectItem value="mistral">Mistral AI</SelectItem>
+                          <SelectItem value="openrouter">OpenRouter</SelectItem>
+                          <SelectItem value="custom">Custom Endpoint</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                {renderProviderApiKeyField(form.watch('visionProvider'))}
+
+                {form.watch('visionProvider') === 'custom' && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="customVisionApiUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm">Custom Vision API Base URL</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. http://localhost:11434/v1" {...field} />
+                          </FormControl>
+                          <FormDescription className="text-xs">The custom OpenAI-compatible Vision API base URL</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="customVisionApiKey"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm">Custom Vision API Key</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="password"
+                              placeholder={settings?.customVisionApiKeySet ? "Already set — enter new key to update" : "Enter Custom Vision API Key"}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription className="text-xs">Optional custom Vision API key</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
 
                 <FormField
                   control={form.control}
@@ -418,6 +561,25 @@ export const SettingsPage: React.FC = () => {
                       <Input type="password" placeholder="Enter Notion API Key" {...field} value={field.value || ''} />
                     </FormControl>
                     <FormDescription className="text-xs">Used by JARVIS to search and read your Notion workspace.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="githubPat"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">GitHub Personal Access Token</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder={settings?.githubPatSet ? "Already set — enter new key to update" : "Enter your GitHub PAT"}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">Required for reading repos, issues, and opening PRs</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

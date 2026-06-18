@@ -16,6 +16,15 @@ export function toResponse(s: typeof settingsTable.$inferSelect) {
     id: s.id,
     groqApiKeySet: !!s.groqApiKey,
     nvidiaApiKeySet: !!s.nvidiaApiKey,
+    openaiApiKeySet: !!s.openaiApiKey,
+    anthropicApiKeySet: !!s.anthropicApiKey,
+    mistralApiKeySet: !!s.mistralApiKey,
+    openrouterApiKeySet: !!s.openrouterApiKey,
+    geminiApiKeySet: !!s.geminiApiKey,
+    customTextApiUrl: s.customTextApiUrl,
+    customTextApiKeySet: !!s.customTextApiKey,
+    customVisionApiUrl: s.customVisionApiUrl,
+    customVisionApiKeySet: !!s.customVisionApiKey,
     selectedModel: s.selectedModel,
     selectedProvider: s.selectedProvider,
     visionModel: s.visionModel,
@@ -51,6 +60,15 @@ export async function updateSettings(parsedData: any) {
   const d = parsedData;
   if (d.groqApiKey != null) updates.groqApiKey = d.groqApiKey;
   if (d.nvidiaApiKey != null) updates.nvidiaApiKey = d.nvidiaApiKey;
+  if (d.openaiApiKey != null) updates.openaiApiKey = d.openaiApiKey;
+  if (d.anthropicApiKey != null) updates.anthropicApiKey = d.anthropicApiKey;
+  if (d.mistralApiKey != null) updates.mistralApiKey = d.mistralApiKey;
+  if (d.openrouterApiKey != null) updates.openrouterApiKey = d.openrouterApiKey;
+  if (d.geminiApiKey != null) updates.geminiApiKey = d.geminiApiKey;
+  if (d.customTextApiUrl !== undefined) updates.customTextApiUrl = d.customTextApiUrl;
+  if (d.customTextApiKey !== undefined) updates.customTextApiKey = d.customTextApiKey;
+  if (d.customVisionApiUrl !== undefined) updates.customVisionApiUrl = d.customVisionApiUrl;
+  if (d.customVisionApiKey !== undefined) updates.customVisionApiKey = d.customVisionApiKey;
   if (d.selectedModel != null) updates.selectedModel = d.selectedModel;
   if (d.selectedProvider != null) updates.selectedProvider = d.selectedProvider;
   if (d.visionModel != null) updates.visionModel = d.visionModel;
