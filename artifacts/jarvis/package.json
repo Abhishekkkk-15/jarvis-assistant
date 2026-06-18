@@ -134,6 +134,8 @@
     "react-markdown": "^9.0.1",
     "sharp": "^0.33.5",
     "sqlite-vec": "^0.1.9",
-    "vosk-browser": "^0.0.8"
+    "vosk-browser": "^0.0.8",
+    "pdf-parse": "^2.4.5",
+    "@langchain/anthropic": "^1.4.1"
   }
 }
