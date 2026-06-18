@@ -272,12 +272,13 @@ pnpm run electron:build`}</Code>
               <P>Click the character icon in the sidebar to open the Character Selector. Pick from 22 built-in companions or create your own in Custom Studio.</P>
 
               <H2>Step 2 — Connect LLMs</H2>
-              <P>JARVIS uses <strong>Groq</strong> as the default LLM provider. Open <strong>Settings</strong> and enter your Groq API key to get started. Optionally add an NVIDIA API key to switch to NVIDIA-hosted models:</P>
+              <P>JARVIS supports multiple providers including <strong>Groq, NVIDIA, OpenAI, Anthropic, Gemini, Mistral, OpenRouter, and Custom endpoints</strong>. Open <strong>Settings</strong> and enter an API key for your preferred provider.</P>
               <Code lang="json">{`{
-  "groqApiKey": "gsk-...",      // Required for default operation
-  "nvidiaApiKey": "nvapi-..."   // Optional — enables NVIDIA-hosted models
+  "groqApiKey": "gsk-...",      // e.g. Groq
+  "openaiApiKey": "sk-...",     // e.g. OpenAI
+  // ... and others
 }`}</Code>
-              <Callout type="tip">A Groq API key is all you need to get started. The NVIDIA API key is optional — add it only if you want to switch to NVIDIA-hosted models via Settings → Model Configuration.</Callout>
+              <Callout type="tip">A single API key for any supported provider is all you need to get started. You can mix and match providers for text and vision models via Settings → Model Configuration.</Callout>
 
               <H2>Step 3 — Say hello</H2>
               <P>Type in the chat box or press the microphone button and say "Hey JARVIS, what can you do?" Your companion will introduce itself and demonstrate its capabilities.</P>
@@ -300,17 +301,17 @@ F11               — Toggle application fullscreen mode`}</Code>
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="px-2.5 py-1 text-xs font-bold text-primary bg-primary/10 rounded-full">Core Orchestrator</span>
-                    <code className="text-sm font-semibold font-mono text-foreground">llama-3.3-70b-versatile</code>
+                    <code className="text-sm font-semibold font-mono text-foreground">Configurable (Default: llama-3.3-70b-versatile via Groq)</code>
                   </div>
-                  <P>Default text model running via Groq. Drives the LangGraph multi-agent loop, handles standard chat messaging, decides which tools to call, and plans step-by-step actions. The provider can be switched to NVIDIA and the model name overridden in Settings → Model Configuration. If the configured provider has no API key, JARVIS automatically falls back to the other provider.</P>
+                  <P>Drives the LangGraph multi-agent loop, handles standard chat messaging, decides which tools to call, and plans step-by-step actions. Supported providers include <strong>Groq, NVIDIA, OpenAI, Anthropic, Gemini, Mistral, OpenRouter, and Custom</strong>. If the configured provider has no API key, JARVIS silently falls back to another available provider.</P>
                 </div>
 
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="px-2.5 py-1 text-xs font-bold text-green-700 bg-green-50 rounded-full">Screen Vision</span>
-                    <code className="text-sm font-semibold font-mono text-foreground">llama-3.2-90b-vision-preview</code>
+                    <code className="text-sm font-semibold font-mono text-foreground">Configurable (Default: llama-3.2-90b-vision-preview via Groq)</code>
                   </div>
-                  <P>Default vision model running via Groq. Activated automatically when a prompt includes an image or screen capture. The vision provider and model are independently configurable in Settings → Model Configuration (separate from the text model), and also support NVIDIA-hosted vision models.</P>
+                  <P>Activated automatically when a prompt includes an image or screen capture. The vision provider and model are independently configurable (separate from the text model) and support all major vision models like GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Flash, and Llama 3.2 Vision.</P>
                 </div>
 
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
@@ -584,7 +585,7 @@ Ctrl+Shift+M  (Windows 10/11)
               <H2>Configuration</H2>
               <P>Vision model and provider are configured in <strong>Settings → Model Configuration</strong>. The defaults use Groq's vision endpoint:</P>
               <Code lang="json">{`{
-  "visionProvider": "groq",                       // "groq" | "nvidia"
+  "visionProvider": "groq",                       // "groq" | "openai" | "anthropic" | ...
   "visionModel":   "llama-3.2-90b-vision-preview" // any vision-capable model on the provider
 }`}</Code>
               <Callout type="warn">Screen vision is opt-in per-prompt. JARVIS only captures your screen when you explicitly ask it to look at something — it does not continuously monitor your display.</Callout>
@@ -962,7 +963,7 @@ Ctrl+Shift+M  (Windows 10/11)
 E:\\Jarvis-Assistant-Companionzip\\sqlite.db`}</Code>
 
               <H2>Settings Table Schema</H2>
-              <P>When reading or modifying settings via the Drizzle settings schema or backend REST routes, the fields mapped are as follows (only a Groq or NVIDIA key is required — not both; models are pre-selected by default):</P>
+              <P>When reading or modifying settings via the Drizzle settings schema or backend REST routes, the fields mapped are as follows (only one API key from any supported provider is required; models are pre-selected by default):</P>
               <Code lang="json">{`{
   "id": 1,
   "groqApiKey": "gsk_...",              // Groq API Key (masked on frontend)
