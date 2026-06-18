@@ -76,28 +76,28 @@ export const SettingsPage: React.FC = () => {
   useEffect(() => {
     if (settings) {
       form.reset({
-        nvidiaApiKey: '',
-        groqApiKey: '',
-        openaiApiKey: '',
-        anthropicApiKey: '',
-        mistralApiKey: '',
-        openrouterApiKey: '',
-        geminiApiKey: '',
+        nvidiaApiKey: (settings as any).nvidiaApiKey || '',
+        groqApiKey: (settings as any).groqApiKey || '',
+        openaiApiKey: (settings as any).openaiApiKey || '',
+        anthropicApiKey: (settings as any).anthropicApiKey || '',
+        mistralApiKey: (settings as any).mistralApiKey || '',
+        openrouterApiKey: (settings as any).openrouterApiKey || '',
+        geminiApiKey: (settings as any).geminiApiKey || '',
         customTextApiUrl: settings.customTextApiUrl || '',
-        customTextApiKey: '',
+        customTextApiKey: (settings as any).customTextApiKey || '',
         customVisionApiUrl: settings.customVisionApiUrl || '',
-        customVisionApiKey: '',
+        customVisionApiKey: (settings as any).customVisionApiKey || '',
         telegramBotToken: settings.telegramBotToken || '',
         discordBotToken: settings.discordBotToken || '',
         notionApiKey: settings.notionApiKey || '',
         spotifyClientId: settings.spotifyClientId || '',
         spotifyClientSecret: settings.spotifyClientSecret || '',
-        githubPat: '',
-        googleClientId: '',
-        googleClientSecret: '',
+        githubPat: (settings as any).githubPat || '',
+        googleClientId: (settings as any).googleClientId || '',
+        googleClientSecret: (settings as any).googleClientSecret || '',
         wakeWord: settings.wakeWord || 'jarvis',
         emailAddress: settings.emailAddress || '',
-        emailPassword: '',
+        emailPassword: (settings as any).emailPassword || '',
         emailProvider: settings.emailProvider || 'gmail',
         selectedProvider: settings.selectedProvider || 'groq',
         selectedModel: settings.selectedModel || 'llama-3.3-70b-versatile',
@@ -118,17 +118,13 @@ export const SettingsPage: React.FC = () => {
       'googleClientId', 'googleClientSecret'
     ];
     keysToDelete.forEach(k => {
-      if (!payload[k]) delete payload[k];
+      if (!payload[k]) payload[k] = null; // update to null if cleared
     });
     updateSettings.mutate({ data: payload }, {
-      onSuccess: () => {
+      onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
         toast({ title: "Settings saved" });
-        const resetObj: any = { ...values };
-        keysToDelete.forEach(k => {
-          resetObj[k] = '';
-        });
-        form.reset(resetObj);
+        form.reset(values);
       },
       onError: () => {
         toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });

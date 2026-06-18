@@ -430,26 +430,44 @@ components:
           type: integer
         groqApiKeySet:
           type: boolean
+        groqApiKey:
+          type: ["string", "null"]
         nvidiaApiKeySet:
           type: boolean
+        nvidiaApiKey:
+          type: ["string", "null"]
         openaiApiKeySet:
           type: boolean
+        openaiApiKey:
+          type: ["string", "null"]
         anthropicApiKeySet:
           type: boolean
+        anthropicApiKey:
+          type: ["string", "null"]
         mistralApiKeySet:
           type: boolean
+        mistralApiKey:
+          type: ["string", "null"]
         openrouterApiKeySet:
           type: boolean
+        openrouterApiKey:
+          type: ["string", "null"]
         geminiApiKeySet:
           type: boolean
+        geminiApiKey:
+          type: ["string", "null"]
         customTextApiUrl:
           type: ["string", "null"]
         customTextApiKeySet:
           type: boolean
+        customTextApiKey:
+          type: ["string", "null"]
         customVisionApiUrl:
           type: ["string", "null"]
         customVisionApiKeySet:
           type: boolean
+        customVisionApiKey:
+          type: ["string", "null"]
         selectedModel:
           type: string
         selectedProvider:
@@ -488,10 +506,16 @@ components:
           type: ["string", "null"]
         githubPatSet:
           type: boolean
+        githubPat:
+          type: ["string", "null"]
         googleClientIdSet:
           type: boolean
+        googleClientId:
+          type: ["string", "null"]
         googleClientSecretSet:
           type: boolean
+        googleClientSecret:
+          type: ["string", "null"]
         googleRefreshTokenSet:
           type: boolean
 

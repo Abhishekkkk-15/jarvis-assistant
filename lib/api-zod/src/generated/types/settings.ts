@@ -9,18 +9,36 @@
 export interface Settings {
   id: number;
   groqApiKeySet?: boolean;
+  /** @nullable */
+  groqApiKey?: string | null;
   nvidiaApiKeySet?: boolean;
+  /** @nullable */
+  nvidiaApiKey?: string | null;
   openaiApiKeySet?: boolean;
+  /** @nullable */
+  openaiApiKey?: string | null;
   anthropicApiKeySet?: boolean;
+  /** @nullable */
+  anthropicApiKey?: string | null;
   mistralApiKeySet?: boolean;
+  /** @nullable */
+  mistralApiKey?: string | null;
   openrouterApiKeySet?: boolean;
+  /** @nullable */
+  openrouterApiKey?: string | null;
   geminiApiKeySet?: boolean;
+  /** @nullable */
+  geminiApiKey?: string | null;
   /** @nullable */
   customTextApiUrl?: string | null;
   customTextApiKeySet?: boolean;
   /** @nullable */
+  customTextApiKey?: string | null;
+  /** @nullable */
   customVisionApiUrl?: string | null;
   customVisionApiKeySet?: boolean;
+  /** @nullable */
+  customVisionApiKey?: string | null;
   selectedModel: string;
   selectedProvider: string;
   visionModel: string;
@@ -49,7 +67,13 @@ export interface Settings {
   /** @nullable */
   emailProvider?: string | null;
   githubPatSet?: boolean;
+  /** @nullable */
+  githubPat?: string | null;
   googleClientIdSet?: boolean;
+  /** @nullable */
+  googleClientId?: string | null;
   googleClientSecretSet?: boolean;
+  /** @nullable */
+  googleClientSecret?: string | null;
   googleRefreshTokenSet?: boolean;
 }
