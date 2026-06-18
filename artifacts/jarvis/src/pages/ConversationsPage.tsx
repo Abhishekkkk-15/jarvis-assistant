@@ -129,7 +129,19 @@ export const ConversationsPage: React.FC = () => {
             <>
               <div className="p-4 border-b border-border bg-slate-50 shrink-0 flex justify-between items-center">
                 <p className="font-semibold text-sm text-foreground truncate pr-4">{detail.title}</p>
-                <p className="text-xs text-muted-foreground shrink-0">#{detail.id}</p>
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    onClick={() => {
+                      setActiveConversationId(detail.id);
+                      setLocation('/');
+                      toast({ title: "Conversation loaded", description: "You can now continue this chat." });
+                    }}
+                    className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    Resume Chat
+                  </button>
+                  <p className="text-xs text-muted-foreground">#{detail.id}</p>
+                </div>
               </div>
               <div className="flex-1 overflow-y-auto p-5 space-y-4">
                 {detail.messages.length === 0 ? (
