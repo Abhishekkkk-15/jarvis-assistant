@@ -83,6 +83,8 @@ export const AgentInteractiveOverlay: React.FC<AgentInteractiveOverlayProps> = (
                     const val = e.currentTarget.value;
                     if (val.trim() && onSubmitAnswer) {
                       onSubmitAnswer(val);
+                      e.currentTarget.value = '';
+                      clearQuestion();
                     }
                   }
                 }}
@@ -92,6 +94,8 @@ export const AgentInteractiveOverlay: React.FC<AgentInteractiveOverlayProps> = (
                   const input = document.getElementById('agent-question-input') as HTMLInputElement;
                   if (input && input.value.trim() && onSubmitAnswer) {
                     onSubmitAnswer(input.value);
+                    input.value = '';
+                    clearQuestion();
                   }
                 }}
                 className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"

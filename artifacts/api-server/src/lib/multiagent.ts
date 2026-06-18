@@ -107,6 +107,13 @@ export function createJarvisGraph(
   llm: ChatOpenAI,
   allTools: DynamicStructuredTool[],
 ) {
+  // Sanitize all tools to ensure they have a description (required by OpenAI/Nvidia APIs)
+  for (const t of allTools) {
+    if (!t.description || typeof t.description !== "string" || t.description.trim() === "") {
+      (t as any).description = `Executes the ${t.name} action.`;
+    }
+  }
+
   // Create list_tools mandatory tool
   const listToolsTool = new DynamicStructuredTool({
     name: "list_tools",
