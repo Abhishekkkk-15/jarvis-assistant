@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useGetSettings, getGetSettingsQueryKey, useGetStats, getGetStatsQueryKey, useGetCommandSuggestions, getGetCommandSuggestionsQueryKey, useTranscribeAudio } from '@workspace/api-client-react';
+import { useGetSettings, getGetSettingsQueryKey, useGetStats, getGetStatsQueryKey, useGetCommandSuggestions, getGetCommandSuggestionsQueryKey, useTranscribeAudio, useGetConversation, getGetConversationQueryKey } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Mic, MicOff, Volume2, VolumeX, Send, Activity, Zap, Square } from 'lucide-react';
 import { AudioVisualizer } from '../components/AudioVisualizer';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +12,7 @@ import { AgentInteractiveOverlay } from '@/components/ui/AgentInteractiveOverlay
 import { useTTS } from '@/hooks/useTTS';
 
 export const JarvisMain: React.FC = () => {
+  const queryClient = useQueryClient();
   const [isListening, setIsListening] = useLocalStorage('jarvisIsListening', false);
   const [isSpeaking, setIsSpeaking] = useLocalStorage('jarvisIsSpeaking', false);
   const { affectionScore, mood, interact } = useRelationshipEngine();
@@ -46,6 +48,25 @@ export const JarvisMain: React.FC = () => {
   const silenceRafRef = useRef<number | null>(null);
 
   const [activeConversationId, setActiveConversationId] = useLocalStorage<number | null>('activeConversationId', null);
+
+  const { data: activeConversationDetail } = useGetConversation(activeConversationId!, {
+    query: {
+      queryKey: getGetConversationQueryKey(activeConversationId!),
+      enabled: !!activeConversationId,
+    }
+  });
+
+  useEffect(() => {
+    if (activeConversationDetail?.messages) {
+      const mapped = activeConversationDetail.messages.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+      setMessages(mapped);
+    } else if (!activeConversationId) {
+      setMessages([]);
+    }
+  }, [activeConversationDetail, activeConversationId]);
 
   const { activeApproval, agentQuestion, resolveApproval, clearQuestion } = useWebSocket();
 
@@ -302,6 +323,11 @@ export const JarvisMain: React.FC = () => {
                 setTimeout(() => setToolsUsed([]), Math.max(3000, wordCount * 350));
               } else {
                 setTimeout(() => setToolsUsed([]), 5000);
+              }
+              // Invalidate query key to sync messages in background
+              const convId = event.conversationId || activeConversationId;
+              if (convId) {
+                queryClient.invalidateQueries({ queryKey: getGetConversationQueryKey(convId) });
               }
             } else if (event.type === 'error') {
               toast({ title: "Error", description: event.message || "AI error.", variant: "destructive" });
