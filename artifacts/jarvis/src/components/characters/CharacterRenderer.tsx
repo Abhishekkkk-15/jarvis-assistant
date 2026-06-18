@@ -918,7 +918,7 @@ export const IronHero: React.FC<CharacterProps> = ({ animation = 'idle', size = 
           </g>
           <g className={animation === 'wave' ? 'arm-wave' : isFlying ? "" : "limb-r"}>
             <rect x="70" y="45" width="10" height="25" rx="5" fill="#c0392b" />
-            {isFlying && animation !== 'wave' && <path d="M 72 70 Q 75 90 78 70 Z" fill="#3498db" className="animate-pulse" opacity="0.8" />}
+            {isFlying && <path d="M 72 70 Q 75 90 78 70 Z" fill="#3498db" className="animate-pulse" opacity="0.8" />}
           </g>
           <g className={isFlying ? "" : "limb-l"}>
             <rect x="35" y="80" width="10" height="20" rx="5" fill="#c0392b" />
@@ -1146,14 +1146,8 @@ export const NinjaTurtle: React.FC<CharacterProps> = ({ animation = 'idle', size
                 </g>
               ) : (
                 <g>
-                  <circle cx="43" cy="24" r="2" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
-                  <circle cx="57" cy="24" r="2" fill="#fff" className={animation === 'sleep' ? 'opacity-0' : ''} />
-                  {animation === 'sleep' && (
-                    <g>
-                      <line x1="41" y1="24" x2="45" y2="24" stroke="#fff" strokeWidth="2" />
-                      <line x1="55" y1="24" x2="59" y2="24" stroke="#fff" strokeWidth="2" />
-                    </g>
-                  )}
+                  <circle cx="43" cy="24" r="2" fill="#fff" />
+                  <circle cx="57" cy="24" r="2" fill="#fff" />
                 </g>
               )}
             </g>

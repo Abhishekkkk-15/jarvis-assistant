@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'wouter';
 import { useListConversations, useGetConversation, useCreateConversation, useDeleteConversation, getListConversationsQueryKey, getGetConversationQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, Clock, MessageSquare, MessagesSquare } from 'lucide-react';
@@ -9,6 +10,20 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 export const ConversationsPage: React.FC = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [, setActiveConversationId] = useLocalStorage<number | null>('activeConversationId', null);
+  const [, setLocation] = useLocation();
+
+  const cleanMessageContent = (role: string, content: string | null | undefined) => {
+    if (!content) return '';
+    if (role === 'user') {
+      return content.replace(/^\[System Note - Your Relationship with User:.*?\]\s*/is, '');
+    } else {
+      return content
+        .replace(/\[anim:\s*[a-zA-Z0-9_-]+\]/gi, '')
+        .replace(/\[draw:\s*.+?\]/gi, '')
+        .replace(/\[Orchestrator\]:/g, '')
+        .trim();
+    }
+  };
 
   const { data: conversations, isLoading: isLoadingList } = useListConversations();
   const { data: detail, isLoading: isLoadingDetail } = useGetConversation(selectedId!, { query: { queryKey: getGetConversationQueryKey(selectedId!), enabled: !!selectedId } });
@@ -130,7 +145,7 @@ export const ConversationsPage: React.FC = () => {
                           ? 'bg-primary text-white rounded-br-sm'
                           : 'bg-slate-100 text-foreground rounded-bl-sm'
                       }`}>
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                        <p className="whitespace-pre-wrap">{cleanMessageContent(msg.role, msg.content)}</p>
                       </div>
                     </div>
                   ))

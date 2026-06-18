@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGetSettings, getGetSettingsQueryKey, useGetStats, getGetStatsQueryKey, useGetCommandSuggestions, getGetCommandSuggestionsQueryKey, useTranscribeAudio, useGetConversation, getGetConversationQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Mic, MicOff, Volume2, VolumeX, Send, Activity, Zap, Square } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Send, Activity, Zap, Square, Plus } from 'lucide-react';
 import { AudioVisualizer } from '../components/AudioVisualizer';
 import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -56,11 +56,24 @@ export const JarvisMain: React.FC = () => {
     }
   });
 
+  const cleanMessageContent = (role: string, content: string) => {
+    if (!content) return '';
+    if (role === 'user') {
+      return content.replace(/^\[System Note - Your Relationship with User:.*?\]\s*/is, '');
+    } else {
+      return content
+        .replace(/\[anim:\s*[a-zA-Z0-9_-]+\]/gi, '')
+        .replace(/\[draw:\s*.+?\]/gi, '')
+        .replace(/\[Orchestrator\]:/g, '')
+        .trim();
+    }
+  };
+
   useEffect(() => {
     if (activeConversationDetail?.messages) {
       const mapped = activeConversationDetail.messages.map(m => ({
         role: m.role,
-        content: m.content
+        content: cleanMessageContent(m.role, m.content)
       }));
       setMessages(mapped);
     } else if (!activeConversationId) {
@@ -297,7 +310,7 @@ export const JarvisMain: React.FC = () => {
               setStreamStatus(NODE_LABELS[event.node] ?? `${event.node}…`);
             } else if (event.type === 'token') {
               accumulatedText += event.text;
-              setStreamingContent(accumulatedText);
+              setStreamingContent(cleanMessageContent('assistant', accumulatedText));
             } else if (event.type === 'done') {
               // accumulatedText has tokens if Synthesizer ran; event.reply is the fallback for Planner-direct responses
               const finalText = accumulatedText || event.reply || '';
@@ -517,15 +530,29 @@ export const JarvisMain: React.FC = () => {
         <div>
           <h2 className="text-xl font-semibold text-foreground">Assistant</h2>
         </div>
-        <button
-          onClick={() => tts.toggleEnabled()}
-          className={`p-2 rounded-lg border transition-colors ${muted ? 'border-destructive/40 text-destructive bg-destructive/5' : 'border-border text-muted-foreground hover:text-foreground hover:bg-slate-100'}`}
-          title={muted ? 'Click to enable JARVIS voice' : 'Click to mute JARVIS voice'}
-          data-testid="button-mute"
-          style={{ WebkitAppRegion: 'no-drag' } as any}
-        >
-          {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-        </button>
+        <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
+          <button
+            onClick={() => {
+              setActiveConversationId(null);
+              setMessages([]);
+              toast({ title: "New Conversation", description: "Started a fresh chat session." });
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-slate-100 transition-colors"
+            title="Start a new conversation"
+            data-testid="button-new-chat"
+          >
+            <Plus size={14} />
+            <span>New Chat</span>
+          </button>
+          <button
+            onClick={() => tts.toggleEnabled()}
+            className={`p-2 rounded-lg border transition-colors ${muted ? 'border-destructive/40 text-destructive bg-destructive/5' : 'border-border text-muted-foreground hover:text-foreground hover:bg-slate-100'}`}
+            title={muted ? 'Click to enable JARVIS voice' : 'Click to mute JARVIS voice'}
+            data-testid="button-mute"
+          >
+            {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+          </button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
