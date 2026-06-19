@@ -20,7 +20,15 @@ export const Navigation: React.FC<NavigationProps> = ({ onMinimize }) => {
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
-  const needsApiKeys = settings && !settings.groqApiKeySet && !settings.nvidiaApiKeySet;
+  const needsApiKeys = settings && 
+    !settings.groqApiKeySet && 
+    !settings.nvidiaApiKeySet &&
+    !settings.openaiApiKeySet &&
+    !settings.anthropicApiKeySet &&
+    !settings.mistralApiKeySet &&
+    !settings.openrouterApiKeySet &&
+    !settings.geminiApiKeySet &&
+    !settings.customTextApiKeySet;
   const isOnline = health?.status === 'ok';
 
   return (
