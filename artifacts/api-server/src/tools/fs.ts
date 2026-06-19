@@ -81,26 +81,60 @@ export const fsTools = [
   }),
   new DynamicStructuredTool({
     name: "search_files",
-    description: "Search for files in a directory using a regex pattern on filenames.",
-    schema: z.object({ dir_path: z.string(), pattern: z.string() }),
+    description: "Search for files in a directory using a regex pattern on filenames. Excludes common development, dependency, and system directories by default to ensure fast response times.",
+    schema: z.object({
+      dir_path: z.string(),
+      pattern: z.string().describe("Regex or query pattern to match in the filename"),
+    }),
     func: async ({ dir_path, pattern }) => {
       try {
         const regex = new RegExp(pattern, 'i');
         const results: string[] = [];
+        let dirsVisited = 0;
+        const maxDirs = 2000;
+        const maxMatches = 250;
         
+        const EXCLUDED_DIRS = new Set([
+          'node_modules', '.git', '.github', '.vscode', '.idea',
+          'dist', 'build', '.next', 'out', 'temp', 'tmp',
+          'venv', '.venv', 'bower_components', 'obj', 'bin'
+        ]);
+
         async function walk(dir: string) {
-          const files = await fs.readdir(dir, { withFileTypes: true });
+          if (dirsVisited >= maxDirs || results.length >= maxMatches) return;
+          
+          let files;
+          try {
+            files = await fs.readdir(dir, { withFileTypes: true });
+          } catch {
+            return; // Ignore directories we can't read
+          }
+
+          dirsVisited++;
+
           for (const file of files) {
+            if (results.length >= maxMatches) break;
             const res = path.resolve(dir, file.name);
+            
             if (file.isDirectory()) {
+              if (EXCLUDED_DIRS.has(file.name.toLowerCase()) || file.name.startsWith('.')) {
+                continue; // Skip excluded and hidden directories
+              }
               await walk(res);
             } else {
-              if (regex.test(file.name)) results.push(res);
+              if (regex.test(file.name)) {
+                results.push(res);
+              }
             }
           }
         }
         await walk(dir_path);
-        return `Found ${results.length} files matching ${pattern}:\n${results.join('\n')}`;
+        
+        let prefix = `Found ${results.length} files matching ${pattern}`;
+        if (dirsVisited >= maxDirs) {
+          prefix += ` (reached maximum scan limit of ${maxDirs} directories)`;
+        }
+        return `${prefix}:\n${results.join('\n')}`;
       } catch (e: any) { return `Error searching files: ${e.message}`; }
     },
   })
