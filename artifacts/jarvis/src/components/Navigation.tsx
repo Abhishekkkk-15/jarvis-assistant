@@ -20,15 +20,7 @@ export const Navigation: React.FC<NavigationProps> = ({ onMinimize }) => {
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
 
-  const needsApiKeys = settings && 
-    !settings.groqApiKeySet && 
-    !settings.nvidiaApiKeySet &&
-    !settings.openaiApiKeySet &&
-    !settings.anthropicApiKeySet &&
-    !settings.mistralApiKeySet &&
-    !settings.openrouterApiKeySet &&
-    !settings.geminiApiKeySet &&
-    !settings.customTextApiKeySet;
+  const needsApiKeys = settings && !settings.groqApiKeySet;
   const isOnline = health?.status === 'ok';
 
   return (
@@ -79,8 +71,8 @@ export const Navigation: React.FC<NavigationProps> = ({ onMinimize }) => {
           <div className="flex flex-col items-center md:items-start gap-1.5">
             <ShieldAlert className="text-amber-500 w-5 h-5" />
             <div className="hidden md:block">
-              <p className="text-amber-700 text-xs font-semibold">API Key Missing</p>
-              <p className="text-amber-600 text-[11px] mt-0.5">Configure keys to enable AI</p>
+              <p className="text-amber-700 text-xs font-semibold">Groq Key Missing</p>
+              <p className="text-amber-600 text-[11px] mt-0.5">Required for speech & AI</p>
               <Link href="/settings">
                 <span className="text-primary text-[11px] font-medium hover:underline mt-1.5 inline-block cursor-pointer">
                   Go to Settings →
