@@ -736,8 +736,6 @@ export async function* processChatRequestStream(parsedData: any): AsyncGenerator
   const controller = new AbortController();
   activeExecutions.set(conversationId, controller);
 
-  yield { type: "started", conversationId };
-
   const history = await db
     .select()
     .from(messagesTable)
@@ -797,6 +795,8 @@ export async function* processChatRequestStream(parsedData: any): AsyncGenerator
     role: "user",
     content: parsedData.message,
   });
+
+  yield { type: "started", conversationId };
 
   const toolsUsed: string[] = [];
   let agentResponse = "";
