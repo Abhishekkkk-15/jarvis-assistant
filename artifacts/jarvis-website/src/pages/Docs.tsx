@@ -568,6 +568,9 @@ Ctrl+Shift+M  (Windows 10/11)
                 ))}
               </div>
               <Callout type="tip">To use Orpheus, ensure you select **Orpheus via Groq** in Settings under Voice Output, select a voice (autumn, diana, hannah, austin, daniel, troy), and save settings.</Callout>
+
+              <H2>Continuous Voice Mode</H2>
+              <P>When enabled in <strong>Settings → Voice & Behavior</strong>, JARVIS will automatically start listening again immediately after it finishes speaking its response to a voice command. This enables fluid back-and-forth conversations without needing to say the wake word or press the microphone button each time. JARVIS will stop listening automatically if you remain silent for 7 seconds.</P>
             </Section>
 
             {/* Vision */}
@@ -872,7 +875,12 @@ Ctrl+Shift+M  (Windows 10/11)
 #    When JARVIS needs to execute a high-risk action (shell command, file write, email),
 #    it sends an inline keyboard message to your Telegram chat:
 #      ✅ Approve   ❌ Deny
-#    Tap to allow or block the action — from anywhere.`}</Code>
+#    Tap to allow or block the action — from anywhere.
+
+# 6. Startup Notifications
+#    When enabled in Settings, JARVIS will automatically message your Telegram chat
+#    every time your PC boots up. The message is generated using a customizable prompt
+#    (e.g., "Give me a morning briefing and the weather").`}</Code>
               <Callout type="info">JARVIS can also proactively <strong>send you messages</strong> via the <code>send_telegram_message</code> tool — including images and screenshots from your desktop.</Callout>
 
               <H2>2. Discord Integration</H2>
@@ -974,9 +982,13 @@ E:\\Jarvis-Assistant-Companionzip\\sqlite.db`}</Code>
   "visionModel": "llama-3.2-90b-vision-preview",
   "wakeWord": "hey jarvis",
   "voiceEnabled": true,
+  "continuousVoiceMode": false,         // Auto-restart mic after speaking
   "selectedCharacterId": "jarvis-bot",
   "miniModeEnabled": false,             // Floating overlay mode
   "telegramBotToken": "bot...",         // Optional Telegram Sync token
+  "telegramChatId": "123456789",        // Auto-saved Telegram Chat ID
+  "startupNotificationEnabled": false,  // Notify Telegram on boot
+  "startupNotificationPrompt": "The system has just booted...",
   "discordBotToken": "Nz...",           // Optional Discord Integration token
   "notionApiKey": "secret_...",         // Notion workspace integration key
   "spotifyClientId": "4a...",           // Spotify Developer API key
