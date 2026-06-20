@@ -5,6 +5,7 @@
  * JARVIS AI Assistant API
  * OpenAPI spec version: 0.1.0
  */
+import type { MessageThinkingMetadata } from './messageThinkingMetadata';
 
 export interface Message {
   id: number;
@@ -14,4 +15,9 @@ export interface Message {
   conversationId: number;
   /** @nullable */
   model?: string | null;
+  /**
+     * Structured thinking process information for assistant messages
+     * @nullable
+     */
+  thinkingMetadata?: MessageThinkingMetadata;
 }

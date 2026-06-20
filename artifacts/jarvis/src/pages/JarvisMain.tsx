@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ThinkingIndicator, ThinkingStep, PlanStep } from '../components/ui/ThinkingIndicator';
 import { useGetSettings, getGetSettingsQueryKey, useGetStats, getGetStatsQueryKey, useGetCommandSuggestions, getGetCommandSuggestionsQueryKey, useTranscribeAudio, useGetConversation, getGetConversationQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Mic, MicOff, Volume2, VolumeX, Send, Activity, Zap, Square, Plus } from 'lucide-react';
@@ -20,7 +21,20 @@ export const JarvisMain: React.FC = () => {
   const [, setLastReply] = useLocalStorage('jarvisLastReply', '');
   const [, setToolsUsed] = useLocalStorage<string[]>('jarvisToolsUsed', []);
   const [transcript, setTranscript] = useState('');
-  const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
+  interface ChatMessage {
+    role: string;
+    content: string;
+    thinkingMetadata?: {
+      durationMs: number | null;
+      plan: PlanStep[] | null;
+      steps: ThinkingStep[];
+    } | null;
+  }
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
+  const [isThinking, setIsThinking] = useState(false);
+  const [thinkingDuration, setThinkingDuration] = useState<number | null>(null);
+  const [thinkingPlan, setThinkingPlan] = useState<PlanStep[] | null>(null);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
@@ -73,7 +87,8 @@ export const JarvisMain: React.FC = () => {
     if (activeConversationDetail?.messages) {
       const mapped = activeConversationDetail.messages.map(m => ({
         role: m.role,
-        content: cleanMessageContent(m.role, m.content)
+        content: cleanMessageContent(m.role, m.content),
+        thinkingMetadata: (m as any).thinkingMetadata
       }));
       setMessages(mapped);
     } else if (!activeConversationId) {
@@ -267,6 +282,12 @@ export const JarvisMain: React.FC = () => {
     setStreamStatus('Starting…');
     setIsStreaming(true);
 
+    // Reset thinking states
+    setThinkingSteps([]);
+    setIsThinking(false);
+    setThinkingDuration(null);
+    setThinkingPlan(null);
+
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
@@ -306,6 +327,42 @@ export const JarvisMain: React.FC = () => {
             const event = JSON.parse(line.slice(6));
             if (event.type === 'started' && event.conversationId) {
               setActiveConversationId(event.conversationId);
+            } else if (event.type === 'thinking_start') {
+              setIsThinking(true);
+              setThinkingSteps([]);
+              setThinkingPlan(null);
+              setThinkingDuration(null);
+            } else if (event.type === 'thinking_step') {
+              setThinkingSteps(prev => [...prev, {
+                type: 'step',
+                node: event.node,
+                detail: event.detail,
+                timestamp: event.timestamp
+              }]);
+            } else if (event.type === 'thinking_tool') {
+              setThinkingSteps(prev => [...prev, {
+                type: 'tool_start',
+                node: event.name,
+                detail: event.step?.detail || `Calling tool ${event.name}`,
+                timestamp: event.step?.timestamp || Date.now()
+              }]);
+            } else if (event.type === 'thinking_tool_result') {
+              setThinkingSteps(prev => [...prev, {
+                type: 'tool_result',
+                node: event.name,
+                detail: event.step?.detail || `Tool ${event.name} completed`,
+                timestamp: event.step?.timestamp || Date.now()
+              }]);
+            } else if (event.type === 'thinking_plan') {
+              setThinkingPlan(event.steps);
+              setThinkingSteps(prev => [...prev, {
+                type: 'plan',
+                detail: `Generated execution plan with ${event.steps?.length || 0} steps`,
+                timestamp: Date.now()
+              }]);
+            } else if (event.type === 'thinking_end') {
+              setIsThinking(false);
+              setThinkingDuration(event.durationMs);
             } else if (event.type === 'status') {
               setStreamStatus(NODE_LABELS[event.node] ?? `${event.node}…`);
             } else if (event.type === 'token') {
@@ -326,7 +383,17 @@ export const JarvisMain: React.FC = () => {
               const drawMatch = finalReply.match(/\[draw:\s*(.+?)\]/i);
               if (drawMatch) { drawPath = drawMatch[1].trim(); finalReply = finalReply.replace(/\[draw:\s*(.+?)\]/i, '').trim(); }
 
-              if (finalReply) setMessages(prev => [...prev, { role: 'assistant', content: finalReply }]);
+              if (finalReply) {
+                setMessages(prev => [...prev, {
+                  role: 'assistant',
+                  content: finalReply,
+                  thinkingMetadata: thinkingSteps.length > 0 ? {
+                    durationMs: thinkingDuration,
+                    plan: thinkingPlan,
+                    steps: thinkingSteps
+                  } : null
+                }]);
+              }
               setLastReply(finalReply);
               if (animTag) window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: animTag.toLowerCase() } }));
               if (drawPath) window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: 'draw', path: drawPath } }));
@@ -624,6 +691,14 @@ export const JarvisMain: React.FC = () => {
                         {msg.role === 'user' ? 'You' : 'JARVIS'}
                       </p>
                       <div className="whitespace-pre-wrap">
+                        {msg.role === 'assistant' && msg.thinkingMetadata && (
+                          <ThinkingIndicator
+                            steps={msg.thinkingMetadata.steps}
+                            isThinking={false}
+                            durationMs={msg.thinkingMetadata.durationMs}
+                            plan={msg.thinkingMetadata.plan}
+                          />
+                        )}
                         <ReactMarkdown
                           components={{
                             p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
@@ -646,6 +721,14 @@ export const JarvisMain: React.FC = () => {
                 <div className="flex justify-start">
                   <div className="max-w-[85%] px-4 py-2.5 rounded-xl text-sm leading-relaxed bg-slate-100 text-foreground rounded-bl-sm">
                     <p className="text-[10px] font-semibold opacity-60 mb-1 uppercase tracking-wide">JARVIS</p>
+                    {(isThinking || thinkingSteps.length > 0) && (
+                      <ThinkingIndicator
+                        steps={thinkingSteps}
+                        isThinking={isThinking}
+                        durationMs={thinkingDuration}
+                        plan={thinkingPlan}
+                      />
+                    )}
                     {streamingContent ? (
                       <div className="whitespace-pre-wrap">
                         <ReactMarkdown
@@ -663,15 +746,17 @@ export const JarvisMain: React.FC = () => {
                         </ReactMarkdown>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1 py-1">
-                        {[0, 150, 300].map((delay) => (
-                          <span
-                            key={delay}
-                            className="w-2 h-2 rounded-full bg-primary/60 animate-bounce"
-                            style={{ animationDelay: `${delay}ms` }}
-                          />
-                        ))}
-                      </div>
+                      !isThinking && (
+                        <div className="flex items-center gap-1 py-1">
+                          {[0, 150, 300].map((delay) => (
+                            <span
+                              key={delay}
+                              className="w-2 h-2 rounded-full bg-primary/60 animate-bounce"
+                              style={{ animationDelay: `${delay}ms` }}
+                            />
+                          ))}
+                        </div>
+                      )
                     )}
                   </div>
                 </div>

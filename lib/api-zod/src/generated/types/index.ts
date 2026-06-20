@@ -20,6 +20,7 @@ export * from './conversationDetail';
 export * from './conversationInput';
 export * from './healthStatus';
 export * from './message';
+export * from './messageThinkingMetadata';
 export * from './scheduledTask';
 export * from './scheduledTaskInput';
 export * from './settings';

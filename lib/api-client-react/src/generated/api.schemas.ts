@@ -204,6 +204,12 @@ export interface SettingsInput {
   googleRefreshToken?: string | null;
 }
 
+/**
+ * Structured thinking process information for assistant messages
+ * @nullable
+ */
+export type MessageThinkingMetadata = { [key: string]: unknown } | null;
+
 export interface Message {
   id: number;
   role: string;
@@ -212,6 +218,11 @@ export interface Message {
   conversationId: number;
   /** @nullable */
   model?: string | null;
+  /**
+     * Structured thinking process information for assistant messages
+     * @nullable
+     */
+  thinkingMetadata?: MessageThinkingMetadata;
 }
 
 export interface Conversation {

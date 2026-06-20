@@ -604,6 +604,9 @@ components:
           type: integer
         model:
           type: ["string", "null"]
+        thinkingMetadata:
+          type: ["object", "null"]
+          description: "Structured thinking process information for assistant messages"
 
     Conversation:
       type: object

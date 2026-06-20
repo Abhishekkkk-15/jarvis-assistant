@@ -244,7 +244,10 @@ export const GetConversationResponse = zod.object({
   "content": zod.string(),
   "createdAt": zod.coerce.date(),
   "conversationId": zod.number(),
-  "model": zod.string().nullish()
+  "model": zod.string().nullish(),
+  "thinkingMetadata": zod.object({
+
+}).passthrough().nullish().describe('Structured thinking process information for assistant messages')
 }))
 })
 

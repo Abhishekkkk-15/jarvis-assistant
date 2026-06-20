@@ -59,6 +59,7 @@ export function setupDb() {
       content TEXT NOT NULL,
       model TEXT,
       tokens_used INTEGER NOT NULL DEFAULT 0,
+      thinking_metadata TEXT,
       created_at INTEGER NOT NULL
     );
     CREATE TABLE IF NOT EXISTS scheduled_tasks (
@@ -116,6 +117,7 @@ export function setupDb() {
     "ALTER TABLE settings ADD COLUMN custom_text_api_key TEXT;",
     "ALTER TABLE settings ADD COLUMN custom_vision_api_url TEXT;",
     "ALTER TABLE settings ADD COLUMN custom_vision_api_key TEXT;",
+    "ALTER TABLE messages ADD COLUMN thinking_metadata TEXT;",
   ];
 
   for (const query of migrations) {

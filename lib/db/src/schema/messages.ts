@@ -10,6 +10,7 @@ export const messagesTable = sqliteTable("messages", {
   content: text("content").notNull(),
   model: text("model"),
   tokensUsed: integer("tokens_used").notNull().default(0),
+  thinkingMetadata: text("thinking_metadata"), // JSON blob: { durationMs, plan, steps }
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 

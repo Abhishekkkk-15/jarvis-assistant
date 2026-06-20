@@ -67,6 +67,7 @@ export async function getConversation(id: number) {
       createdAt: m.createdAt.toISOString(),
       conversationId: m.conversationId,
       model: m.model ?? null,
+      thinkingMetadata: m.thinkingMetadata ? JSON.parse(m.thinkingMetadata) : null,
     })),
   };
 }
