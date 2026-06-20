@@ -128,12 +128,15 @@ export const JarvisMain: React.FC = () => {
     };
   }, []);
 
+  const hasSpokenRef = useRef(false);
+
   const startListening = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setAudioStream(stream);
       setIsListening(true);
       setTranscript('Listening... (speak now)');
+      hasSpokenRef.current = false;
 
       audioChunksRef.current = [];
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
@@ -146,6 +149,12 @@ export const JarvisMain: React.FC = () => {
       };
 
       mediaRecorder.onstop = async () => {
+        if (!hasSpokenRef.current) {
+          setTranscript('No speech detected.');
+          setTimeout(() => setTranscript(''), 2000);
+          return;
+        }
+
         setTranscript('Transcribing...');
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
 
@@ -163,7 +172,27 @@ export const JarvisMain: React.FC = () => {
             data: { audioBase64: base64data, mimeType: 'audio/webm' }
           }, {
             onSuccess: (res) => {
-              const text = res.text?.trim();
+              let text = res.text?.trim();
+              
+              // Filter out common Whisper hallucinations on background noise/silence
+              if (text) {
+                const lower = text.toLowerCase();
+                const hallucinations = [
+                  "thank you.",
+                  "thank you!",
+                  "thank you for watching.",
+                  "thank you for watching!",
+                  "subscribe to my channel.",
+                  "subscribe.",
+                  "i'm going to make a",
+                  "i'm going to make a.",
+                  "bye."
+                ];
+                if (hallucinations.includes(lower)) {
+                  text = "";
+                }
+              }
+
               if (text) {
                 setTranscript(text);
                 handleSendMessage(text);
@@ -195,7 +224,6 @@ export const JarvisMain: React.FC = () => {
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       let silenceStart = performance.now();
-      let hasSpoken = false;
 
       const checkSilence = () => {
         if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== 'recording') return;
@@ -206,15 +234,15 @@ export const JarvisMain: React.FC = () => {
         const avg = sum / dataArray.length;
 
         if (avg > 15) { // Speech threshold
-          hasSpoken = true;
+          hasSpokenRef.current = true;
           silenceStart = performance.now();
         } else {
           const now = performance.now();
-          if (hasSpoken && (now - silenceStart > 2000)) {
+          if (hasSpokenRef.current && (now - silenceStart > 2000)) {
             // 2 seconds of silence AFTER they spoke -> assume they finished their command
             stopListening();
             return;
-          } else if (!hasSpoken && (now - silenceStart > 7000)) {
+          } else if (!hasSpokenRef.current && (now - silenceStart > 7000)) {
             // 7 seconds of complete silence after wake word -> cancel recording
             stopListening();
             return;
