@@ -118,6 +118,10 @@ export function setupDb() {
     "ALTER TABLE settings ADD COLUMN custom_vision_api_url TEXT;",
     "ALTER TABLE settings ADD COLUMN custom_vision_api_key TEXT;",
     "ALTER TABLE messages ADD COLUMN thinking_metadata TEXT;",
+    "ALTER TABLE settings ADD COLUMN continuous_voice_mode INTEGER NOT NULL DEFAULT 0;",
+    "ALTER TABLE settings ADD COLUMN telegram_chat_id TEXT;",
+    "ALTER TABLE settings ADD COLUMN startup_notification_enabled INTEGER NOT NULL DEFAULT 0;",
+    "ALTER TABLE settings ADD COLUMN startup_notification_prompt TEXT NOT NULL DEFAULT 'The system has just booted. Please provide a brief morning greeting and summarize the current weather or time.';",
   ];
 
   for (const query of migrations) {

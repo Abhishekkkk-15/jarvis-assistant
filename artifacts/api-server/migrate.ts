@@ -1,4 +1,4 @@
-import { db } from './src/db.js';
+import { db } from '@workspace/db';
 import { sql } from 'drizzle-orm';
 const run = async () => {
     try { await db.run(sql`ALTER TABLE settings ADD COLUMN telegram_chat_id TEXT;`); } catch(e){}
