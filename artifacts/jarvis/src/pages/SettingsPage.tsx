@@ -453,6 +453,22 @@ export const SettingsPage: React.FC = () => {
                   )}
                 />
 
+                <FormField
+                  control={form.control}
+                  name="continuousVoiceMode"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border border-border p-4">
+                      <div>
+                        <FormLabel className="text-sm font-medium cursor-pointer">Continuous Voice Mode</FormLabel>
+                        <FormDescription className="text-xs mt-0.5">Mic automatically turns back on after JARVIS speaks</FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
                 <div className="flex items-center justify-between rounded-lg border border-border p-4">
                   <div>
                     <p className="text-sm font-medium text-foreground">Mini Mode</p>

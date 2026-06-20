@@ -104,6 +104,7 @@ export interface Settings {
   visionProvider: string;
   wakeWord: string;
   voiceEnabled: boolean;
+  continuousVoiceMode: boolean;
   selectedCharacterId: string;
   miniModeEnabled: boolean;
   /** @nullable */
@@ -174,6 +175,8 @@ export interface SettingsInput {
   wakeWord?: string | null;
   /** @nullable */
   voiceEnabled?: boolean | null;
+  /** @nullable */
+  continuousVoiceMode?: boolean | null;
   /** @nullable */
   selectedCharacterId?: string | null;
   /** @nullable */

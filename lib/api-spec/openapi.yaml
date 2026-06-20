@@ -424,7 +424,7 @@ components:
 
     Settings:
       type: object
-      required: [id, selectedModel, selectedProvider, visionModel, visionProvider, wakeWord, voiceEnabled, selectedCharacterId, miniModeEnabled]
+      required: [id, selectedModel, selectedProvider, visionModel, visionProvider, wakeWord, voiceEnabled, continuousVoiceMode, selectedCharacterId, miniModeEnabled]
       properties:
         id:
           type: integer
@@ -479,6 +479,8 @@ components:
         wakeWord:
           type: string
         voiceEnabled:
+          type: boolean
+        continuousVoiceMode:
           type: boolean
         selectedCharacterId:
           type: string
@@ -557,6 +559,8 @@ components:
         wakeWord:
           type: ["string", "null"]
         voiceEnabled:
+          type: ["boolean", "null"]
+        continuousVoiceMode:
           type: ["boolean", "null"]
         selectedCharacterId:
           type: ["string", "null"]

@@ -40,6 +40,7 @@ export function toResponse(s: typeof settingsTable.$inferSelect) {
     visionProvider: s.visionProvider,
     wakeWord: s.wakeWord,
     voiceEnabled: s.voiceEnabled,
+    continuousVoiceMode: s.continuousVoiceMode,
     selectedCharacterId: s.selectedCharacterId,
     miniModeEnabled: s.miniModeEnabled,
     telegramBotToken: s.telegramBotToken,
@@ -88,6 +89,7 @@ export async function updateSettings(parsedData: any) {
   if (d.visionProvider != null) updates.visionProvider = d.visionProvider;
   if (d.wakeWord != null) updates.wakeWord = d.wakeWord;
   if (d.voiceEnabled != null) updates.voiceEnabled = d.voiceEnabled;
+  if (d.continuousVoiceMode != null) updates.continuousVoiceMode = d.continuousVoiceMode;
   if (d.selectedCharacterId != null) updates.selectedCharacterId = d.selectedCharacterId;
   if (d.miniModeEnabled != null) updates.miniModeEnabled = d.miniModeEnabled;
   if (d.telegramBotToken !== undefined) updates.telegramBotToken = d.telegramBotToken;

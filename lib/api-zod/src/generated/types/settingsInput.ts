@@ -44,6 +44,8 @@ export interface SettingsInput {
   /** @nullable */
   voiceEnabled?: boolean | null;
   /** @nullable */
+  continuousVoiceMode?: boolean | null;
+  /** @nullable */
   selectedCharacterId?: string | null;
   /** @nullable */
   miniModeEnabled?: boolean | null;

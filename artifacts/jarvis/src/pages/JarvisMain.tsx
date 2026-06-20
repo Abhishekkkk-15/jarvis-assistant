@@ -110,6 +110,19 @@ export const JarvisMain: React.FC = () => {
     }
   }, [agentQuestion]);
 
+  // Continuous Voice Mode
+  useEffect(() => {
+    if (!tts.isSpeaking && settings?.continuousVoiceMode && wasLastInteractionVoiceRef.current && !isListening) {
+      // 500ms delay to prevent picking up the very end of the TTS audio/echo
+      const t = setTimeout(() => {
+        if (!isListening && wasLastInteractionVoiceRef.current) {
+          startListening();
+        }
+      }, 500);
+      return () => clearTimeout(t);
+    }
+  }, [tts.isSpeaking, settings?.continuousVoiceMode, isListening]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -129,6 +142,7 @@ export const JarvisMain: React.FC = () => {
   }, []);
 
   const hasSpokenRef = useRef(false);
+  const wasLastInteractionVoiceRef = useRef(false);
 
   const startListening = async () => {
     try {
@@ -137,6 +151,7 @@ export const JarvisMain: React.FC = () => {
       setIsListening(true);
       setTranscript('Listening... (speak now)');
       hasSpokenRef.current = false;
+      wasLastInteractionVoiceRef.current = true;
 
       audioChunksRef.current = [];
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
@@ -799,6 +814,7 @@ export const JarvisMain: React.FC = () => {
                   const form = e.target as HTMLFormElement;
                   const input = form.elements.namedItem('manualInput') as HTMLInputElement;
                   if (input.value.trim()) {
+                    wasLastInteractionVoiceRef.current = false;
                     handleSendMessage(input.value.trim());
                     input.value = '';
                   }

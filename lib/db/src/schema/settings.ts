@@ -21,6 +21,7 @@ export const settingsTable = sqliteTable("settings", {
   visionProvider: text("vision_provider").notNull().default("groq"),
   wakeWord: text("wake_word").notNull().default("hey jarvis"),
   voiceEnabled: integer("voice_enabled", { mode: "boolean" }).notNull().default(true),
+  continuousVoiceMode: integer("continuous_voice_mode", { mode: "boolean" }).notNull().default(false),
   selectedCharacterId: text("selected_character_id").notNull().default("jarvis-bot"),
   miniModeEnabled: integer("mini_mode_enabled", { mode: "boolean" }).notNull().default(false),
   telegramBotToken: text("telegram_bot_token"),

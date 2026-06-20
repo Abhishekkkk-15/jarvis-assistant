@@ -45,6 +45,7 @@ export interface Settings {
   visionProvider: string;
   wakeWord: string;
   voiceEnabled: boolean;
+  continuousVoiceMode: boolean;
   selectedCharacterId: string;
   miniModeEnabled: boolean;
   /** @nullable */
