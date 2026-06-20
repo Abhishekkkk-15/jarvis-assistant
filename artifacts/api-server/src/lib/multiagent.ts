@@ -61,15 +61,7 @@ export const GraphState = Annotation.Root({
   }),
 
   observations: Annotation<any[]>({
-    value: (x, y) => {
-      const newObs = [...x];
-      if (Array.isArray(y)) {
-        for (let i = 0; i < y.length; i++) {
-          if (y[i] !== undefined) newObs[i] = y[i];
-        }
-      }
-      return newObs;
-    },
+    value: (x, y) => y,
     default: () => [],
   }),
 
@@ -138,6 +130,14 @@ export function createJarvisGraph(
   const toolDescriptions = availableTools
     .map((t) => `- ${t.name}: ${t.description}`)
     .join("\n");
+  const systemContext = `
+  System Context:
+  - User's Username: ${require("os").userInfo().username}
+  - User's Home Directory: ${require("os").homedir()}
+  - Desktop Directory: ${require("path").join(require("os").homedir(), "Desktop")}
+  - OS Platform: ${process.platform}
+  `;
+
   // --- Nodes ---
 
   const initNode = async (state: typeof GraphState.State) => {
@@ -238,11 +238,7 @@ export function createJarvisGraph(
     const prompt = `You are the JARVIS Planner Agent.
   Objective: ${state.objective}.
 
-  System Context:
-  - User's Username: ${require("os").userInfo().username}
-  - User's Home Directory: ${require("os").homedir()}
-  - Desktop Directory: ${require("path").join(require("os").homedir(), "Desktop")}
-  - OS Platform: ${process.platform}
+  ${systemContext}
 
   Available Tools:
   ${toolDescriptions}
@@ -299,6 +295,8 @@ export function createJarvisGraph(
   Objective: ${state.objective}
   Current Step: ${JSON.stringify(currentStepDef)}
   Execution History: ${JSON.stringify(state.executionHistory)}
+
+  ${systemContext}
 
   Available Tools:
   ${toolDescriptions}
@@ -476,10 +474,12 @@ export function createJarvisGraph(
         next: "Supervisor",
       };
     } else {
+      const newObservations = state.observations.slice(0, state.currentStep);
       if (result.nextAction === "replan") {
         return {
           verified: false,
           retryCount: 3, // Force replan on next supervisor tick
+          observations: newObservations,
           next: "Supervisor",
         };
       }
@@ -487,6 +487,7 @@ export function createJarvisGraph(
         verified: false,
         retryCount: state.retryCount + 1,
         lastResult: null, // Reset execution for retry
+        observations: newObservations,
         next: "Supervisor",
       };
     }
@@ -516,6 +517,8 @@ export function createJarvisGraph(
   Failed at Step Index: ${state.currentStep}
   Execution History: ${JSON.stringify(state.executionHistory)}
 
+  ${systemContext}
+
   Execution repeatedly failed. Generate a revised plan.
   Preserve completed steps (indices 0 to ${state.currentStep - 1}).
   Only modify unfinished steps from the failure point onward.
@@ -532,12 +535,14 @@ export function createJarvisGraph(
     // Keep completed steps, replace the rest with the new planned steps
     const completedSteps = state.plan!.slice(0, state.currentStep);
     const newPlan = [...completedSteps, ...result.steps];
+    const newObservations = state.observations.slice(0, state.currentStep);
 
     return {
       plan: newPlan,
       retryCount: 0,
       lastResult: null,
       verified: false,
+      observations: newObservations,
       next: "Supervisor",
       planValidated: false
     };
@@ -557,6 +562,7 @@ export function createJarvisGraph(
     const result = await llm.invoke([
       new SystemMessage(synthesizerPrompt),
       ...state.messages,
+      new HumanMessage(`Based on the execution history, please provide the final response to my objective: "${state.objective}"`),
     ]);
 
     return {

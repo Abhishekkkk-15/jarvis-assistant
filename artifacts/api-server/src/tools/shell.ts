@@ -11,7 +11,7 @@ export const shellTools = [
       return new Promise((resolve) => {
         child_process.exec(
           command,
-          { shell: "bash" },
+          { shell: "bash", timeout: 30000 },
           (err, stdout, stderr) => {
             resolve(`STDOUT:\n${stdout}\nSTDERR:\n${stderr}`);
           },
@@ -27,7 +27,7 @@ export const shellTools = [
       return new Promise((resolve) => {
         child_process.exec(
           command,
-          { shell: "powershell.exe" },
+          { shell: "powershell.exe", timeout: 30000 },
           (err, stdout, stderr) => {
             resolve(`STDOUT:\n${stdout}\nSTDERR:\n${stderr}`);
           },
@@ -43,7 +43,7 @@ export const shellTools = [
       return new Promise((resolve) => {
         child_process.exec(
           command,
-          { shell: "cmd.exe" },
+          { shell: "cmd.exe", timeout: 30000 },
           (err, stdout, stderr) => {
             resolve(`STDOUT:\n${stdout}\nSTDERR:\n${stderr}`);
           },
