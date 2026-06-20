@@ -117,16 +117,19 @@ export const JarvisMain: React.FC = () => {
 
   // Continuous Voice Mode
   useEffect(() => {
-    if (!tts.isSpeaking && settings?.continuousVoiceMode && wasLastInteractionVoiceRef.current && !isListening) {
+    if (continuousVoiceQueuedRef.current && !tts.isSpeaking && !isStreaming && !isListening) {
+      // Consume the queue flag so it only triggers once per response
+      continuousVoiceQueuedRef.current = false;
+
       // 500ms delay to prevent picking up the very end of the TTS audio/echo
       const t = setTimeout(() => {
-        if (!isListening && wasLastInteractionVoiceRef.current) {
+        if (!isListening && !isStreamingRef.current) {
           startListening();
         }
       }, 500);
       return () => clearTimeout(t);
     }
-  }, [tts.isSpeaking, settings?.continuousVoiceMode, isListening]);
+  }, [tts.isSpeaking, isStreaming, isListening]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -148,6 +151,7 @@ export const JarvisMain: React.FC = () => {
 
   const hasSpokenRef = useRef(false);
   const wasLastInteractionVoiceRef = useRef(false);
+  const continuousVoiceQueuedRef = useRef(false);
 
   const startListening = async () => {
     if (isStreamingRef.current) return;
@@ -326,6 +330,10 @@ export const JarvisMain: React.FC = () => {
 
   const handleSendMessage = async (text: string, imageBase64?: string) => {
     if (!text.trim() || isStreaming) return;
+
+    if (settings?.continuousVoiceMode && wasLastInteractionVoiceRef.current) {
+      continuousVoiceQueuedRef.current = true;
+    }
 
     if (agentQuestion) clearQuestion();
 
