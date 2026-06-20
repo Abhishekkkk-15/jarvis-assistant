@@ -37,6 +37,11 @@ export const JarvisMain: React.FC = () => {
   const [thinkingPlan, setThinkingPlan] = useState<PlanStep[] | null>(null);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const isStreamingRef = useRef(false);
+  useEffect(() => {
+    isStreamingRef.current = isStreaming;
+  }, [isStreaming]);
+
   const [streamingContent, setStreamingContent] = useState('');
   const [streamStatus, setStreamStatus] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -145,6 +150,7 @@ export const JarvisMain: React.FC = () => {
   const wasLastInteractionVoiceRef = useRef(false);
 
   const startListening = async () => {
+    if (isStreamingRef.current) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setAudioStream(stream);
@@ -300,6 +306,10 @@ export const JarvisMain: React.FC = () => {
 
   useEffect(() => {
     if (isListening && !audioStream) {
+      if (isStreamingRef.current) {
+        setIsListening(false);
+        return;
+      }
       // Triggered by Wake Word externally — needs full mic init
       startListening();
     } else if (!isListening && audioStream) {
@@ -703,10 +713,14 @@ export const JarvisMain: React.FC = () => {
           <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-white shrink-0">
             <button
               onClick={isListening ? stopListening : startListening}
-              className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shrink-0 ${isListening
-                ? 'bg-destructive/10 border-2 border-destructive text-destructive'
-                : 'bg-primary/10 border-2 border-primary text-primary hover:bg-primary/20'
-                }`}
+              disabled={isStreaming}
+              className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shrink-0 ${
+                isStreaming 
+                  ? 'bg-slate-100 border-2 border-slate-300 text-slate-400 cursor-not-allowed opacity-50'
+                  : isListening
+                    ? 'bg-destructive/10 border-2 border-destructive text-destructive'
+                    : 'bg-primary/10 border-2 border-primary text-primary hover:bg-primary/20'
+              }`}
               data-testid="button-mic"
             >
               {isListening ? <MicOff size={24} /> : <Mic size={24} />}
