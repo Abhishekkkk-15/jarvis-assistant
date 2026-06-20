@@ -837,6 +837,7 @@ export async function* processChatRequestStream(parsedData: any): AsyncGenerator
   let thinkingPlan: any[] | null = null;
   const toolsUsed: string[] = [];
   let agentResponse = "";
+  let totalTokensUsed = 0;
 
   const NODE_LABELS: Record<string, string> = {
     Init: "Initializing system...",
@@ -939,6 +940,30 @@ export async function* processChatRequestStream(parsedData: any): AsyncGenerator
         thinkingSteps.push(step);
         yield { type: "thinking_tool_result", name: event.name, result: truncatedResult, step };
 
+      } else if (event.event === "on_chat_model_end") {
+        // Accumulate tokens for any LLM call that finishes
+        const msg = event.data?.output;
+        if (msg) {
+          if (msg.usage_metadata?.total_tokens) {
+            totalTokensUsed += msg.usage_metadata.total_tokens;
+          } else if (msg.response_metadata?.tokenUsage?.totalTokens) {
+            totalTokensUsed += msg.response_metadata.tokenUsage.totalTokens;
+          }
+        }
+        
+        if (event.metadata?.langgraph_node === "Synthesizer" && !agentResponse) {
+          // Non-streaming APIs (e.g. NVIDIA): the full response arrives at once in on_chat_model_end
+          const raw = msg?.content ?? msg?.text ?? msg?.generations?.[0]?.[0]?.text ?? "";
+          const text = typeof raw === "string" ? raw :
+            Array.isArray(raw) ? raw.map((c: any) => (typeof c === "string" ? c : c.text || "")).join("") : "";
+          if (text) {
+            for (const chunk of sendThinkingEndIfNeeded()) {
+              yield chunk;
+            }
+            agentResponse = text;
+            yield { type: "token", text };
+          }
+        }
       } else if (event.event === "on_chain_end") {
         if (event.data?.output?.plan) {
           const plan = event.data.output.plan;
@@ -990,7 +1015,7 @@ export async function* processChatRequestStream(parsedData: any): AsyncGenerator
     role: "assistant",
     content: agentResponse,
     model: modelName,
-    tokensUsed: 0,
+    tokensUsed: totalTokensUsed,
     thinkingMetadata: JSON.stringify({
       durationMs: Date.now() - thinkingStartTime,
       plan: thinkingPlan,
