@@ -46,10 +46,14 @@ export interface Settings {
   wakeWord: string;
   voiceEnabled: boolean;
   continuousVoiceMode: boolean;
+  startupNotificationEnabled: boolean;
+  startupNotificationPrompt: string;
   selectedCharacterId: string;
   miniModeEnabled: boolean;
   /** @nullable */
   telegramBotToken?: string | null;
+  /** @nullable */
+  telegramChatId?: string | null;
   /** @nullable */
   discordBotToken?: string | null;
   /** @nullable */

@@ -424,7 +424,7 @@ components:
 
     Settings:
       type: object
-      required: [id, selectedModel, selectedProvider, visionModel, visionProvider, wakeWord, voiceEnabled, continuousVoiceMode, selectedCharacterId, miniModeEnabled]
+      required: [id, selectedModel, selectedProvider, visionModel, visionProvider, wakeWord, voiceEnabled, continuousVoiceMode, startupNotificationEnabled, startupNotificationPrompt, selectedCharacterId, miniModeEnabled]
       properties:
         id:
           type: integer
@@ -482,11 +482,17 @@ components:
           type: boolean
         continuousVoiceMode:
           type: boolean
+        startupNotificationEnabled:
+          type: boolean
+        startupNotificationPrompt:
+          type: string
         selectedCharacterId:
           type: string
         miniModeEnabled:
           type: boolean
         telegramBotToken:
+          type: ["string", "null"]
+        telegramChatId:
           type: ["string", "null"]
         discordBotToken:
           type: ["string", "null"]
@@ -567,6 +573,12 @@ components:
         miniModeEnabled:
           type: ["boolean", "null"]
         telegramBotToken:
+          type: ["string", "null"]
+        telegramChatId:
+          type: ["string", "null"]
+        startupNotificationEnabled:
+          type: ["boolean", "null"]
+        startupNotificationPrompt:
           type: ["string", "null"]
         discordBotToken:
           type: ["string", "null"]

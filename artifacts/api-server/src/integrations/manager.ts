@@ -1,4 +1,5 @@
 import { db, settingsTable } from '@workspace/db';
+import { eq } from 'drizzle-orm';
 import { TelegramIntegration } from './telegram.js';
 import { DiscordIntegration, type DiscordMessage } from './discord.js';
 import { broadcast, addBroadcastListener } from "../lib/wsManager.js";
@@ -118,6 +119,18 @@ class IntegrationsManager {
     this.activeTelegramChatId = msg.chatId;
     const conversationId = this.conversationMap.get(msg.chatId);
     const port = process.env.PORT || 4444;
+
+    // Save chatId to settings if not present
+    try {
+      const rows = await db.select().from(settingsTable).limit(1);
+      if (rows.length > 0 && rows[0].telegramChatId !== String(msg.chatId)) {
+        await db.update(settingsTable)
+          .set({ telegramChatId: String(msg.chatId) })
+          .where(eq(settingsTable.id, rows[0].id));
+      }
+    } catch (e) {
+      console.error('[Integrations] Failed to save telegramChatId:', e);
+    }
 
     // Show 'typing...' indicator immediately and refresh it every 4 seconds
     this.telegram.sendChatAction(msg.chatId, 'typing');

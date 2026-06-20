@@ -44,6 +44,9 @@ export function toResponse(s: typeof settingsTable.$inferSelect) {
     selectedCharacterId: s.selectedCharacterId,
     miniModeEnabled: s.miniModeEnabled,
     telegramBotToken: s.telegramBotToken,
+    telegramChatId: s.telegramChatId,
+    startupNotificationEnabled: s.startupNotificationEnabled,
+    startupNotificationPrompt: s.startupNotificationPrompt,
     discordBotToken: s.discordBotToken,
     notionApiKey: s.notionApiKey,
     spotifyClientId: s.spotifyClientId,
@@ -93,6 +96,9 @@ export async function updateSettings(parsedData: any) {
   if (d.selectedCharacterId != null) updates.selectedCharacterId = d.selectedCharacterId;
   if (d.miniModeEnabled != null) updates.miniModeEnabled = d.miniModeEnabled;
   if (d.telegramBotToken !== undefined) updates.telegramBotToken = d.telegramBotToken;
+  if (d.telegramChatId !== undefined) updates.telegramChatId = d.telegramChatId;
+  if (d.startupNotificationEnabled !== undefined) updates.startupNotificationEnabled = d.startupNotificationEnabled;
+  if (d.startupNotificationPrompt !== undefined) updates.startupNotificationPrompt = d.startupNotificationPrompt;
   if (d.discordBotToken !== undefined) updates.discordBotToken = d.discordBotToken;
   if (d.notionApiKey !== undefined) updates.notionApiKey = d.notionApiKey;
   if (d.spotifyClientId !== undefined) updates.spotifyClientId = d.spotifyClientId;

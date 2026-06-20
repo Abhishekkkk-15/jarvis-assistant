@@ -548,6 +548,48 @@ export const SettingsPage: React.FC = () => {
                 )}
               />
 
+              {form.watch('telegramBotToken') && (
+                <div className="pl-4 border-l-2 border-primary/20 space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="startupNotificationEnabled"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between rounded-lg border border-border p-4">
+                        <div>
+                          <FormLabel className="text-sm font-medium cursor-pointer">Startup Notification (Morning Briefing)</FormLabel>
+                          <FormDescription className="text-xs mt-0.5">JARVIS will send a Telegram message when the server starts.</FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.watch('startupNotificationEnabled') && (
+                    <FormField
+                      control={form.control}
+                      name="startupNotificationPrompt"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm">Startup Notification Prompt</FormLabel>
+                          <FormControl>
+                            <textarea 
+                              className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                              placeholder="e.g. Check today's date, weather, and summarize..." 
+                              {...field} 
+                              value={field.value || ''} 
+                            />
+                          </FormControl>
+                          <FormDescription className="text-xs">The system prompt JARVIS runs on boot to generate the message.</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+              )}
+
               <FormField
                 control={form.control}
                 name="discordBotToken"

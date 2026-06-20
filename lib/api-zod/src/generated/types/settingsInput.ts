@@ -52,6 +52,12 @@ export interface SettingsInput {
   /** @nullable */
   telegramBotToken?: string | null;
   /** @nullable */
+  telegramChatId?: string | null;
+  /** @nullable */
+  startupNotificationEnabled?: boolean | null;
+  /** @nullable */
+  startupNotificationPrompt?: string | null;
+  /** @nullable */
   discordBotToken?: string | null;
   /** @nullable */
   systemPrompt?: string | null;

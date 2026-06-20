@@ -18,7 +18,7 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-import { setupDb } from "@workspace/db";
+import { db, settingsTable, setupDb } from "@workspace/db";
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: "/ws" });
 setupWsManager(wss);
@@ -32,8 +32,47 @@ try {
 
 export const getWss = () => wss;
 
+async function runStartupNotification() {
+  try {
+    const rows = await db.select().from(settingsTable).limit(1);
+    if (rows.length === 0) return;
+    const settings = rows[0];
+
+    if (settings.startupNotificationEnabled && settings.telegramChatId && settings.telegramBotToken) {
+      logger.info("Startup notification enabled. Triggering in 5s...");
+      
+      setTimeout(async () => {
+        try {
+          const res = await fetch(`http://127.0.0.1:${port}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: `[System Event: System Booted]\n\n${settings.startupNotificationPrompt}`
+            })
+          });
+          const text = await res.text();
+          let data: any = {};
+          try { data = JSON.parse(text); } catch { /* ignore */ }
+          
+          if (data.reply) {
+            const telegram = integrationsManager.getTelegram();
+            if (telegram) {
+              await telegram.sendMessage(Number(settings.telegramChatId), `🌅 **System Startup Briefing**\n\n${data.reply}`);
+            }
+          }
+        } catch (err) {
+          logger.error(err, "Failed to run startup notification");
+        }
+      }, 5000);
+    }
+  } catch (err) {
+    logger.error(err, "Failed to check startup notification settings");
+  }
+}
+
 server.listen(port, () => {
   logger.info({ port }, "Server listening (HTTP + WebSocket)");
   initializeScheduler();
   integrationsManager.start();
+  runStartupNotification();
 });
