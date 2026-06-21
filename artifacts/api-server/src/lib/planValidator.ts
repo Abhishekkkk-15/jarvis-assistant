@@ -79,7 +79,8 @@ export const securityRules: SecurityRule[] = [
 
   // UI/Input Automation
   {
-    match: (tool, args) => ["mouse_control", "keyboard_control", "uia_click_element", "uia_set_text"].includes(tool),
+    match: (tool, args) =>
+      ["mouse_control", "keyboard_control", "uia_click_element", "uia_set_text", "launch_application"].includes(tool),
     risk: RiskLevel.LOW,
     reason: "Automated UI interaction",
   },

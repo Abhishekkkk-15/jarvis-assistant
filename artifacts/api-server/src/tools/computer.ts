@@ -42,6 +42,26 @@ function runPS(script: string, timeout = 10000): Promise<string> {
   });
 }
 
+// ─────────────────────────────────────────────────────────────────
+// Helper: run a multi-line PowerShell script via a temp .ps1 file —
+// avoids the quote/newline-escaping fragility of inline -Command strings.
+// ─────────────────────────────────────────────────────────────────
+async function runPowerShellScript(script: string, timeout = 15000): Promise<{ stdout: string; failed: boolean }> {
+  const tmpFile = path.join(os.tmpdir(), `jarvis_ps_${Date.now()}.ps1`);
+  await fs.writeFile(tmpFile, script, "utf8");
+  try {
+    return await new Promise((resolve) => {
+      child_process.exec(
+        `powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${tmpFile}"`,
+        { timeout },
+        (err, stdout) => resolve({ stdout: stdout.trim(), failed: !!err }),
+      );
+    });
+  } finally {
+    await fs.unlink(tmpFile).catch(() => {});
+  }
+}
+
 export const computerTools = [
   // ──────────────────────────────────────────────────────────────
   // MOUSE CONTROL — real robotjs implementation
@@ -275,6 +295,51 @@ export const computerTools = [
         return data.text.trim() || "No text found in image.";
       } catch (err: any) {
         return `OCR error: ${err.message}`;
+      }
+    },
+  }),
+
+  // ──────────────────────────────────────────────────────────────
+  // LAUNCH APPLICATION — resolve against real Start Menu apps first,
+  // so a not-found app is reported honestly instead of a blind guess
+  // (e.g. `start teams.exe`) that fails silently with a Windows-level
+  // "can't find" dialog while still reporting success.
+  // ──────────────────────────────────────────────────────────────
+  new DynamicStructuredTool({
+    name: "launch_application",
+    description:
+      "Open/launch an installed application by its name (e.g. 'Microsoft Teams', 'Spotify', 'Notepad', 'Chrome'). " +
+      "Resolves the name against installed Start Menu apps and PATH executables first, so it reliably reports " +
+      "failure if the app isn't found instead of guessing. Prefer this over a raw shell command to open an app.",
+    schema: z.object({
+      name: z.string().describe("The application's display name or executable name to launch, e.g. 'Microsoft Teams' or 'notepad'."),
+    }),
+    func: async ({ name }) => {
+      try {
+        const escaped = name.replace(/'/g, "''");
+        const script = `
+$match = Get-StartApps | Where-Object { $_.Name -like '*${escaped}*' } | Select-Object -First 1
+if ($match) {
+  explorer.exe "shell:appsFolder\\$($match.AppID)"
+  Write-Output "LAUNCHED|$($match.Name)"
+  exit 0
+}
+$cmd = Get-Command '${escaped}' -ErrorAction SilentlyContinue
+if ($cmd) {
+  Start-Process $cmd.Source
+  Write-Output "LAUNCHED|$($cmd.Name)"
+  exit 0
+}
+Write-Output "NOTFOUND"
+exit 1
+`;
+        const { stdout } = await runPowerShellScript(script);
+        if (stdout.startsWith("LAUNCHED|")) {
+          return `Successfully launched "${stdout.split("|")[1]}".`;
+        }
+        return `Error: could not find an installed application matching "${name}". It may not be installed, or registered under a different name — try a different name or verify it's installed.`;
+      } catch (err: any) {
+        return `Failed to launch "${name}": ${err.message}`;
       }
     },
   }),
