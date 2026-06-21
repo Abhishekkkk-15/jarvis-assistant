@@ -7,6 +7,8 @@ import * as fs from "fs/promises";
 import robot from "@hurdlegroup/robotjs";
 import { windowManager } from "node-window-manager";
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // ─────────────────────────────────────────────────────────────────
 // Helper: run a python one-liner via pyautogui
 // ─────────────────────────────────────────────────────────────────
@@ -49,7 +51,7 @@ export const computerTools = [
     description:
       "Control the computer mouse with REAL actions. " +
       "Actions: move (move to x,y), click (left click at x,y), " +
-      "double_click, right_click, scroll (scroll at x,y by amount), drag (drag from x,y to x2,y2). " +
+      "double_click, right_click, scroll (scroll at x,y by amount, vertical by default), drag (drag from x,y to x2,y2). " +
       "If x,y are omitted, action happens at current cursor position. " +
       "Use get_cursor_position first to know where the cursor is.",
     schema: z.object({
@@ -58,10 +60,11 @@ export const computerTools = [
       y: z.number().optional().describe("Target Y coordinate"),
       x2: z.number().optional().describe("End X for drag"),
       y2: z.number().optional().describe("End Y for drag"),
-      amount: z.number().optional().describe("Scroll amount (positive = down, negative = up)"),
+      amount: z.number().optional().describe("Scroll amount (positive = down/right, negative = up/left)"),
+      scrollDirection: z.enum(["vertical", "horizontal"]).default("vertical").describe("Scroll axis (action='scroll' only)."),
       duration: z.number().optional().describe("Movement duration in seconds (ignored by robotjs)"),
     }),
-    func: async ({ action, x, y, x2, y2, amount }) => {
+    func: async ({ action, x, y, x2, y2, amount, scrollDirection }) => {
       try {
         if (action === "move") {
           if (x !== undefined && y !== undefined) {
@@ -79,9 +82,10 @@ export const computerTools = [
           if (x !== undefined && y !== undefined) robot.moveMouse(x, y);
           robot.mouseClick("right");
         } else if (action === "scroll") {
-           // robotjs scroll is horizontal, vertical
+           // robotjs scrollMouse(x, y) is (horizontal, vertical)
            if (x !== undefined && y !== undefined) robot.moveMouse(x, y);
-           robot.scrollMouse(0, amount || -3);
+           if (scrollDirection === "horizontal") robot.scrollMouse(amount || -3, 0);
+           else robot.scrollMouse(0, amount || -3);
         } else if (action === "drag") {
           if (x !== undefined && y !== undefined && x2 !== undefined && y2 !== undefined) {
              robot.moveMouse(x, y);
@@ -121,12 +125,13 @@ export const computerTools = [
   // ──────────────────────────────────────────────────────────────
   new DynamicStructuredTool({
     name: "find_and_click_text",
-    description: "Captures the screen, uses OCR to find the specified text, and clicks it. Use this when you don't know the exact X/Y coordinates of a UI button but you know its text.",
+    description: "Captures the screen, uses OCR to find the specified text, and clicks it. Use this when you don't know the exact X/Y coordinates of a UI button but you know its text. If the text appears more than once, all matches are reported with their positions instead of guessing — pass 'occurrence' to pick one.",
     schema: z.object({
       text: z.string().describe("The exact text to find and click on the screen (case-insensitive substring)"),
       action: z.enum(["click", "double_click", "right_click"]).default("click"),
+      occurrence: z.number().optional().describe("If the text appears multiple times on screen, which match to use (1-indexed). Omit to see all matches first."),
     }),
-    func: async ({ text, action }) => {
+    func: async ({ text, action, occurrence }) => {
       try {
         const tmpPath = path.join(os.tmpdir(), `ocr_${Date.now()}.png`);
         const captureResult = await runPython(`import pyautogui; pyautogui.screenshot('${tmpPath.replace(/\\/g, '\\\\')}')`);
@@ -138,17 +143,23 @@ export const computerTools = [
         await worker.terminate();
 
         const target = text.toLowerCase();
-        let foundWord = null;
+        const matches = data.words.filter((word) => word.text.toLowerCase().includes(target));
 
-        for (const word of data.words) {
-          if (word.text.toLowerCase().includes(target)) {
-            foundWord = word;
-            break;
-          }
+        if (matches.length === 0) {
+          return `Could not find text "${text}" on the screen.`;
         }
 
+        if (matches.length > 1 && !occurrence) {
+          const positions = matches.map((w, i) => {
+            const b = w.bbox;
+            return `[${i + 1}] "${w.text}" at (${Math.floor((b.x0 + b.x1) / 2)}, ${Math.floor((b.y0 + b.y1) / 2)})`;
+          });
+          return `Found ${matches.length} matches for "${text}":\n${positions.join("\n")}\nSpecify 'occurrence' to pick one.`;
+        }
+
+        const foundWord = matches[occurrence ? occurrence - 1 : 0];
         if (!foundWord) {
-          return `Could not find text "${text}" on the screen.`;
+          return `Error: occurrence ${occurrence} is out of range (found ${matches.length} match(es)).`;
         }
 
         const bbox = foundWord.bbox;
@@ -163,7 +174,7 @@ export const computerTools = [
         const clickResult = await runPython(code);
         if (clickResult.startsWith("Error")) return clickResult;
 
-        return `Successfully found "${text}" and executed ${action} at (${centerX}, ${centerY}).`;
+        return `Successfully found "${text}" (match ${occurrence || 1} of ${matches.length}) and executed ${action} at (${centerX}, ${centerY}).`;
       } catch (err: any) {
         return `Error during OCR processing: ${err.message}`;
       }
@@ -314,6 +325,7 @@ export const computerTools = [
                 // node-window-manager does not have a direct close() method, we can kill its process or send a close key
                 // A reliable way is sending alt+f4 using robotjs to the focused window.
                 win.bringToTop();
+                await delay(300); // let focus settle before the keystroke, or it can hit the wrong window
                 robot.keyTap("f4", "alt");
             }
         }
