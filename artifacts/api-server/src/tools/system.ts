@@ -5,14 +5,6 @@ import { requestApprovalFromUser, broadcast } from "../lib/wsManager.js";
 
 export const systemTools = [
   new DynamicStructuredTool({
-    name: "listTools",
-    description: "Returns a list of all tools currently available to the agent.",
-    schema: z.object({}),
-    func: async () => {
-      return "Available tools: web_browser_page_reader, website_screenshot_capture, pdf_reader, youtube_transcript_extractor, rss_feed_reader, news_search, mouse_control, get_cursor_position, get_screen_size, keyboard_control, screen_capture, window_management, clipboard, read_file, write_file, edit_file, create_directory, delete_file, move_rename_file, search_files, execute_bash, execute_powershell, execute_cmd, process_management, remember_fact, recall_memory, list_memories, forget_memory, listTools, requestApproval, askQuestion.";
-    },
-  }),
-  new DynamicStructuredTool({
     name: "requestApproval",
     description: "PAUSE execution and request explicit user approval before performing a dangerous or destructive action. The agent will WAIT until the user approves or denies.",
     schema: z.object({ reason: z.string().describe("Clear description of what action needs approval and why it is risky") }),

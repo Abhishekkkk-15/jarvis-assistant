@@ -85,11 +85,20 @@ export const webTools = [
   }),
   new DynamicStructuredTool({
     name: "news_search",
-    description: "Search for latest news using a web query (simulated/basic).",
-    schema: z.object({ query: z.string() }),
-    func: async ({ query }) => {
-      // In a full implementation, you'd call a news API like NewsAPI or Serper
-      return `[Mock] Found 3 news articles for: ${query}. (1) Example News 1 (2) Example News 2`;
+    description: "Search for recent news articles matching a query, via Google News.",
+    schema: z.object({ query: z.string(), limit: z.number().optional().describe("Max articles to return (default 8).") }),
+    func: async ({ query, limit }) => {
+      try {
+        const parser = new Parser();
+        const feed = await parser.parseURL(
+          `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`,
+        );
+        const items = feed.items.slice(0, limit || 8);
+        if (items.length === 0) return `No news found for "${query}".`;
+        return items.map((i) => `${i.title} - ${i.link}${i.pubDate ? ` (${i.pubDate})` : ""}`).join("\n");
+      } catch (e: any) {
+        return `Error searching news: ${e.message}`;
+      }
     },
   })
 ];

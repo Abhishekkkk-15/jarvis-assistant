@@ -35,6 +35,7 @@ export const uiaTools = [
       depth: z.number().default(5).describe("Max depth to search/dump the UI tree. Keep it small (3-5) unless you can't find what you need."),
     }),
     func: async ({ windowTitle, depth }) => {
+      const safeTitle = (windowTitle || "").replace(/'/g, "\\'");
       const code = `
 import uiautomation as auto
 import json
@@ -59,8 +60,8 @@ def get_tree(control, current_depth, max_depth):
 
 try:
     auto.SetGlobalSearchTimeout(2)
-    if '${windowTitle || ""}' != '':
-        root = auto.WindowControl(searchDepth=1, RegexName='.*${windowTitle || ""}.*')
+    if '${safeTitle}' != '':
+        root = auto.WindowControl(searchDepth=1, RegexName='.*${safeTitle}.*')
     else:
         root = auto.GetFocusedControl().GetTopLevelControl()
     
