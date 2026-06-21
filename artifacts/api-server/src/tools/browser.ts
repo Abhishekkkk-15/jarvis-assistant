@@ -10,6 +10,7 @@ import * as path from "path";
 declare const document: any;
 declare const window: any;
 declare const navigator: any;
+declare const Event: any;
 
 async function getPuppeteer() {
   const mod = await new Function('return import("puppeteer")')();
@@ -24,8 +25,31 @@ function delay(ms: number) {
 }
 
 async function preparePage(page: Page) {
+  // Registered per-Page, this re-runs in every frame's document on every navigation
+  // (including iframes), so the deep-query helper is always available everywhere.
   await page.evaluateOnNewDocument(() => {
     Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+
+    // querySelector/querySelectorAll never pierce shadow DOM boundaries by design, so a
+    // plain selector can't see inside a <my-widget> web component's shadow root. This walks
+    // the light DOM and recurses into every *open* shadow root it finds along the way.
+    // (Closed shadow roots have no JS-level escape hatch at all — that's intentional.)
+    window.__jarvisDeepQuery = function (selector: string, first: boolean) {
+      const results: any[] = [];
+      const stack: any[] = [document];
+      while (stack.length) {
+        const root = stack.pop();
+        const all = root.querySelectorAll("*");
+        for (const el of all) {
+          if (el.matches(selector)) {
+            results.push(el);
+            if (first) return el;
+          }
+          if (el.shadowRoot) stack.push(el.shadowRoot);
+        }
+      }
+      return first ? null : results;
+    };
   });
   page.setDefaultNavigationTimeout(30000);
   page.setDefaultTimeout(15000);
@@ -90,12 +114,14 @@ async function findInFrames<T>(
 async function extractFromFrames(page: Page, selector: string, attribute: string | undefined) {
   for (const frame of getFrames(page)) {
     try {
-      const values: any[] = await frame.$$eval(
-        selector,
-        (els: any[], attr: string | undefined) =>
-          els.map((el: any) =>
+      const values: any[] = await frame.evaluate(
+        (sel: string, attr: string | undefined) => {
+          const els = window.__jarvisDeepQuery(sel, false);
+          return els.map((el: any) =>
             attr === "value" ? el.value : attr ? el.getAttribute(attr) : (el.innerText || el.textContent || "").trim(),
-          ),
+          );
+        },
+        selector,
         attribute,
       );
       if (values.length > 0) return values;
@@ -106,8 +132,20 @@ async function extractFromFrames(page: Page, selector: string, attribute: string
   return [];
 }
 
+async function findHandleInFrames(page: Page, selector: string) {
+  return findInFrames(page, async (frame) => {
+    const handle = await frame.evaluateHandle((sel: string) => window.__jarvisDeepQuery(sel, true), selector);
+    const el = handle.asElement();
+    if (!el) {
+      await handle.dispose();
+      return null;
+    }
+    return el;
+  });
+}
+
 async function findByIndex(page: Page, index: number) {
-  const match = await findInFrames(page, (frame) => frame.$(`[data-jarvis-id="${index}"]`));
+  const match = await findHandleInFrames(page, `[data-jarvis-id="${index}"]`);
   return match ? match.result : null;
 }
 
@@ -117,7 +155,7 @@ async function findClickableByText(page: Page, text: string) {
       const tags =
         'a, button, input[type="submit"], input[type="button"], [role="button"], ' +
         '[role="link"], [role="menuitem"], [role="tab"], label, summary';
-      const candidates = Array.from(document.querySelectorAll(tags));
+      const candidates = window.__jarvisDeepQuery(tags, false);
       const lower = searchText.toLowerCase();
       const matches = candidates.filter((el: any) => {
         const t = (
@@ -149,7 +187,7 @@ async function findClickableByText(page: Page, text: string) {
 async function findInputByLabel(page: Page, text: string) {
   const match = await findInFrames(page, async (frame) => {
     const handle = await frame.evaluateHandle((searchText: string) => {
-      const inputs = Array.from(document.querySelectorAll('input, textarea, [contenteditable="true"]'));
+      const inputs = window.__jarvisDeepQuery('input, textarea, [contenteditable="true"]', false);
       const lower = searchText.toLowerCase();
       const matches = inputs.filter((el: any) => {
         const placeholder = el.getAttribute("placeholder") || "";
@@ -157,7 +195,9 @@ async function findInputByLabel(page: Page, text: string) {
         const name = el.getAttribute("name") || "";
         let labelText = "";
         if (el.id) {
-          const lbl = document.querySelector(`label[for="${el.id}"]`);
+          // A <label for=...> for a field inside a shadow root lives in that same root,
+          // not the outer document — getRootNode() resolves to whichever one actually owns it.
+          const lbl = el.getRootNode().querySelector(`label[for="${el.id}"]`);
           if (lbl) labelText = lbl.textContent || "";
         }
         const haystack = `${placeholder} ${aria} ${name} ${labelText}`.toLowerCase();
@@ -187,7 +227,7 @@ async function resolveTarget(
     return { el: await findByIndex(page, index), via: `index ${index}` };
   }
   if (selector) {
-    const match = await findInFrames(page, (frame) => frame.$(selector));
+    const match = await findHandleInFrames(page, selector);
     return { el: match ? match.result : null, via: `selector "${selector}"` };
   }
   if (matchText) {
@@ -227,11 +267,12 @@ export const browserTools = [
   new DynamicStructuredTool({
     name: "browser_observe",
     description:
-      "Inspect the current web page — including any embedded iframes (e.g. payment widgets, login forms) — and " +
-      "list visible interactive elements (links, buttons, inputs, dropdowns) numbered by index, with their " +
-      "label/placeholder/text. Call this whenever you don't know the exact CSS selector for something (e.g. a " +
-      "site's search box) — then pass that index to browser_click, browser_type, browser_extract, or " +
-      "browser_select_option. Re-run it after navigating, typing, clicking, or scrolling, since indices can change.",
+      "Inspect the current web page — including embedded iframes (e.g. payment widgets, login forms) and elements " +
+      "inside web components' shadow DOM — and list visible interactive elements (links, buttons, inputs, " +
+      "dropdowns) numbered by index, with their label/placeholder/text. Call this whenever you don't know the " +
+      "exact CSS selector for something (e.g. a site's search box) — then pass that index to browser_click, " +
+      "browser_type, browser_extract, or browser_select_option. Re-run it after navigating, typing, clicking, or " +
+      "scrolling, since indices can change.",
     schema: z.object({
       maxElements: z.number().optional().describe("Maximum number of elements to list (default 60)."),
     }),
@@ -247,7 +288,7 @@ export const browserTools = [
                 'a[href], button, input, select, textarea, [role="button"], [role="link"], ' +
                 '[role="textbox"], [role="combobox"], [role="checkbox"], [role="radio"], ' +
                 '[role="menuitem"], [role="tab"], [tabindex]:not([tabindex="-1"]), [onclick]';
-              const nodes = Array.from(document.querySelectorAll(selector));
+              const nodes = window.__jarvisDeepQuery(selector, false);
               const elements: any[] = [];
               let count = 0;
               for (const el of nodes as any[]) {
@@ -283,6 +324,7 @@ export const browserTools = [
 
                 const globalIndex = start + count;
                 el.setAttribute("data-jarvis-id", String(globalIndex));
+                const rootNode = el.getRootNode();
                 elements.push({
                   index: globalIndex,
                   tag,
@@ -290,6 +332,7 @@ export const browserTools = [
                   label: label || "(no label)",
                   href: tag === "a" ? el.getAttribute("href") : undefined,
                   inViewport: rect.top < window.innerHeight && rect.bottom > 0,
+                  inShadowDom: !!(rootNode && rootNode.host),
                 });
                 count++;
               }
@@ -332,8 +375,9 @@ export const browserTools = [
           }
           const frameNote = frame === mainFrame ? "" : ` (in iframe: ${frame.url() || "embedded"})`;
           for (const e of data.elements) {
+            const shadowNote = e.inShadowDom ? " (in shadow DOM)" : "";
             allLines.push(
-              `[${e.index}] <${e.tag}${e.type ? ` ${e.type}` : ""}>${e.inViewport ? "" : " (below fold)"} - ${e.label}${e.href ? ` -> ${e.href}` : ""}${frameNote}`,
+              `[${e.index}] <${e.tag}${e.type ? ` ${e.type}` : ""}>${e.inViewport ? "" : " (below fold)"} - ${e.label}${e.href ? ` -> ${e.href}` : ""}${frameNote}${shadowNote}`,
             );
           }
           shownCount += data.elements.length;
@@ -605,9 +649,9 @@ export const browserTools = [
         const cssSelector = index !== undefined ? `[data-jarvis-id="${index}"]` : selector;
         if (!cssSelector) return "Error: provide either index or selector.";
         const { page } = await getBrowser();
-        const match = await findInFrames(page, (frame) => frame.$(cssSelector));
+        const match = await findHandleInFrames(page, cssSelector);
         if (!match) return `Error: no <select> element found via ${index !== undefined ? `index ${index}` : `selector "${selector}"`}.`;
-        const { result: el, frame } = match;
+        const { result: el } = match;
 
         let optionValue = value;
         if (!optionValue && label) {
@@ -621,7 +665,14 @@ export const browserTools = [
         }
         if (!optionValue) return "Error: provide either value or label.";
 
-        await frame.select(cssSelector, optionValue);
+        // Set directly on the resolved handle (rather than Frame.select, which re-queries via
+        // a plain selector and would miss an element living inside a shadow root) and fire the
+        // same events frameworks listen for to pick up the change.
+        await el.evaluate((node: any, val: string) => {
+          node.value = val;
+          node.dispatchEvent(new Event("input", { bubbles: true }));
+          node.dispatchEvent(new Event("change", { bubbles: true }));
+        }, optionValue);
         return `Selected option "${value || label}" in the dropdown.`;
       } catch (err: any) {
         return `Failed to select option: ${err.message}`;
