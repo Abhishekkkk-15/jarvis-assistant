@@ -1,6 +1,6 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
-import type { Browser, Page } from "puppeteer";
+import type { Browser, Page, Frame } from "puppeteer";
 import * as os from "os";
 import * as path from "path";
 
@@ -65,68 +65,116 @@ async function getBrowser(): Promise<{ browser: Browser; page: Page }> {
   return { browser: browserInstance!, page: activePage };
 }
 
+// Puppeteer talks to every frame (including cross-origin ones) directly over CDP, so
+// Frame.evaluate()/$()/$$eval() work the same as Page's even inside <iframe> documents
+// that JS in the parent page could never reach due to the same-origin policy.
+function getFrames(page: Page) {
+  return page.frames().filter((f) => !f.detached);
+}
+
+async function findInFrames<T>(
+  page: Page,
+  fn: (frame: Frame) => Promise<T | null | undefined>,
+): Promise<{ result: T; frame: Frame } | null> {
+  for (const frame of getFrames(page)) {
+    try {
+      const result = await fn(frame);
+      if (result) return { result, frame };
+    } catch {
+      // cross-origin frame not yet navigated, detached mid-call, etc. — skip it
+    }
+  }
+  return null;
+}
+
+async function extractFromFrames(page: Page, selector: string, attribute: string | undefined) {
+  for (const frame of getFrames(page)) {
+    try {
+      const values: any[] = await frame.$$eval(
+        selector,
+        (els: any[], attr: string | undefined) =>
+          els.map((el: any) =>
+            attr === "value" ? el.value : attr ? el.getAttribute(attr) : (el.innerText || el.textContent || "").trim(),
+          ),
+        attribute,
+      );
+      if (values.length > 0) return values;
+    } catch {
+      // selector not present in this frame's context
+    }
+  }
+  return [];
+}
+
 async function findByIndex(page: Page, index: number) {
-  return page.$(`[data-jarvis-id="${index}"]`);
+  const match = await findInFrames(page, (frame) => frame.$(`[data-jarvis-id="${index}"]`));
+  return match ? match.result : null;
 }
 
 async function findClickableByText(page: Page, text: string) {
-  const handle = await page.evaluateHandle((searchText: string) => {
-    const tags =
-      'a, button, input[type="submit"], input[type="button"], [role="button"], ' +
-      '[role="link"], [role="menuitem"], [role="tab"], label, summary';
-    const candidates = Array.from(document.querySelectorAll(tags));
-    const lower = searchText.toLowerCase();
-    const matches = candidates.filter((el: any) => {
-      const t = (
-        el.innerText ||
-        el.textContent ||
-        el.getAttribute("aria-label") ||
-        el.getAttribute("value") ||
-        ""
-      )
-        .trim()
-        .toLowerCase();
-      if (!t.includes(lower)) return false;
-      const rect = el.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
-    });
-    matches.sort((a: any, b: any) => (a.textContent || "").length - (b.textContent || "").length);
-    return matches[0] || null;
-  }, text);
-  const el = handle.asElement();
-  if (!el) {
-    await handle.dispose();
-    return null;
-  }
-  return el;
+  const match = await findInFrames(page, async (frame) => {
+    const handle = await frame.evaluateHandle((searchText: string) => {
+      const tags =
+        'a, button, input[type="submit"], input[type="button"], [role="button"], ' +
+        '[role="link"], [role="menuitem"], [role="tab"], label, summary';
+      const candidates = Array.from(document.querySelectorAll(tags));
+      const lower = searchText.toLowerCase();
+      const matches = candidates.filter((el: any) => {
+        const t = (
+          el.innerText ||
+          el.textContent ||
+          el.getAttribute("aria-label") ||
+          el.getAttribute("value") ||
+          ""
+        )
+          .trim()
+          .toLowerCase();
+        if (!t.includes(lower)) return false;
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      });
+      matches.sort((a: any, b: any) => (a.textContent || "").length - (b.textContent || "").length);
+      return matches[0] || null;
+    }, text);
+    const el = handle.asElement();
+    if (!el) {
+      await handle.dispose();
+      return null;
+    }
+    return el;
+  });
+  return match ? match.result : null;
 }
 
 async function findInputByLabel(page: Page, text: string) {
-  const handle = await page.evaluateHandle((searchText: string) => {
-    const inputs = Array.from(document.querySelectorAll('input, textarea, [contenteditable="true"]'));
-    const lower = searchText.toLowerCase();
-    const matches = inputs.filter((el: any) => {
-      const placeholder = el.getAttribute("placeholder") || "";
-      const aria = el.getAttribute("aria-label") || "";
-      const name = el.getAttribute("name") || "";
-      let labelText = "";
-      if (el.id) {
-        const lbl = document.querySelector(`label[for="${el.id}"]`);
-        if (lbl) labelText = lbl.textContent || "";
-      }
-      const haystack = `${placeholder} ${aria} ${name} ${labelText}`.toLowerCase();
-      if (!haystack.includes(lower)) return false;
-      const rect = el.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
-    });
-    return matches[0] || null;
-  }, text);
-  const el = handle.asElement();
-  if (!el) {
-    await handle.dispose();
-    return null;
-  }
-  return el;
+  const match = await findInFrames(page, async (frame) => {
+    const handle = await frame.evaluateHandle((searchText: string) => {
+      const inputs = Array.from(document.querySelectorAll('input, textarea, [contenteditable="true"]'));
+      const lower = searchText.toLowerCase();
+      const matches = inputs.filter((el: any) => {
+        const placeholder = el.getAttribute("placeholder") || "";
+        const aria = el.getAttribute("aria-label") || "";
+        const name = el.getAttribute("name") || "";
+        let labelText = "";
+        if (el.id) {
+          const lbl = document.querySelector(`label[for="${el.id}"]`);
+          if (lbl) labelText = lbl.textContent || "";
+        }
+        const haystack = `${placeholder} ${aria} ${name} ${labelText}`.toLowerCase();
+        if (!haystack.includes(lower)) return false;
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      });
+      return matches[0] || null;
+    }, text);
+    const el = handle.asElement();
+    if (!el) {
+      await handle.dispose();
+      return null;
+    }
+    return el;
+  });
+  return match ? match.result : null;
 }
 
 async function resolveTarget(
@@ -139,7 +187,8 @@ async function resolveTarget(
     return { el: await findByIndex(page, index), via: `index ${index}` };
   }
   if (selector) {
-    return { el: await page.$(selector), via: `selector "${selector}"` };
+    const match = await findInFrames(page, (frame) => frame.$(selector));
+    return { el: match ? match.result : null, via: `selector "${selector}"` };
   }
   if (matchText) {
     const el = kind === "click" ? await findClickableByText(page, matchText) : await findInputByLabel(page, matchText);
@@ -178,91 +227,131 @@ export const browserTools = [
   new DynamicStructuredTool({
     name: "browser_observe",
     description:
-      "Inspect the current web page and list visible interactive elements (links, buttons, inputs, dropdowns) " +
-      "numbered by index, with their label/placeholder/text. Call this whenever you don't know the exact CSS " +
-      "selector for something (e.g. a site's search box) — then pass that index to browser_click, browser_type, " +
-      "browser_extract, or browser_select_option. Re-run it after navigating, typing, clicking, or scrolling, " +
-      "since indices can change.",
+      "Inspect the current web page — including any embedded iframes (e.g. payment widgets, login forms) — and " +
+      "list visible interactive elements (links, buttons, inputs, dropdowns) numbered by index, with their " +
+      "label/placeholder/text. Call this whenever you don't know the exact CSS selector for something (e.g. a " +
+      "site's search box) — then pass that index to browser_click, browser_type, browser_extract, or " +
+      "browser_select_option. Re-run it after navigating, typing, clicking, or scrolling, since indices can change.",
     schema: z.object({
       maxElements: z.number().optional().describe("Maximum number of elements to list (default 60)."),
     }),
     func: async ({ maxElements }) => {
       try {
         const { page } = await getBrowser();
-        const data = await page.evaluate((max: number) => {
-          const selector =
-            'a[href], button, input, select, textarea, [role="button"], [role="link"], ' +
-            '[role="textbox"], [role="combobox"], [role="checkbox"], [role="radio"], ' +
-            '[role="menuitem"], [role="tab"], [tabindex]:not([tabindex="-1"]), [onclick]';
-          const nodes = Array.from(document.querySelectorAll(selector));
-          const elements: any[] = [];
-          let index = 0;
-          for (const el of nodes as any[]) {
-            const rect = el.getBoundingClientRect();
-            const style = window.getComputedStyle(el);
-            const visible =
-              rect.width > 0 &&
-              rect.height > 0 &&
-              style.visibility !== "hidden" &&
-              style.display !== "none" &&
-              parseFloat(style.opacity || "1") > 0;
-            if (!visible) continue;
+        const max = maxElements || 60;
+        const mainFrame = page.mainFrame();
+        const scanFrame = (frame: Frame, startIndex: number, budget: number) =>
+          frame.evaluate(
+            (start: number, max: number) => {
+              const selector =
+                'a[href], button, input, select, textarea, [role="button"], [role="link"], ' +
+                '[role="textbox"], [role="combobox"], [role="checkbox"], [role="radio"], ' +
+                '[role="menuitem"], [role="tab"], [tabindex]:not([tabindex="-1"]), [onclick]';
+              const nodes = Array.from(document.querySelectorAll(selector));
+              const elements: any[] = [];
+              let count = 0;
+              for (const el of nodes as any[]) {
+                if (count >= max) break;
+                const rect = el.getBoundingClientRect();
+                const style = window.getComputedStyle(el);
+                const visible =
+                  rect.width > 0 &&
+                  rect.height > 0 &&
+                  style.visibility !== "hidden" &&
+                  style.display !== "none" &&
+                  parseFloat(style.opacity || "1") > 0;
+                if (!visible) continue;
 
-            const tag = el.tagName.toLowerCase();
-            let label = "";
-            if (tag === "input" || tag === "textarea") {
-              label = el.getAttribute("placeholder") || el.getAttribute("aria-label") || el.getAttribute("name") || el.id || "";
-              if (el.value) label += ` (current value: "${String(el.value).substring(0, 40)}")`;
-            } else {
-              label = (
-                el.innerText ||
-                el.textContent ||
-                el.getAttribute("aria-label") ||
-                el.getAttribute("title") ||
-                el.getAttribute("alt") ||
-                ""
-              )
-                .trim()
-                .replace(/\s+/g, " ")
-                .substring(0, 100);
-            }
+                const tag = el.tagName.toLowerCase();
+                let label = "";
+                if (tag === "input" || tag === "textarea") {
+                  label = el.getAttribute("placeholder") || el.getAttribute("aria-label") || el.getAttribute("name") || el.id || "";
+                  if (el.value) label += ` (current value: "${String(el.value).substring(0, 40)}")`;
+                } else {
+                  label = (
+                    el.innerText ||
+                    el.textContent ||
+                    el.getAttribute("aria-label") ||
+                    el.getAttribute("title") ||
+                    el.getAttribute("alt") ||
+                    ""
+                  )
+                    .trim()
+                    .replace(/\s+/g, " ")
+                    .substring(0, 100);
+                }
 
-            el.setAttribute("data-jarvis-id", String(index));
-            elements.push({
-              index,
-              tag,
-              type: el.getAttribute("type") || el.getAttribute("role") || "",
-              label: label || "(no label)",
-              href: tag === "a" ? el.getAttribute("href") : undefined,
-              inViewport: rect.top < window.innerHeight && rect.bottom > 0,
-            });
-            index++;
-            if (index >= max) break;
+                const globalIndex = start + count;
+                el.setAttribute("data-jarvis-id", String(globalIndex));
+                elements.push({
+                  index: globalIndex,
+                  tag,
+                  type: el.getAttribute("type") || el.getAttribute("role") || "",
+                  label: label || "(no label)",
+                  href: tag === "a" ? el.getAttribute("href") : undefined,
+                  inViewport: rect.top < window.innerHeight && rect.bottom > 0,
+                });
+                count++;
+              }
+              return {
+                elements,
+                totalFound: nodes.length,
+                url: document.location.href,
+                title: document.title,
+                scrollY: window.scrollY,
+                scrollHeight: document.body.scrollHeight,
+                viewportHeight: window.innerHeight,
+              };
+            },
+            startIndex,
+            budget,
+          );
+
+        let globalIndex = 0;
+        let shownCount = 0;
+        let unreachedTotal = 0;
+        let unreachableFrames = 0;
+        const allLines: string[] = [];
+        let pageTitle = "";
+        let pageUrl = "";
+        let scrollLine = "";
+
+        for (const frame of getFrames(page)) {
+          if (globalIndex >= max) break;
+          let data;
+          try {
+            data = await scanFrame(frame, globalIndex, max - globalIndex);
+          } catch {
+            unreachableFrames++;
+            continue;
           }
-          return {
-            elements,
-            totalFound: nodes.length,
-            url: document.location.href,
-            title: document.title,
-            scrollY: window.scrollY,
-            scrollHeight: document.body.scrollHeight,
-            viewportHeight: window.innerHeight,
-          };
-        }, maxElements || 60);
+          if (frame === mainFrame) {
+            pageTitle = data.title;
+            pageUrl = data.url;
+            scrollLine = `Scroll position: ${data.scrollY}/${Math.max(0, data.scrollHeight - data.viewportHeight)}`;
+          }
+          const frameNote = frame === mainFrame ? "" : ` (in iframe: ${frame.url() || "embedded"})`;
+          for (const e of data.elements) {
+            allLines.push(
+              `[${e.index}] <${e.tag}${e.type ? ` ${e.type}` : ""}>${e.inViewport ? "" : " (below fold)"} - ${e.label}${e.href ? ` -> ${e.href}` : ""}${frameNote}`,
+            );
+          }
+          shownCount += data.elements.length;
+          globalIndex += data.elements.length;
+          unreachedTotal += Math.max(0, data.totalFound - data.elements.length);
+        }
 
-        const lines = data.elements.map(
-          (e: any) =>
-            `[${e.index}] <${e.tag}${e.type ? ` ${e.type}` : ""}>${e.inViewport ? "" : " (below fold)"} - ${e.label}${e.href ? ` -> ${e.href}` : ""}`,
-        );
-        const more =
-          data.totalFound > data.elements.length
-            ? `\n...and ${data.totalFound - data.elements.length} more not shown. Use browser_scroll then browser_observe again to see them.`
-            : "";
+        const more = unreachedTotal > 0
+          ? `\n...and ${unreachedTotal} more not shown. Use browser_scroll then browser_observe again to see them.`
+          : "";
+        const frameNote = unreachableFrames > 0
+          ? `\n(${unreachableFrames} embedded frame(s) could not be inspected — likely still loading or cross-origin restricted.)`
+          : "";
 
         return (
-          `Page: "${data.title}" (${data.url})\n` +
-          `Scroll position: ${data.scrollY}/${Math.max(0, data.scrollHeight - data.viewportHeight)}\n\n` +
-          `${lines.join("\n") || "(no interactive elements found)"}${more}`
+          `Page: "${pageTitle}" (${pageUrl})\n` +
+          `${scrollLine}\n\n` +
+          `${allLines.join("\n") || "(no interactive elements found)"}${more}${frameNote}`
         );
       } catch (err: any) {
         return `Failed to observe page: ${err.message}`;
@@ -369,24 +458,30 @@ export const browserTools = [
           const el = await findByIndex(page, index);
           if (!el) return `Error: no element with index ${index}. Run browser_observe again.`;
           const value = attribute
-            ? await el.evaluate((node: any, attr: string) => node.getAttribute(attr), attribute)
+            ? await el.evaluate((node: any, attr: string) => (attr === "value" ? node.value : node.getAttribute(attr)), attribute)
             : await el.evaluate((node: any) => (node.innerText || node.textContent || "").trim());
           return value ? `Extracted: ${value}` : "Element found but has no content/attribute value.";
         }
 
         if (selector) {
-          const values: string[] = await page.$$eval(
-            selector,
-            (els: any[], attr: string | undefined) =>
-              els.map((el: any) => (attr ? el.getAttribute(attr) : (el.innerText || el.textContent || "").trim())),
-            attribute,
-          );
+          const values = await extractFromFrames(page, selector, attribute);
           const filtered = values.filter((v) => v !== null && v !== "");
           if (filtered.length === 0) return `No elements found matching ${selector}`;
           return `Extracted ${filtered.length} elements. First ${Math.min(max, filtered.length)} results:\n${filtered.slice(0, max).join("\n")}`;
         }
 
-        const bodyText: string = await page.evaluate(() => document.body.innerText);
+        const sections: string[] = [];
+        for (const frame of getFrames(page)) {
+          try {
+            const text: string = await frame.evaluate(() => document.body.innerText);
+            if (text && text.trim()) {
+              sections.push(frame === page.mainFrame() ? text.trim() : `[iframe: ${frame.url()}]\n${text.trim()}`);
+            }
+          } catch {
+            // cross-origin/unreachable frame — skip
+          }
+        }
+        const bodyText = sections.join("\n\n");
         return bodyText.substring(0, 4000) + (bodyText.length > 4000 ? "\n...(truncated)" : "");
       } catch (err: any) {
         return `Failed to extract: ${err.message}`;
@@ -510,8 +605,9 @@ export const browserTools = [
         const cssSelector = index !== undefined ? `[data-jarvis-id="${index}"]` : selector;
         if (!cssSelector) return "Error: provide either index or selector.";
         const { page } = await getBrowser();
-        const el = await page.$(cssSelector);
-        if (!el) return `Error: no <select> element found via ${index !== undefined ? `index ${index}` : `selector "${selector}"`}.`;
+        const match = await findInFrames(page, (frame) => frame.$(cssSelector));
+        if (!match) return `Error: no <select> element found via ${index !== undefined ? `index ${index}` : `selector "${selector}"`}.`;
+        const { result: el, frame } = match;
 
         let optionValue = value;
         if (!optionValue && label) {
@@ -525,7 +621,7 @@ export const browserTools = [
         }
         if (!optionValue) return "Error: provide either value or label.";
 
-        await page.select(cssSelector, optionValue);
+        await frame.select(cssSelector, optionValue);
         return `Selected option "${value || label}" in the dropdown.`;
       } catch (err: any) {
         return `Failed to select option: ${err.message}`;
