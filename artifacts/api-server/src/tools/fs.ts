@@ -3,21 +3,43 @@ import { z } from "zod";
 import * as fs from "fs/promises";
 import * as path from "path";
 
-// @ts-ignore
-import pdf = require("pdf-parse");
-
 export const fsTools = [
   new DynamicStructuredTool({
     name: "read_file",
-    description: "Read the contents of a file. Automatically parses text from PDF documents if the file ends with .pdf.",
+    description: "Read the contents of a file. Automatically parses text from PDF, Word (.docx), and Excel (.xlsx/.xls) documents based on the file extension.",
     schema: z.object({ file_path: z.string() }),
     func: async ({ file_path }) => {
       try {
-        if (file_path.toLowerCase().endsWith(".pdf")) {
+        const ext = path.extname(file_path).toLowerCase();
+
+        if (ext === ".pdf") {
           const buffer = await fs.readFile(file_path);
-          const data = await pdf(buffer);
+          const pdfParseModule = await import("pdf-parse");
+          const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+          const data = await pdfParse(buffer);
           return `Content of PDF file ${file_path}:\n${data.text}`;
         }
+
+        if (ext === ".docx") {
+          const buffer = await fs.readFile(file_path);
+          const mammothModule = await import("mammoth");
+          const mammoth = (mammothModule as any).default || mammothModule;
+          const result = await mammoth.extractRawText({ buffer });
+          return `Content of Word document ${file_path}:\n${result.value}`;
+        }
+
+        if (ext === ".xlsx" || ext === ".xls") {
+          const buffer = await fs.readFile(file_path);
+          const xlsxModule = await import("xlsx");
+          const XLSX = (xlsxModule as any).default || xlsxModule;
+          const workbook = XLSX.read(buffer, { type: "buffer" });
+          const sheets = workbook.SheetNames.map((name: string) => {
+            const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[name]);
+            return `--- Sheet: ${name} ---\n${csv}`;
+          });
+          return `Content of Excel file ${file_path}:\n${sheets.join("\n\n")}`;
+        }
+
         const content = await fs.readFile(file_path, "utf-8");
         return `Content of ${file_path}:\n${content}`;
       } catch (e: any) { return `Error reading file: ${e.message}`; }
@@ -37,12 +59,27 @@ export const fsTools = [
   }),
   new DynamicStructuredTool({
     name: "edit_file",
-    description: "Append content to a file.",
-    schema: z.object({ file_path: z.string(), content: z.string() }),
-    func: async ({ file_path, content }) => {
+    description: "Edit a file by replacing an exact piece of text with new text. If 'find' is omitted, 'content' is appended to the end of the file instead.",
+    schema: z.object({
+      file_path: z.string(),
+      find: z.string().optional().describe("Exact text to find and replace. Omit to append 'content' to the file instead."),
+      content: z.string().describe("The replacement text (when 'find' is given) or the text to append (when it isn't)."),
+      replaceAll: z.boolean().optional().describe("Replace every occurrence of 'find' instead of just the first."),
+    }),
+    func: async ({ file_path, find, content, replaceAll }) => {
       try {
-        await fs.appendFile(file_path, content, "utf-8");
-        return `File edited successfully at ${file_path}.`;
+        if (!find) {
+          await fs.appendFile(file_path, content, "utf-8");
+          return `Appended content to ${file_path}.`;
+        }
+        const original = await fs.readFile(file_path, "utf-8");
+        if (!original.includes(find)) {
+          return `Error: could not find the exact text to replace in ${file_path}. No changes made.`;
+        }
+        const occurrences = original.split(find).length - 1;
+        const updated = replaceAll ? original.split(find).join(content) : original.replace(find, content);
+        await fs.writeFile(file_path, updated, "utf-8");
+        return `Replaced ${replaceAll ? occurrences : 1} occurrence(s) of the text in ${file_path}.`;
       } catch (e: any) { return `Error editing file: ${e.message}`; }
     },
   }),
@@ -93,7 +130,7 @@ export const fsTools = [
         let dirsVisited = 0;
         const maxDirs = 2000;
         const maxMatches = 250;
-        
+
         const EXCLUDED_DIRS = new Set([
           'node_modules', '.git', '.github', '.vscode', '.idea',
           'dist', 'build', '.next', 'out', 'temp', 'tmp',
@@ -102,7 +139,7 @@ export const fsTools = [
 
         async function walk(dir: string) {
           if (dirsVisited >= maxDirs || results.length >= maxMatches) return;
-          
+
           let files;
           try {
             files = await fs.readdir(dir, { withFileTypes: true });
@@ -115,7 +152,7 @@ export const fsTools = [
           for (const file of files) {
             if (results.length >= maxMatches) break;
             const res = path.resolve(dir, file.name);
-            
+
             if (file.isDirectory()) {
               if (EXCLUDED_DIRS.has(file.name.toLowerCase()) || file.name.startsWith('.')) {
                 continue; // Skip excluded and hidden directories
@@ -129,7 +166,7 @@ export const fsTools = [
           }
         }
         await walk(dir_path);
-        
+
         let prefix = `Found ${results.length} files matching ${pattern}`;
         if (dirsVisited >= maxDirs) {
           prefix += ` (reached maximum scan limit of ${maxDirs} directories)`;

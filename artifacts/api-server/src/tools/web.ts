@@ -6,7 +6,6 @@ async function getPuppeteer() {
   return mod.default || mod;
 }
 
-import fs from "fs/promises";
 import { YoutubeTranscript } from "youtube-transcript";
 import Parser from "rss-parser";
 
@@ -42,21 +41,6 @@ export const webTools = [
         await browser.close();
         return path ? `Screenshot saved to ${path}` : `Base64 string created (length: ${screenshot.length})`;
       } catch (e: any) { return `Error capturing screenshot: ${e.message}`; }
-    },
-  }),
-  new DynamicStructuredTool({
-    name: "pdf_reader",
-    description: "Read text from a local PDF file.",
-    schema: z.object({ file_path: z.string() }),
-    func: async ({ file_path }) => {
-      try {
-        const dataBuffer = await fs.readFile(file_path);
-        // Dynamic import to prevent DOMMatrix ReferenceError on startup in Node 22
-        const pdfParseModule = await import("pdf-parse");
-        const pdfParse = (pdfParseModule as any).default || pdfParseModule;
-        const data = await pdfParse(dataBuffer);
-        return data.text.substring(0, 8000);
-      } catch (e: any) { return `Error reading PDF: ${e.message}`; }
     },
   }),
   new DynamicStructuredTool({
