@@ -79,4 +79,52 @@ export const notionReadPage = new DynamicStructuredTool({
   },
 });
 
-export const notionTools = [notionSearch, notionReadPage];
+export const notionCreatePage = new DynamicStructuredTool({
+  name: "notion_create_page",
+  description: "Create a new page in the user's Notion workspace under a parent page, with a title and optional text content.",
+  schema: z.object({
+    parentPageId: z.string().describe("The Notion page ID to create the new page under."),
+    title: z.string().describe("The title of the new page."),
+    content: z.string().optional().describe("Plain text content to add as the page body."),
+  }),
+  func: async ({ parentPageId, title, content }: { parentPageId: string; title: string; content?: string }) => {
+    try {
+      const notion = await getNotionClient();
+      const response = await notion.pages.create({
+        parent: { page_id: parentPageId },
+        properties: {
+          title: { title: [{ text: { content: title } }] },
+        },
+        children: content
+          ? [{ object: "block", type: "paragraph", paragraph: { rich_text: [{ type: "text", text: { content } }] } }]
+          : undefined,
+      } as any);
+      return `Successfully created Notion page "${title}" (ID: ${response.id}).`;
+    } catch (e: any) {
+      return `Error creating Notion page: ${e.message}`;
+    }
+  },
+});
+
+export const notionAppendText = new DynamicStructuredTool({
+  name: "notion_append_text",
+  description: "Append a block of text to an existing Notion page or block.",
+  schema: z.object({
+    id: z.string().describe("The Notion page or block ID to append content to."),
+    content: z.string().describe("The plain text content to append as a new paragraph."),
+  }),
+  func: async ({ id, content }: { id: string; content: string }) => {
+    try {
+      const notion = await getNotionClient();
+      await notion.blocks.children.append({
+        block_id: id,
+        children: [{ object: "block", type: "paragraph", paragraph: { rich_text: [{ type: "text", text: { content } }] } }],
+      } as any);
+      return `Successfully appended content to Notion page/block ${id}.`;
+    } catch (e: any) {
+      return `Error appending to Notion page: ${e.message}`;
+    }
+  },
+});
+
+export const notionTools = [notionSearch, notionReadPage, notionCreatePage, notionAppendText];
