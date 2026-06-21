@@ -80,6 +80,17 @@ export const securityRules: SecurityRule[] = [
     reason: "Automated UI interaction",
   },
 
+  // Browser automation
+  {
+    match: (tool, args) =>
+      tool === "browser_click" &&
+      /(buy now|place order|confirm order|complete purchase|pay now|submit payment|confirm payment|checkout)/i.test(
+        args?.text || args?.selector || "",
+      ),
+    risk: RiskLevel.HIGH,
+    reason: "Clicking a purchase/checkout confirmation button — may spend money",
+  },
+
   // Network
   {
     match: (tool, args) => tool === "http_request" && args?.method !== "GET",
