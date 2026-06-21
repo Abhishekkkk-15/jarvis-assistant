@@ -88,6 +88,37 @@ export const calendarTools = [
   }),
 
   new DynamicStructuredTool({
+    name: "calendar_update_event",
+    description: "Update an existing event in the user's Google Calendar. Only the fields provided are changed; omitted fields keep their current value.",
+    schema: z.object({
+      eventId: z.string().describe("The Google Calendar event ID (from calendar_list_events or calendar_search_events)"),
+      title: z.string().optional().describe("New event title/summary"),
+      startDateTime: z.string().optional().describe("New start date-time in ISO format (e.g. 2024-01-15T14:00:00)"),
+      endDateTime: z.string().optional().describe("New end date-time in ISO format (e.g. 2024-01-15T15:00:00)"),
+      description: z.string().optional().describe("New event description or notes"),
+      location: z.string().optional().describe("New event location"),
+      attendees: z.array(z.string()).optional().describe("New list of attendee email addresses (replaces the existing list)"),
+      timeZone: z.string().default("UTC").describe("IANA timezone string, used if start/end times are updated"),
+    }),
+    func: async ({ eventId, title, startDateTime, endDateTime, description, location, attendees, timeZone }) => {
+      try {
+        const calendar = await getCalendarClient();
+        const event: any = {};
+        if (title !== undefined) event.summary = title;
+        if (startDateTime !== undefined) event.start = { dateTime: startDateTime, timeZone };
+        if (endDateTime !== undefined) event.end = { dateTime: endDateTime, timeZone };
+        if (description !== undefined) event.description = description;
+        if (location !== undefined) event.location = location;
+        if (attendees !== undefined) event.attendees = attendees.map((email) => ({ email }));
+        const resp = await calendar.events.patch({ calendarId: "primary", eventId, requestBody: event });
+        return `Event updated successfully!\nID: ${resp.data.id}\nTitle: ${resp.data.summary}\nLink: ${resp.data.htmlLink}`;
+      } catch (err: any) {
+        return `Error updating calendar event: ${err.message}`;
+      }
+    },
+  }),
+
+  new DynamicStructuredTool({
     name: "calendar_delete_event",
     description: "Delete an event from the user's Google Calendar by its event ID.",
     schema: z.object({
