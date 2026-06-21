@@ -48,6 +48,11 @@ Make sure you have the following installed on your machine:
    pnpm run rebuild:dev
    ```
 
+4. **Install Python dependencies** (required for screen capture, OCR-based clicking, and Windows UI Automation tools):
+   ```bash
+   pip install -r artifacts/api-server/requirements.txt
+   ```
+
 ---
 
 ## 🛠️ Development Scripts

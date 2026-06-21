@@ -19,11 +19,25 @@ function runPython(code: string, timeout = 8000): Promise<string> {
       `python -c "${escaped}"`,
       { timeout },
       (err, stdout, stderr) => {
-        if (err) resolve(`Error: ${stderr || err.message}`);
+        if (err) resolve(formatPythonError(stderr, err.message));
         else resolve(stdout.trim() || "OK");
       }
     );
   });
+}
+
+// Surfaces a missing-package/missing-Python error as an actionable message instead of
+// dumping the raw traceback, which just confuses whoever reads the tool result.
+function formatPythonError(stderr: string, fallbackMessage: string): string {
+  const text = stderr || fallbackMessage || "";
+  const moduleMatch = text.match(/ModuleNotFoundError: No module named '([^']+)'/);
+  if (moduleMatch) {
+    return `Error: the Python package '${moduleMatch[1]}' is not installed. Run \`pip install ${moduleMatch[1]}\` (see artifacts/api-server/requirements.txt) and try again.`;
+  }
+  if (/python/i.test(text) && /(not recognized as an internal or external command|command not found)/i.test(text)) {
+    return "Error: Python is not installed or not on PATH. Install Python 3 and make sure it's added to PATH.";
+  }
+  return `Error: ${text}`;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -268,7 +282,7 @@ export const computerTools = [
     func: async ({ save_path }) => {
       const outPath = save_path || path.join(os.homedir(), "Desktop", `jarvis_screenshot_${Date.now()}.png`);
       // Use pyautogui to capture screenshot
-      const code = `import pyautogui; img = pyautogui.screenshot(); img.save(r'${outPath.replace(/\\/g, "\\\\")}'); print('OK')`;
+      const code = `import pyautogui; img = pyautogui.screenshot(); img.save(r'${outPath}'); print('OK')`;
       const result = await runPython(code);
       if (result.startsWith("Error")) return result;
       return `Screenshot saved to: ${outPath}`;

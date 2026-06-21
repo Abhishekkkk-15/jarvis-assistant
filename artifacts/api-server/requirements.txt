@@ -1,0 +1,7 @@
+# Python dependencies for tools that shell out to Python (src/tools/computer.ts,
+# src/tools/uiautomation.ts). Install with: pip install -r requirements.txt
+#
+# pyautogui  -> screen_capture, find_and_click_text (screenshots + OCR-based clicking)
+# uiautomation -> uia_inspect_window, uia_click_element, uia_set_text (Windows UI Automation)
+pyautogui
+uiautomation

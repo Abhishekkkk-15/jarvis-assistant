@@ -19,11 +19,25 @@ function runPythonScript(code: string, timeout = 15000): Promise<string> {
       { timeout, maxBuffer: 1024 * 1024 * 5 }, // 5MB buffer for large UI trees
       (err, stdout, stderr) => {
         try { fs.unlinkSync(tmpFile); } catch (e) {} // cleanup
-        if (err) resolve(`Error: ${stderr || err.message}`);
+        if (err) resolve(formatPythonError(stderr, err.message));
         else resolve(stdout.trim() || "OK");
       }
     );
   });
+}
+
+// Surfaces a missing-package/missing-Python error as an actionable message instead of
+// dumping the raw traceback, which just confuses whoever reads the tool result.
+function formatPythonError(stderr: string, fallbackMessage: string): string {
+  const text = stderr || fallbackMessage || "";
+  const moduleMatch = text.match(/ModuleNotFoundError: No module named '([^']+)'/);
+  if (moduleMatch) {
+    return `Error: the Python package '${moduleMatch[1]}' is not installed. Run \`pip install ${moduleMatch[1]}\` (see artifacts/api-server/requirements.txt) and try again.`;
+  }
+  if (/python/i.test(text) && /(not recognized as an internal or external command|command not found)/i.test(text)) {
+    return "Error: Python is not installed or not on PATH. Install Python 3 and make sure it's added to PATH.";
+  }
+  return `Error: ${text}`;
 }
 
 export const uiaTools = [
