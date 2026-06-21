@@ -12,6 +12,34 @@ import { useRelationshipEngine } from '@/hooks/useRelationshipEngine';
 import { AgentInteractiveOverlay } from '@/components/ui/AgentInteractiveOverlay';
 import { useTTS } from '@/hooks/useTTS';
 
+// Whisper frequently hallucinates YouTube-outro-style phrases (or bare punctuation) when fed
+// silence/background noise instead of real speech. Normalize and pattern-match rather than
+// requiring an exact string match, since the model varies wording/punctuation each time.
+const HALLUCINATION_PATTERNS = [
+  /^(thanks?|thank you)( so much| very much)?( for watching)?$/,
+  /thanks? for watching/,
+  /welcome to my channel/,
+  /^hello everyone/,
+  /(please )?(like( and|,)? )?subscribe( to my channel)?$/,
+  /don'?t forget to (like|subscribe)/,
+  /see you (in the )?next (video|time)/,
+  /^(bye|goodbye)( bye)?$/,
+  /i'?m going to make a/,
+];
+
+function isWhisperHallucination(text: string): boolean {
+  const normalized = text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Empty, or just punctuation/symbols (e.g. ",", "...", "-")
+  if (!normalized) return true;
+
+  return HALLUCINATION_PATTERNS.some((re) => re.test(normalized));
+}
+
 export const JarvisMain: React.FC = () => {
   const queryClient = useQueryClient();
   const [isListening, setIsListening] = useLocalStorage('jarvisIsListening', false);
@@ -198,24 +226,10 @@ export const JarvisMain: React.FC = () => {
           }, {
             onSuccess: (res) => {
               let text = res.text?.trim();
-              
+
               // Filter out common Whisper hallucinations on background noise/silence
-              if (text) {
-                const lower = text.toLowerCase();
-                const hallucinations = [
-                  "thank you.",
-                  "thank you!",
-                  "thank you for watching.",
-                  "thank you for watching!",
-                  "subscribe to my channel.",
-                  "subscribe.",
-                  "i'm going to make a",
-                  "i'm going to make a.",
-                  "bye."
-                ];
-                if (hallucinations.includes(lower)) {
-                  text = "";
-                }
+              if (text && isWhisperHallucination(text)) {
+                text = "";
               }
 
               if (text) {
@@ -622,11 +636,6 @@ export const JarvisMain: React.FC = () => {
       }
     }
   };
-
-  // Sync isSpeaking from TTS hook to local storage so MiniMode can read it
-  useEffect(() => {
-    setIsSpeaking(tts.isSpeaking);
-  }, [tts.isSpeaking]);
 
   return (
     <div 
