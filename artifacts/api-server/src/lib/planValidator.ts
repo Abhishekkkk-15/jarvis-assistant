@@ -45,8 +45,7 @@ export const securityRules: SecurityRule[] = [
     reason: "Writing to system directory",
   },
   {
-    match: (tool, args) =>
-      ["delete_file", "remove_directory"].includes(tool),
+    match: (tool, args) => tool === "delete_file",
     risk: RiskLevel.HIGH,
     reason: "Destructive file operation",
   },
@@ -58,9 +57,14 @@ export const securityRules: SecurityRule[] = [
 
   // System control
   {
-    match: (tool, args) => tool === "registry_control",
+    match: (tool, args) => tool === "registry_control" && args?.action === "add",
     risk: RiskLevel.CRITICAL,
     reason: "Modifies Windows Registry",
+  },
+  {
+    match: (tool, args) => tool === "registry_control" && args?.action === "query",
+    risk: RiskLevel.NONE,
+    reason: "Read-only registry query",
   },
   {
     match: (tool, args) => tool === "power_management",
@@ -91,12 +95,41 @@ export const securityRules: SecurityRule[] = [
     reason: "Clicking a purchase/checkout confirmation button — may spend money",
   },
 
-  // Network
+  // Delegation to a second autonomous agent
   {
-    match: (tool, args) => tool === "http_request" && args?.method !== "GET",
-    risk: RiskLevel.MEDIUM,
-    reason: "Non‑GET HTTP request (may modify remote data)",
+    match: (tool, args) => ["spawn_claude", "delegate_to_antigravity"].includes(tool),
+    risk: RiskLevel.CRITICAL,
+    reason: "Delegates control to a second autonomous AI agent with its own shell/file-system access",
   },
+
+  // External messaging
+  {
+    match: (tool, args) => ["send_telegram_message", "send_discord_message"].includes(tool),
+    risk: RiskLevel.HIGH,
+    reason: "Sending a message or file to an external chat on behalf of the user",
+  },
+
+  // Calendar
+  {
+    match: (tool, args) =>
+      tool === "calendar_create_event" && Array.isArray(args?.attendees) && args.attendees.length > 0,
+    risk: RiskLevel.HIGH,
+    reason: "Sends real calendar invitations to other people",
+  },
+  {
+    match: (tool, args) => tool === "calendar_delete_event",
+    risk: RiskLevel.HIGH,
+    reason: "Deletes a calendar event, which may also notify other attendees",
+  },
+
+  // GitHub
+  {
+    match: (tool, args) => tool === "github_create_issue",
+    risk: RiskLevel.MEDIUM,
+    reason: "Creates a publicly visible issue under the user's GitHub identity",
+  },
+
+  // Network
   {
     match: (tool, args) => tool === "send_email",
     risk: RiskLevel.HIGH,
@@ -114,7 +147,6 @@ export function assessRisk(
     }
   }
   const safeTools = [
-    "listTools",
     "askQuestion",
     "requestApproval",
     "notify_user",
