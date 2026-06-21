@@ -106,6 +106,16 @@ export function useTTS() {
   );
   const [isSpeaking, setIsSpeaking] = useState(false);
 
+  // Broadcast speaking state via the same key/event useLocalStorage consumers use, so the
+  // global wake-word listener (which checks 'jarvisIsSpeaking') knows TTS is playing no matter
+  // which page/component instance of useTTS() triggered it (e.g. Settings' "Test Voice").
+  useEffect(() => {
+    try {
+      localStorage.setItem("jarvisIsSpeaking", JSON.stringify(isSpeaking));
+      window.dispatchEvent(new CustomEvent("local-storage", { detail: { key: "jarvisIsSpeaking", value: isSpeaking } }));
+    } catch { }
+  }, [isSpeaking]);
+
   // ── Engine selection
   const [engine, setEngine] = useState<TTSEngine>(
     () => (ls("jarvis_tts_engine", "browser") as TTSEngine)
