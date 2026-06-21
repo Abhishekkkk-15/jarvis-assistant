@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@workspace/db";
 import { scheduledTasksTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
-import { scheduleTaskInMemory, cancelTaskInMemory } from "../lib/scheduler.js"; // We will build this
+import { scheduleTaskInMemory, cancelTaskInMemory } from "../lib/scheduler.js";
 
 export const cronTools = [
   new DynamicStructuredTool({
@@ -37,6 +37,35 @@ export const cronTools = [
       const tasks = await db.select().from(scheduledTasksTable);
       if (tasks.length === 0) return "No scheduled tasks are currently active.";
       return tasks.map(t => `ID: ${t.id} | Schedule: ${t.cronExpression} | Task: ${t.taskDescription}`).join("\\n");
+    },
+  }),
+
+  new DynamicStructuredTool({
+    name: "update_scheduled_task",
+    description: "Update an existing scheduled background task's cron schedule and/or description by its ID. Only the fields provided are changed.",
+    schema: z.object({
+      taskId: z.number().describe("The ID of the task to update (from list_scheduled_tasks)."),
+      cronExpression: z.string().optional().describe("New cron expression. Omit to keep the current schedule."),
+      taskDescription: z.string().optional().describe("New task description. Omit to keep the current description."),
+    }),
+    func: async ({ taskId, cronExpression, taskDescription }) => {
+      try {
+        const [existing] = await db.select().from(scheduledTasksTable).where(eq(scheduledTasksTable.id, taskId));
+        if (!existing) return `Error: no scheduled task found with ID ${taskId}.`;
+
+        const newCronExpression = cronExpression || existing.cronExpression;
+        const newTaskDescription = taskDescription || existing.taskDescription;
+
+        await db.update(scheduledTasksTable)
+          .set({ cronExpression: newCronExpression, taskDescription: newTaskDescription })
+          .where(eq(scheduledTasksTable.id, taskId));
+
+        scheduleTaskInMemory(taskId, newCronExpression, newTaskDescription);
+
+        return `Task ${taskId} updated successfully. Schedule: '${newCronExpression}', Task: '${newTaskDescription}'.`;
+      } catch (err: any) {
+        return `Failed to update scheduled task: ${err.message}`;
+      }
     },
   }),
 
