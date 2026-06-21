@@ -112,7 +112,9 @@ export const securityRules: SecurityRule[] = [
   // Calendar
   {
     match: (tool, args) =>
-      tool === "calendar_create_event" && Array.isArray(args?.attendees) && args.attendees.length > 0,
+      ["calendar_create_event", "calendar_update_event"].includes(tool) &&
+      Array.isArray(args?.attendees) &&
+      args.attendees.length > 0,
     risk: RiskLevel.HIGH,
     reason: "Sends real calendar invitations to other people",
   },
@@ -124,9 +126,16 @@ export const securityRules: SecurityRule[] = [
 
   // GitHub
   {
-    match: (tool, args) => tool === "github_create_issue",
+    match: (tool, args) => ["github_create_issue", "github_create_pull_request"].includes(tool),
     risk: RiskLevel.MEDIUM,
-    reason: "Creates a publicly visible issue under the user's GitHub identity",
+    reason: "Creates a publicly visible issue/PR under the user's GitHub identity",
+  },
+
+  // Notion
+  {
+    match: (tool, args) => ["notion_create_page", "notion_append_text"].includes(tool),
+    risk: RiskLevel.LOW,
+    reason: "Modifies the user's Notion workspace",
   },
 
   // Network
@@ -173,6 +182,8 @@ export function assessRisk(
     "display_brightness",
     "website_screenshot_capture",
     "read_recent_emails",
+    "read_email_body",
+    "email_search",
     "read_jarvis_manual",
     "check_configured_settings"
   ];
