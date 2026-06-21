@@ -113,6 +113,28 @@ export const githubTools = [
   }),
 
   new DynamicStructuredTool({
+    name: "github_create_pull_request",
+    description: "Create a new pull request in a GitHub repository.",
+    schema: z.object({
+      owner: z.string().describe("The account owner of the repository."),
+      repo: z.string().describe("The name of the repository."),
+      title: z.string().describe("The title of the pull request."),
+      head: z.string().describe("The name of the branch where your changes are implemented (e.g. 'feature/foo', or 'username:feature/foo' for a fork)."),
+      base: z.string().describe("The name of the branch you want the changes pulled into (e.g. 'main')."),
+      body: z.string().optional().describe("The body/description of the pull request."),
+    }),
+    func: async ({ owner, repo, title, head, base, body }) => {
+      try {
+        const octokit = await getOctokit();
+        const response = await octokit.rest.pulls.create({ owner, repo, title, head, base, body });
+        return `Successfully created pull request #${response.data.number}: ${response.data.html_url}`;
+      } catch (err: any) {
+        return `Failed to create pull request on GitHub: ${err.message}`;
+      }
+    },
+  }),
+
+  new DynamicStructuredTool({
     name: "github_create_issue",
     description: "Create a new issue in a specific GitHub repository.",
     schema: z.object({
