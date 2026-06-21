@@ -180,6 +180,7 @@ export const JarvisMain: React.FC = () => {
   const hasSpokenRef = useRef(false);
   const wasLastInteractionVoiceRef = useRef(false);
   const continuousVoiceQueuedRef = useRef(false);
+  const manualStopRef = useRef(false);
 
   const startListening = async () => {
     if (isStreamingRef.current) return;
@@ -190,6 +191,7 @@ export const JarvisMain: React.FC = () => {
       setTranscript('Listening... (speak now)');
       hasSpokenRef.current = false;
       wasLastInteractionVoiceRef.current = true;
+      manualStopRef.current = false;
 
       audioChunksRef.current = [];
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
@@ -322,6 +324,19 @@ export const JarvisMain: React.FC = () => {
     }
   };
 
+  // Manually clicking the mic to stop means "I'm done," not "pause for a follow-up" — unlike
+  // VAD's silence-based auto-stop, it should suppress that turn's continuous-voice restart even
+  // if the captured audio still gets transcribed and sent.
+  const handleMicButtonClick = () => {
+    if (isListening) {
+      manualStopRef.current = true;
+      continuousVoiceQueuedRef.current = false;
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
   useEffect(() => {
     if (isListening && !audioStream) {
       if (isStreamingRef.current) {
@@ -345,7 +360,7 @@ export const JarvisMain: React.FC = () => {
   const handleSendMessage = async (text: string, imageBase64?: string) => {
     if (!text.trim() || isStreaming) return;
 
-    if (settings?.continuousVoiceMode && wasLastInteractionVoiceRef.current) {
+    if (settings?.continuousVoiceMode && wasLastInteractionVoiceRef.current && !manualStopRef.current) {
       continuousVoiceQueuedRef.current = true;
     }
 
@@ -729,7 +744,7 @@ export const JarvisMain: React.FC = () => {
           {/* Mic + visualizer */}
           <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-white shrink-0">
             <button
-              onClick={isListening ? stopListening : startListening}
+              onClick={handleMicButtonClick}
               disabled={isStreaming}
               className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shrink-0 ${
                 isStreaming 
