@@ -127,6 +127,10 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   // Attention Seeker Tracker
   const lastInteractionTime = useRef(Date.now());
 
+  // Last screen title seen by the periodic visual task check — kept outside the effect
+  // so it survives the effect re-running when isDragging/isListening/isProcessing etc. change.
+  const lastScreenTitleRef = useRef('');
+
   // Personality Hook (Blinking, microexpressions, sentiment emotion)
   const personality = useCharacterPersonality();
 
@@ -760,16 +764,14 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   useEffect(() => {
     if (!autonomousMode || !isMinimized) return;
 
-    let lastScreenTitle = '';
-
     const checkVisualTaskHelp = async () => {
       if (isDragging || isListening || isSpeaking || isProcessing || showContextMenu) return;
 
       const activeWin = (window as any).lastActiveWindow;
       if (!activeWin || !activeWin.title) return;
 
-      if (activeWin.title === lastScreenTitle) return;
-      lastScreenTitle = activeWin.title;
+      if (activeWin.title === lastScreenTitleRef.current) return;
+      lastScreenTitleRef.current = activeWin.title;
 
       try {
         if (window.electronAPI && typeof window.electronAPI.captureScreen === 'function') {
