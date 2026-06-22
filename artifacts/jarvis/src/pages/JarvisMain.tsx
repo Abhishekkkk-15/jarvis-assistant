@@ -48,6 +48,7 @@ export const JarvisMain: React.FC = () => {
   const [, setIsProcessing] = useLocalStorage('jarvisIsProcessing', false);
   const [, setLastReply] = useLocalStorage('jarvisLastReply', '');
   const [, setToolsUsed] = useLocalStorage<string[]>('jarvisToolsUsed', []);
+  const [, setStreamStatusStore] = useLocalStorage<string | null>('jarvisStreamStatus', null);
   const [transcript, setTranscript] = useState('');
   interface ChatMessage {
     role: string;
@@ -420,6 +421,7 @@ export const JarvisMain: React.FC = () => {
               setActiveConversationId(event.conversationId);
             } else if (event.type === 'thinking_start') {
               setIsThinking(true);
+              setStreamStatusStore('Supervisor');
               setThinkingSteps([]);
               setThinkingPlan(null);
               setThinkingDuration(null);
@@ -456,6 +458,7 @@ export const JarvisMain: React.FC = () => {
               setThinkingDuration(event.durationMs);
             } else if (event.type === 'status') {
               setStreamStatus(NODE_LABELS[event.node] ?? `${event.node}…`);
+              setStreamStatusStore(event.node);
             } else if (event.type === 'token') {
               accumulatedText += event.text;
               setStreamingContent(cleanMessageContent('assistant', accumulatedText));
@@ -502,6 +505,7 @@ export const JarvisMain: React.FC = () => {
               }
             } else if (event.type === 'error') {
               toast({ title: "Error", description: event.message || "AI error.", variant: "destructive" });
+              window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: 'sad' } }));
             }
           } catch { }
         }
@@ -509,11 +513,13 @@ export const JarvisMain: React.FC = () => {
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         toast({ title: "Error", description: "Failed to reach the AI.", variant: "destructive" });
+        window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: 'angry' } }));
       }
     } finally {
       setIsStreaming(false);
       setStreamingContent('');
       setStreamStatus(null);
+      setStreamStatusStore(null);
       setIsProcessing(false);
       abortControllerRef.current = null;
     }

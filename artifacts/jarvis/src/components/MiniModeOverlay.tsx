@@ -86,6 +86,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [lastReply] = useLocalStorage('jarvisLastReply', '');
   const [toolsUsed, setToolsUsed] = useLocalStorage<string[]>('jarvisToolsUsed', []);
   const [customCharacters] = useLocalStorage<CustomCharacter[]>('jarvisCustomCharacters', []);
+  const [streamStatus] = useLocalStorage<string | null>('jarvisStreamStatus', null);
   const [notificationMsg, setNotificationMsg] = useState<{ title: string; message: string } | null>(null);
 
   // Clear tools after 4 seconds so they don't stay forever
@@ -164,7 +165,15 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const animation = isListening
     ? 'excited'
     : (isProcessing
-      ? 'thinking'
+      ? (streamStatus === 'Executor'
+        ? (toolsUsed.length > 0 ? 'excited' : 'walk')
+        : (streamStatus === 'Synthesizer'
+          ? 'talk'
+          : (streamStatus === 'Verifier' || streamStatus === 'Observer' || streamStatus === 'PlanValidator'
+            ? 'surprised'
+            : (streamStatus === 'Replanner'
+              ? 'confused'
+              : 'thinking'))))
       : (baseAnimation === 'courier'
         ? 'courier'
         : (personality.emotionAnimation
@@ -501,11 +510,21 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   // Handle thinking state
   useEffect(() => {
     if (isProcessing) {
-      setBaseAnimation('thinking');
+      if (streamStatus === 'Executor') {
+        setBaseAnimation('walk');
+      } else if (streamStatus === 'Synthesizer') {
+        setBaseAnimation('idle');
+      } else if (streamStatus === 'Verifier' || streamStatus === 'Observer' || streamStatus === 'PlanValidator') {
+        setBaseAnimation('surprised');
+      } else if (streamStatus === 'Replanner') {
+        setBaseAnimation('confused');
+      } else {
+        setBaseAnimation('thinking');
+      }
     } else if (baseAnimation === 'thinking') {
       setBaseAnimation('idle');
     }
-  }, [isProcessing]);
+  }, [isProcessing, streamStatus]);
 
   // Randomize tracking state
   useEffect(() => {
@@ -540,15 +559,17 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
   // Autonomous movement
   useEffect(() => {
-    if (autonomousMode || isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic || isProcessing) return;
+    if (autonomousMode || isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic) return;
+    if (isProcessing && streamStatus !== 'Executor') return;
 
     const idleTimer = setTimeout(() => {
       if (baseAnimation === 'idle' && !isTrackingCursor) setBaseAnimation('sleep');
     }, 20000);
 
     const moveTimer = setInterval(() => {
-      if (isTrackingCursor || isProcessing) return;
-      if (baseAnimation !== 'idle' && baseAnimation !== 'sleep') return;
+      if (isTrackingCursor) return;
+      if (isProcessing && streamStatus !== 'Executor') return;
+      if (baseAnimation !== 'idle' && baseAnimation !== 'sleep' && baseAnimation !== 'walk' && baseAnimation !== 'thinking') return;
 
       const maxX = window.innerWidth - 120;
       const maxY = window.innerHeight - 120;
@@ -599,14 +620,14 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       }
 
       const duration = nextStyle === 'dash' ? 800 : (nextStyle === 'jump' ? 1200 : (nextStyle === 'sneak' || nextStyle === 'crawl' ? 4000 : 2000));
-      setTimeout(() => setBaseAnimation('idle'), duration);
+      setTimeout(() => setBaseAnimation(isProcessing ? 'walk' : 'idle'), duration);
     }, 1500 + Math.random() * 2000); // move every 1.5 to 3.5 seconds (SUPER HYPERACTIVE)
 
     return () => {
       clearTimeout(idleTimer);
       clearInterval(moveTimer);
     };
-  }, [autonomousMode, isDragging, isListening, isSpeaking, isTrackingCursor, isPhysicsActive, isDancingToMusic, posX, setPosX, setPosY, baseAnimation, isProcessing]);
+  }, [autonomousMode, isDragging, isListening, isSpeaking, isTrackingCursor, isPhysicsActive, isDancingToMusic, posX, setPosX, setPosY, baseAnimation, isProcessing, streamStatus]);
 
   useEffect(() => {
     // Reset timer when Jarvis state changes (e.g. finishes speaking/listening)

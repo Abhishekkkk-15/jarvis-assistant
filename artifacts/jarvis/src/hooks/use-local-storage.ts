@@ -35,8 +35,21 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
         setStoredValue(customEvent.detail.value);
       }
     };
+    const handleNativeStorage = (e: StorageEvent) => {
+      if (e.key === key && e.newValue !== null) {
+        try {
+          setStoredValue(JSON.parse(e.newValue));
+        } catch {
+          setStoredValue(e.newValue as any);
+        }
+      }
+    };
     window.addEventListener('local-storage', handleStorageChange);
-    return () => window.removeEventListener('local-storage', handleStorageChange);
+    window.addEventListener('storage', handleNativeStorage);
+    return () => {
+      window.removeEventListener('local-storage', handleStorageChange);
+      window.removeEventListener('storage', handleNativeStorage);
+    };
   }, [key]);
 
   return [storedValue, setValue] as const;
