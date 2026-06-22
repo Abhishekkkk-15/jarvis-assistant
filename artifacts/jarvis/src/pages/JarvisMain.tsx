@@ -552,11 +552,13 @@ export const JarvisMain: React.FC = () => {
     toast({ title: "Stopped", description: "Execution aborted by user." });
   };
 
-  const handleMessageWithScreenshot = async (message: string, imageBase64?: string) => {
+  const handleMessageWithScreenshot = async (message: string, imageBase64?: string, skipAutoScreenshot?: boolean) => {
     let finalImageBase64 = imageBase64;
 
     // If no image was explicitly passed, automatically capture the screen for True Visual AI context!
-    if (!finalImageBase64 && window.electronAPI?.captureScreen) {
+    // Skipped for sources like Quick Input, where the user just wants a fast plain-text answer
+    // using their chosen text model, not a screenshot that silently forces the vision model.
+    if (!finalImageBase64 && !skipAutoScreenshot && window.electronAPI?.captureScreen) {
       try {
         const screenshot = await window.electronAPI.captureScreen();
         if (screenshot) {
@@ -572,9 +574,9 @@ export const JarvisMain: React.FC = () => {
 
   useEffect(() => {
     const handleGlobalMessage = (e: any) => {
-      const { message, imageBase64 } = e.detail;
+      const { message, imageBase64, skipAutoScreenshot } = e.detail;
       if (message) {
-        handleMessageWithScreenshot(message, imageBase64);
+        handleMessageWithScreenshot(message, imageBase64, skipAutoScreenshot);
       }
     };
     const handleSystemEvent = (e: any) => {

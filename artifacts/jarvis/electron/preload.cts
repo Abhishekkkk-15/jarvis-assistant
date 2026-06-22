@@ -25,7 +25,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 });
 
 ipcRenderer.on('message-from-quick-input', (event, message) => {
-  (window as any).dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message } }));
+  // Quick Input is meant for fast plain-text commands — don't force every message
+  // into the vision model by auto-attaching a screenshot of the whole desktop.
+  (window as any).dispatchEvent(new CustomEvent('jarvis-send-message', { detail: { message, skipAutoScreenshot: true } }));
 });
 
 ipcRenderer.on('active-window-changed', (event, winInfo) => {
