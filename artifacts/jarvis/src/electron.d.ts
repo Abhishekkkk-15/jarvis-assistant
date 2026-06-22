@@ -9,6 +9,7 @@ interface Window {
     setIgnoreMouseEvents: (ignore: boolean) => void;
     setFullscreen: (isFullscreen: boolean, alwaysOnTop?: boolean) => void;
     minimizeWindow: () => void;
+    maximizeWindow: () => void;
     closeWindow: () => void;
     captureScreen: () => Promise<string | null>;
     getActiveWindow: () => Promise<{ title: string; id: number; bounds: { x: number; y: number; width: number; height: number; }; owner: { name: string; processId: number; path: string; }; url?: string; memoryUsage?: number; } | null>;

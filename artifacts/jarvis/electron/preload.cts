@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setIgnoreMouseEvents: (ignore: boolean) => ipcRenderer.send('set-ignore-mouse-events', ignore),
   setFullscreen: (isFullscreen: boolean, alwaysOnTop?: boolean) => ipcRenderer.send('set-fullscreen', isFullscreen, alwaysOnTop),
   minimizeWindow: () => ipcRenderer.send('minimize-window'),
+  maximizeWindow: () => ipcRenderer.send('maximize-window'),
   closeWindow: () => ipcRenderer.send('close-window'),
   captureScreen: () => ipcRenderer.invoke('capture-screen'),
   getActiveWindow: () => ipcRenderer.invoke('get-active-window'),
