@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ThinkingIndicator, ThinkingStep, PlanStep } from '../components/ui/ThinkingIndicator';
 import { useGetSettings, getGetSettingsQueryKey, useGetStats, getGetStatsQueryKey, useGetCommandSuggestions, getGetCommandSuggestionsQueryKey, useTranscribeAudio, useGetConversation, getGetConversationQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Mic, MicOff, Volume2, VolumeX, Send, Activity, Zap, Square, Plus } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Send, Activity, Zap, Square, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { AudioVisualizer } from '../components/AudioVisualizer';
 import { useToast } from '@/hooks/use-toast';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -61,6 +61,8 @@ export const JarvisMain: React.FC = () => {
   }
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(true);
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingDuration, setThinkingDuration] = useState<number | null>(null);
   const [thinkingPlan, setThinkingPlan] = useState<PlanStep[] | null>(null);
@@ -107,7 +109,9 @@ export const JarvisMain: React.FC = () => {
   const cleanMessageContent = (role: string, content: string) => {
     if (!content) return '';
     if (role === 'user') {
-      return content.replace(/^\[System Note - Your Relationship with User:.*?\]\s*/is, '');
+      return content
+        .replace(/^\[System Note - Your Relationship with User:.*?\]\s*/is, '')
+        .replace(/^\[User Active Window Context - Application:.*?, Window Title: ".*?"\]\s*/is, '');
     } else {
       return content
         .replace(/\[anim:\s*[a-zA-Z0-9_-]+\]/gi, '')
@@ -694,11 +698,19 @@ export const JarvisMain: React.FC = () => {
       />
 
       {/* Header */}
-      <header className="flex justify-between items-center mb-6 shrink-0 select-none" style={{ WebkitAppRegion: 'drag' } as any}>
+      <header className="flex justify-between items-center mb-6 shrink-0 select-none border-b border-border pb-4" style={{ WebkitAppRegion: 'drag' } as any}>
         <div>
           <h2 className="text-xl font-semibold text-foreground">Assistant</h2>
         </div>
-        <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as any}>
+        <div className="flex items-center gap-3" style={{ WebkitAppRegion: 'no-drag' } as any}>
+          {/* Inline Token Stats */}
+          <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-lg px-3 py-1.5 text-xs text-slate-600 font-medium">
+            <span className="flex items-center gap-1"><Activity size={12} className="text-primary" /> {stats?.todayMessages || 0} messages</span>
+            <span className="w-px h-3 bg-slate-200" />
+            <span>{stats?.totalTokens || 0} tokens</span>
+          </div>
+
+
           <button
             onClick={() => {
               setActiveConversationId(null);
@@ -723,237 +735,242 @@ export const JarvisMain: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+      {/* Option A Layout: Full width, vertical chat flow with controls at bottom */}
+      <div className="flex-1 flex flex-col gap-4 min-h-0 relative">
 
-        {/* Left — Interaction */}
-        <div className="lg:col-span-2 flex flex-col gap-4">
-
-          {/* Orb / Visualizer area */}
-          <div className="rounded-xl border border-border bg-slate-50 flex flex-col items-center justify-center p-8 gap-5 min-h-[200px] shrink-0">
-            <div className={`w-24 h-24 rounded-full bg-primary/10 border-2 flex items-center justify-center transition-all duration-300 ${isListening || isSpeaking ? 'border-primary animate-pulse-ring' : 'border-primary/30'}`}>
-              <div className={`w-12 h-12 rounded-full transition-all duration-300 ${isListening ? 'bg-primary animate-ping' : isSpeaking ? 'bg-primary/70 animate-bounce' : 'bg-primary/30'}`} />
-            </div>
-            {transcript && (
-              <p className="text-sm text-foreground font-medium text-center italic">"{transcript}"</p>
-            )}
-            {isListening && !transcript && (
-              <p className="text-sm text-muted-foreground animate-pulse">Listening…</p>
-            )}
-          </div>
-
-          {/* Quick commands */}
-          {commandSuggestions && commandSuggestions.flatMap(c => c.examples).length > 0 && (
-            <div className="flex gap-2 overflow-x-auto pb-1 shrink-0">
-              {commandSuggestions.flatMap(c => c.examples).slice(0, 5).map((cmd, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSendMessage(cmd)}
-                  className="px-3 py-1.5 whitespace-nowrap bg-white border border-border hover:bg-slate-50 hover:border-primary/40 rounded-full text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
-                  data-testid={`button-quick-command-${i}`}
-                >
-                  <Zap size={11} className="text-primary" /> {cmd}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Mic + visualizer */}
-          <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-white shrink-0">
-            <button
-              onClick={handleMicButtonClick}
-              disabled={isStreaming}
-              className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shrink-0 ${
-                isStreaming 
-                  ? 'bg-slate-100 border-2 border-slate-300 text-slate-400 cursor-not-allowed opacity-50'
-                  : isListening
-                    ? 'bg-destructive/10 border-2 border-destructive text-destructive'
-                    : 'bg-primary/10 border-2 border-primary text-primary hover:bg-primary/20'
-              }`}
-              data-testid="button-mic"
-            >
-              {isListening ? <MicOff size={24} /> : <Mic size={24} />}
-            </button>
-            <div className="flex-1">
-              <AudioVisualizer isListening={isListening} stream={audioStream} />
-            </div>
-          </div>
-
-          {/* Conversation / Chat */}
-          <div className="flex-1 min-h-[240px] flex flex-col rounded-xl border border-border bg-white overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                  Start by speaking or typing below
-                </div>
-              ) : (
-                messages.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] px-4 py-2.5 rounded-xl text-sm leading-relaxed ${msg.role === 'user'
-                      ? 'bg-primary text-white rounded-br-sm'
-                      : 'bg-slate-100 text-foreground rounded-bl-sm'
-                      }`}>
-                      <p className="text-[10px] font-semibold opacity-60 mb-1 uppercase tracking-wide">
-                        {msg.role === 'user' ? 'You' : 'JARVIS'}
-                      </p>
-                      <div className="whitespace-pre-wrap">
-                        {msg.role === 'assistant' && msg.thinkingMetadata && (
-                          <ThinkingIndicator
-                            steps={msg.thinkingMetadata.steps}
-                            isThinking={false}
-                            durationMs={msg.thinkingMetadata.durationMs}
-                            plan={msg.thinkingMetadata.plan}
-                          />
-                        )}
-                        <ReactMarkdown
-                          components={{
-                            p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                            ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2" {...props} />,
-                            ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2" {...props} />,
-                            li: ({ node, ...props }) => <li className="mb-1" {...props} />,
-                            code: ({ node, ...props }) => <code className="bg-black/10 px-1.5 py-0.5 rounded text-xs" {...props} />,
-                            pre: ({ node, ...props }) => <pre className="bg-slate-800 text-slate-100 p-3 rounded-lg text-xs overflow-x-auto mb-2" {...props} />,
-                            a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline" {...props} />,
-                          }}
-                        >
-                          {msg.content}
-                        </ReactMarkdown>
-                      </div>
+        {/* Chat History Container (Spans full page width and stretches vertically) */}
+        <div className="flex-1 rounded-xl border border-border bg-white overflow-hidden flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            {messages.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                Start by speaking or typing below
+              </div>
+            ) : (
+              messages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] break-words [word-break:break-word] px-4 py-2.5 rounded-xl text-sm leading-relaxed ${msg.role === 'user'
+                    ? 'bg-primary text-white rounded-br-sm'
+                    : 'bg-slate-100 text-foreground rounded-bl-sm'
+                    }`}>
+                    <p className="text-[10px] font-semibold opacity-60 mb-1 uppercase tracking-wide">
+                      {msg.role === 'user' ? 'You' : 'JARVIS'}
+                    </p>
+                    <div className="whitespace-pre-wrap break-words [word-break:break-word]">
+                      {msg.role === 'assistant' && msg.thinkingMetadata && (
+                        <ThinkingIndicator
+                           steps={msg.thinkingMetadata.steps}
+                           isThinking={false}
+                           durationMs={msg.thinkingMetadata.durationMs}
+                           plan={msg.thinkingMetadata.plan}
+                        />
+                      )}
+                      <ReactMarkdown
+                        components={{
+                          p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                          ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2" {...props} />,
+                          ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2" {...props} />,
+                          li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                          code: ({ node, ...props }) => <code className="bg-black/10 px-1.5 py-0.5 rounded text-xs" {...props} />,
+                          pre: ({ node, ...props }) => <pre className="bg-slate-800 text-slate-100 p-3 rounded-lg text-xs overflow-x-auto mb-2" {...props} />,
+                          a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline" {...props} />,
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
                     </div>
                   </div>
-                ))
-              )}
-              {isStreaming && (
-                <div className="flex justify-start">
-                  <div className="max-w-[85%] px-4 py-2.5 rounded-xl text-sm leading-relaxed bg-slate-100 text-foreground rounded-bl-sm">
-                    <p className="text-[10px] font-semibold opacity-60 mb-1 uppercase tracking-wide">JARVIS</p>
-                    {(isThinking || thinkingSteps.length > 0) && (
-                      <ThinkingIndicator
-                        steps={thinkingSteps}
-                        isThinking={isThinking}
-                        durationMs={thinkingDuration}
-                        plan={thinkingPlan}
-                      />
-                    )}
-                    {streamingContent ? (
-                      <div className="whitespace-pre-wrap">
-                        <ReactMarkdown
-                          components={{
-                            p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
-                            ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2" {...props} />,
-                            ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2" {...props} />,
-                            li: ({ node, ...props }) => <li className="mb-1" {...props} />,
-                            code: ({ node, ...props }) => <code className="bg-black/10 px-1.5 py-0.5 rounded text-xs" {...props} />,
-                            pre: ({ node, ...props }) => <pre className="bg-slate-800 text-slate-100 p-3 rounded-lg text-xs overflow-x-auto mb-2" {...props} />,
-                            a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline" {...props} />,
-                          }}
-                        >
-                          {streamingContent}
-                        </ReactMarkdown>
-                      </div>
-                    ) : (
-                      !isThinking && (
-                        <div className="flex items-center gap-1 py-1">
-                          {[0, 150, 300].map((delay) => (
-                            <span
-                              key={delay}
-                              className="w-2 h-2 rounded-full bg-primary/60 animate-bounce"
-                              style={{ animationDelay: `${delay}ms` }}
-                            />
-                          ))}
-                        </div>
-                      )
-                    )}
-                  </div>
                 </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <div className="p-3 sm:p-4 border-t border-border bg-white/50 backdrop-blur-xl shrink-0">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const form = e.target as HTMLFormElement;
-                  const input = form.elements.namedItem('manualInput') as HTMLInputElement;
-                  if (input.value.trim()) {
-                    wasLastInteractionVoiceRef.current = false;
-                    handleSendMessage(input.value.trim());
-                    input.value = '';
-                  }
-                }}
-                className="relative flex items-center shadow-sm rounded-2xl group"
-              >
-                <div className="absolute left-3 sm:left-4 text-muted-foreground group-focus-within:text-primary transition-colors">
-                  <Zap size={18} />
-                </div>
-                <input
-                  name="manualInput"
-                  type="text"
-                  placeholder="Ask JARVIS or type a command..."
-                  className="w-full bg-slate-50/80 hover:bg-slate-100/80 border border-slate-200 rounded-2xl pl-10 sm:pl-12 pr-14 sm:pr-28 py-3 sm:py-4 text-sm sm:text-[15px] text-foreground focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary/50 transition-all placeholder:text-muted-foreground/70 shadow-inner"
-                  data-testid="input-manual-chat"
-                />
-                <div className="absolute right-2 flex items-center gap-2">
-                  <kbd className="hidden sm:inline-flex h-6 items-center gap-1 rounded border bg-muted px-2 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                    <span className="text-xs">↵</span> Enter
-                  </kbd>
-                  {isStreaming ? (
-                    <button
-                      type="button"
-                      onClick={handleStop}
-                      className="w-10 h-10 flex items-center justify-center bg-destructive text-white rounded-xl hover:bg-destructive/90 hover:scale-105 active:scale-95 transition-all shadow-md shadow-destructive/20 animate-pulse"
-                      title="Stop execution"
-                    >
-                      <Square size={14} fill="currentColor" />
-                    </button>
+              ))
+            )}
+            {isStreaming && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] break-words [word-break:break-word] px-4 py-2.5 rounded-xl text-sm leading-relaxed bg-slate-100 text-foreground rounded-bl-sm">
+                  <p className="text-[10px] font-semibold opacity-60 mb-1 uppercase tracking-wide">JARVIS</p>
+                  {(isThinking || thinkingSteps.length > 0) && (
+                    <ThinkingIndicator
+                      steps={thinkingSteps}
+                      isThinking={isThinking}
+                      durationMs={thinkingDuration}
+                      plan={thinkingPlan}
+                    />
+                  )}
+                  {streamingContent ? (
+                    <div className="whitespace-pre-wrap break-words [word-break:break-word]">
+                      <ReactMarkdown
+                        components={{
+                          p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                          ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2" {...props} />,
+                          ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2" {...props} />,
+                          li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                          code: ({ node, ...props }) => <code className="bg-black/10 px-1.5 py-0.5 rounded text-xs" {...props} />,
+                          pre: ({ node, ...props }) => <pre className="bg-slate-800 text-slate-100 p-3 rounded-lg text-xs overflow-x-auto mb-2" {...props} />,
+                          a: ({ node, ...props }) => <a target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline" {...props} />,
+                        }}
+                      >
+                        {streamingContent}
+                      </ReactMarkdown>
+                    </div>
                   ) : (
-                    <button
-                      type="submit"
-                      disabled={isStreaming}
-                      className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-md shadow-primary/20"
-                      data-testid="button-send-chat"
-                      title="Send message"
-                    >
-                      <Send size={16} className="ml-0.5" />
-                    </button>
+                    !isThinking && (
+                      <div className="flex items-center gap-1 py-1">
+                        {[0, 150, 300].map((delay) => (
+                          <span
+                            key={delay}
+                            className="w-2 h-2 rounded-full bg-primary/60 animate-bounce"
+                            style={{ animationDelay: `${delay}ms` }}
+                          />
+                        ))}
+                      </div>
+                    )
                   )}
                 </div>
-              </form>
-            </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
-        </div>
 
-        {/* Right — Stats */}
-        <div className="flex flex-col gap-4">
-          <div className="rounded-xl border border-border bg-white p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Activity size={15} className="text-primary" /> Today's Usage
-            </h3>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="p-3 bg-slate-50 rounded-lg text-center">
-                <p className="text-2xl font-bold text-primary">{stats?.todayMessages || 0}</p>
-                <p className="text-[11px] text-muted-foreground mt-1">Messages</p>
+          {/* Unified Controls Bottom Panel (Suggestions, Mic Visualizer, & Input inline) */}
+          <div className="p-4 border-t border-border bg-slate-50/50 backdrop-blur-xl flex flex-col gap-3 shrink-0">
+            {/* Quick action suggest list */}
+            {commandSuggestions && commandSuggestions.flatMap(c => c.examples).length > 0 && showQuickActions && (
+              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar shrink-0 animate-in slide-in-from-top-1 duration-200">
+                {commandSuggestions.flatMap(c => c.examples).slice(0, 5).map((cmd, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSendMessage(cmd)}
+                    className="px-3 py-1.5 whitespace-nowrap bg-white border border-border hover:bg-slate-50 hover:border-primary/40 rounded-full text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+                    data-testid={`button-quick-command-${i}`}
+                  >
+                    <Zap size={11} className="text-primary" /> {cmd}
+                  </button>
+                ))}
               </div>
-              <div className="p-3 bg-slate-50 rounded-lg text-center">
-                <p className="text-2xl font-bold text-primary">{stats?.totalTokens || 0}</p>
-                <p className="text-[11px] text-muted-foreground mt-1">Tokens</p>
+            )}
+
+            {/* Mic visualizer, Transcript text, & Textarea Input controls */}
+            <div className="flex items-start gap-4 bg-white p-3 rounded-2xl border border-border">
+              {/* Mic action orb */}
+              <button
+                onClick={handleMicButtonClick}
+                disabled={isStreaming}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shrink-0 mt-0.5 ${
+                  isStreaming 
+                    ? 'bg-slate-100 border-2 border-slate-300 text-slate-400 cursor-not-allowed opacity-50'
+                    : isListening
+                      ? 'bg-destructive/10 border-2 border-destructive text-destructive'
+                      : 'bg-primary/10 border-2 border-primary text-primary hover:bg-primary/20'
+                }`}
+                data-testid="button-mic"
+                title={isListening ? "Stop listening" : "Start voice control"}
+              >
+                {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+              </button>
+
+              {/* Combined Audio Visualizer / Textarea display */}
+              <div className="flex-1 min-w-0 flex flex-col justify-center min-h-[48px]">
+                {isListening ? (
+                  <div className="h-6 w-full max-w-[200px] mt-3">
+                    <AudioVisualizer isListening={isListening} stream={audioStream} />
+                  </div>
+                ) : (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const form = e.target as HTMLFormElement;
+                      const textarea = form.elements.namedItem('manualInput') as HTMLTextAreaElement;
+                      if (textarea.value.trim()) {
+                        wasLastInteractionVoiceRef.current = false;
+                        handleSendMessage(textarea.value.trim());
+                        textarea.value = '';
+                      }
+                    }}
+                    className="relative flex items-center w-full"
+                  >
+                    <textarea
+                      name="manualInput"
+                      rows={1}
+                      placeholder={transcript || "Ask JARVIS or type a command..."}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          const form = e.currentTarget.form;
+                          if (form) {
+                            form.requestSubmit();
+                          }
+                        }
+                      }}
+                      className="w-full bg-transparent border-0 py-2 pr-20 text-sm text-foreground focus:outline-none placeholder:text-muted-foreground/75 resize-none min-h-[32px] max-h-[160px] overflow-y-auto no-scrollbar"
+                      data-testid="input-manual-chat"
+                      ref={(el) => {
+                        if (el) {
+                          el.style.height = 'auto';
+                          el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+                        }
+                      }}
+                      onChange={(e) => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+                      }}
+                    />
+                    <div className="absolute right-0 bottom-2 flex items-center gap-2 z-10">
+                      {commandSuggestions && commandSuggestions.flatMap(c => c.examples).length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowQuickActions(prev => !prev)}
+                          className={`p-1 rounded hover:bg-slate-100 transition-colors text-muted-foreground hover:text-foreground`}
+                          title={showQuickActions ? "Hide suggestions" : "Show suggestions"}
+                        >
+                          {showQuickActions ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                        </button>
+                      )}
+                      <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground opacity-70">
+                        <span className="text-[10px]">↵</span> Enter
+                      </kbd>
+                    </div>
+                  </form>
+                )}
+              </div>
+
+              {/* Inline Send / Stop Trigger */}
+              <div className="shrink-0 mt-0.5">
+                {isStreaming ? (
+                  <button
+                    type="button"
+                    onClick={handleStop}
+                    className="w-10 h-10 flex items-center justify-center bg-destructive text-white rounded-xl hover:bg-destructive/90 hover:scale-105 active:scale-95 transition-all shadow-md shadow-destructive/20 animate-pulse"
+                    title="Stop execution"
+                  >
+                    <Square size={14} fill="currentColor" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      const textarea = document.querySelector('textarea[name="manualInput"]') as HTMLTextAreaElement;
+                      if (textarea && textarea.value.trim()) {
+                        wasLastInteractionVoiceRef.current = false;
+                        handleSendMessage(textarea.value.trim());
+                        textarea.value = '';
+                        textarea.style.height = 'auto';
+                      }
+                    }}
+                    disabled={isStreaming}
+                    className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 shadow-md shadow-primary/20"
+                    data-testid="button-send-chat"
+                    title="Send message"
+                  >
+                    <Send size={16} className="ml-0.5" />
+                  </button>
+                )}
               </div>
             </div>
-            {stats?.topCommands && stats.topCommands.length > 0 && (
-              <div className="pt-4 border-t border-border">
-                <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide mb-2">Top commands</p>
-                <div className="space-y-1.5">
-                  {stats.topCommands.map((cmd, i) => (
-                    <div key={i} className="flex justify-between text-xs">
-                      <span className="text-foreground truncate pr-2">{cmd.command}</span>
-                      <span className="text-muted-foreground shrink-0">{cmd.count}×</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+
+            {/* Float transcript details above input when active */}
+            {isListening && transcript && (
+              <p className="text-xs text-foreground font-medium text-center italic mt-1">"{transcript}"</p>
             )}
           </div>
         </div>
+
       </div>
     </div>
   );
