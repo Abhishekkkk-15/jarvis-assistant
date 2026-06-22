@@ -118,10 +118,10 @@ export const fsTools = [
   }),
   new DynamicStructuredTool({
     name: "search_files",
-    description: "Search for files in a directory using a regex pattern on filenames. Excludes common development, dependency, and system directories by default to ensure fast response times.",
+    description: "Search for files and folders/directories in a directory using a regex pattern on names. Excludes common development, dependency, and system directories by default to ensure fast response times.",
     schema: z.object({
       dir_path: z.string(),
-      pattern: z.string().describe("Regex or query pattern to match in the filename"),
+      pattern: z.string().describe("Regex or query pattern to match in the name"),
     }),
     func: async ({ dir_path, pattern }) => {
       try {
@@ -157,6 +157,9 @@ export const fsTools = [
               if (EXCLUDED_DIRS.has(file.name.toLowerCase()) || file.name.startsWith('.')) {
                 continue; // Skip excluded and hidden directories
               }
+              if (regex.test(file.name)) {
+                results.push(res);
+              }
               await walk(res);
             } else {
               if (regex.test(file.name)) {
@@ -167,7 +170,7 @@ export const fsTools = [
         }
         await walk(dir_path);
 
-        let prefix = `Found ${results.length} files matching ${pattern}`;
+        let prefix = `Found ${results.length} files/folders matching ${pattern}`;
         if (dirsVisited >= maxDirs) {
           prefix += ` (reached maximum scan limit of ${maxDirs} directories)`;
         }

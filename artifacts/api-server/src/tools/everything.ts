@@ -80,6 +80,7 @@ export async function fallbackSearch(query: string, maxResults: number): Promise
       try {
         $conn = New-Object System.Data.OleDb.OleDbConnection("Provider=Search.CollatorDSO;Extended Properties='Application=Windows';");
         $conn.Open();
+        # Querying both file and folder items matching the query under file: scheme
         $cmd = New-Object System.Data.OleDb.OleDbCommand("SELECT TOP ${maxResults} System.ItemPathDisplay FROM SystemIndex WHERE Scope='file:' AND (System.ItemName LIKE '%${escapedSqlLike}%' OR System.ItemNameDisplay LIKE '%${escapedSqlLike}%')", $conn);
         $adapter = New-Object System.Data.OleDb.OleDbDataAdapter($cmd);
         $dt = New-Object System.Data.DataTable;
@@ -112,6 +113,7 @@ export async function fallbackSearch(query: string, maxResults: number): Promise
           while ($queue.Count -gt 0 -and $results.Count -lt $max) {
               $current = $queue.Dequeue();
               try {
+                  # Enumerate matching files
                   foreach ($file in [System.IO.Directory]::EnumerateFiles($current, $filter)) {
                       if ($results.Count -lt $max) {
                           if (-not $results.Contains($file)) {
@@ -121,6 +123,17 @@ export async function fallbackSearch(query: string, maxResults: number): Promise
                           break;
                       }
                   }
+                  # Enumerate matching folders/directories
+                  foreach ($dir in [System.IO.Directory]::EnumerateDirectories($current, $filter)) {
+                      if ($results.Count -lt $max) {
+                          if (-not $results.Contains($dir)) {
+                              $results.Add($dir);
+                          }
+                      } else {
+                          break;
+                      }
+                  }
+                  # Traverse subdirectories to look deeper
                   foreach ($sub in [System.IO.Directory]::EnumerateDirectories($current)) {
                       $subName = [System.IO.Path]::GetFileName($sub);
                       if ($subName -notmatch '^(AppData|node_modules|\\.git|\\.npm|\\.cargo|\\.vscode|\\.electron|\\.gradle|\\.m2|\\.nuget|LocalStorage|Local Settings|Cookies|NetHood|PrintHood|Recent|SendTo|Start Menu|Templates|Application Data|History|My Documents)$') {
@@ -142,11 +155,11 @@ export async function fallbackSearch(query: string, maxResults: number): Promise
     }
     return `No results found for "${query}"`;
   } else {
-    // macOS / Linux fallback - Exclude hidden/dot dirs and node_modules
+    // macOS / Linux fallback - Exclude hidden/dot dirs and node_modules, find both files (-type f) and folders (-type d)
     return new Promise((resolve) => {
       const homeDir = os.homedir();
       child_process.exec(
-        `find "${homeDir}" -not -path '*/.*' -not -path '*/node_modules/*' -name "${wildcardQuery}" -type f 2>/dev/null | head -n ${maxResults}`,
+        `find "${homeDir}" -not -path '*/.*' -not -path '*/node_modules/*' -name "${wildcardQuery}" 2>/dev/null | head -n ${maxResults}`,
         (err, stdout) => {
           if (err) resolve(`Fallback search failed: ${err.message}`);
           else resolve(stdout.trim() || `No results found for "${query}"`);
