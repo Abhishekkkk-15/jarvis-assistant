@@ -3,6 +3,7 @@ import { Navigation } from './Navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { MiniModeOverlay } from './MiniModeOverlay';
+import { DisclaimerModal } from './DisclaimerModal';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useWakeWord } from '@/hooks/useWakeWord';
 import { useGetSettings, getGetSettingsQueryKey } from '@workspace/api-client-react';
@@ -90,6 +91,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Disclaimer modal displayed on first launch */}
+      <DisclaimerModal />
 
       {/* Character overlay — only rendered when mini mode is enabled */}
       {miniModeEnabled && (

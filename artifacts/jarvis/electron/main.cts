@@ -341,6 +341,10 @@ ipcMain.on('minimize-window', (event) => {
   win.minimize();
 });
 
+ipcMain.on('close-window', () => {
+  app.quit();
+});
+
 ipcMain.handle('capture-screen', async () => {
   try {
     const sources = await desktopCapturer.getSources({
