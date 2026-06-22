@@ -371,6 +371,7 @@ export const JarvisMain: React.FC = () => {
     setStreamingContent('');
     setStreamStatus('Starting…');
     setIsStreaming(true);
+    setIsProcessing(true);
 
     // Reset thinking states
     setThinkingSteps([]);
@@ -513,6 +514,7 @@ export const JarvisMain: React.FC = () => {
       setIsStreaming(false);
       setStreamingContent('');
       setStreamStatus(null);
+      setIsProcessing(false);
       abortControllerRef.current = null;
     }
   };
