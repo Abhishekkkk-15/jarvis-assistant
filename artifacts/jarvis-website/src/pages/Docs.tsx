@@ -570,7 +570,7 @@ Ctrl+Shift+M  (Windows 10/11)
               <Callout type="tip">To use Orpheus, ensure you select **Orpheus via Groq** in Settings under Voice Output, select a voice (autumn, diana, hannah, austin, daniel, troy), and save settings.</Callout>
 
               <H2>Continuous Voice Mode</H2>
-              <P>When enabled in <strong>Settings → Voice & Behavior</strong>, JARVIS will automatically start listening again immediately after it finishes speaking its response to a voice command. This enables fluid back-and-forth conversations without needing to say the wake word or press the microphone button each time. JARVIS will stop listening automatically if you remain silent for 7 seconds.</P>
+              <P>When enabled in <strong>Settings → Voice & Behavior</strong>, JARVIS will automatically start listening again immediately after it finishes speaking its response to a voice command. This enables fluid back-and-forth conversations without needing to say the wake word or press the microphone button each time. JARVIS stops listening automatically after 2 seconds of silence once you've started speaking, or after 7 seconds if you say nothing at all.</P>
             </Section>
 
             {/* Vision */}
@@ -641,7 +641,7 @@ Example: "Drawing a star for you! [draw: M 50 15 L 61 38 L 87 41 L 68 59 L 72 85
                   ['💬 Medium reply (20–50 words)', '+2 affection per message'],
                   ['💬 Long detailed reply (50+ words)', '+3 affection per message'],
                   ['🐾 Petting the character in MiniMode', '+5 affection (vigorous mouse-over)'],
-                  ['📁 Dropping a file onto the character', '+2 affection'],
+                  ['📁 Dropping a file onto the character', '+2 for images/PDFs, +1 for text/code files'],
                   ['⏰ 48+ hours without interaction', '−5 affection (passive decay, floor: 20)'],
                 ].map(([action, effect]) => (
                   <div key={action as string} className="flex justify-between text-sm p-2 rounded-lg bg-secondary/50 border border-border">
