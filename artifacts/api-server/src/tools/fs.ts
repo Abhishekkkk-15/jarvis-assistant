@@ -15,8 +15,8 @@ export const fsTools = [
         if (ext === ".pdf") {
           const buffer = await fs.readFile(file_path);
           const pdfParseModule = await import("pdf-parse");
-          const pdfParse = (pdfParseModule as any).default || pdfParseModule;
-          const data = await pdfParse(buffer);
+          const parser = new pdfParseModule.PDFParse({ data: new Uint8Array(buffer) });
+          const data = await parser.getText();
           return `Content of PDF file ${file_path}:\n${data.text}`;
         }
 

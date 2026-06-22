@@ -149,6 +149,19 @@ buildAll().then(() => {
   } catch (e) {
     console.log("Failed to copy sqlite-vec dll", e);
   }
+
+  try {
+    const workerSrcPath = path.join(artifactDir, '../..', 'node_modules', '.pnpm', 'pdfjs-dist@5.4.296', 'node_modules', 'pdfjs-dist', 'legacy', 'build', 'pdf.worker.mjs');
+    const workerDestPath = path.join(artifactDir, 'dist', 'pdf.worker.mjs');
+    if (fs.existsSync(workerSrcPath)) {
+      fs.copyFileSync(workerSrcPath, workerDestPath);
+      console.log(`Copied pdf.worker.mjs to dist/pdf.worker.mjs`);
+    } else {
+      console.log("Could not find pdf.worker.mjs at", workerSrcPath);
+    }
+  } catch (e) {
+    console.log("Failed to copy pdf.worker.mjs", e);
+  }
 }).catch((err) => {
   console.error(err);
   process.exit(1);
