@@ -858,7 +858,7 @@ export const JarvisMain: React.FC = () => {
               {/* Combined Audio Visualizer / Textarea display */}
               <div className="flex-1 min-w-0 flex flex-col justify-center min-h-[48px]">
                 {isListening ? (
-                  <div className="h-6 w-full max-w-[200px] mt-3">
+                  <div className="h-9 w-full max-w-[200px]">
                     <AudioVisualizer isListening={isListening} stream={audioStream} />
                   </div>
                 ) : (

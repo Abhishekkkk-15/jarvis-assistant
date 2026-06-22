@@ -76,11 +76,11 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({ isListening, s
   }, [isListening, stream]);
 
   return (
-    <canvas 
-      ref={canvasRef} 
-      width={300} 
-      height={100} 
-      className="w-full max-w-md h-24 mx-auto rounded-xl bg-black/20 border border-cyan-500/20 backdrop-blur-sm"
+    <canvas
+      ref={canvasRef}
+      width={300}
+      height={100}
+      className="block w-full h-full"
       data-testid="audio-visualizer"
     />
   );
