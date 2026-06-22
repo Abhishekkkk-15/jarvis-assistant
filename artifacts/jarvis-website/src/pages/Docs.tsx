@@ -791,7 +791,7 @@ Example: "Drawing a star for you! [draw: M 50 15 L 61 38 L 87 41 L 68 59 L 72 85
                       ['computer', 'Mouse/keyboard control, screenshots, OCR, clipboard access, and window management (minimize/maximize/focus/close) via RobotJS and node-window-manager'],
                       ['uiautomation', 'Windows UI Automation — interact with any native Win32 UI element'],
                       ['windowsSystem', 'Media/volume control, display brightness, power management (sleep/restart/shutdown), and registry edits — the latter two require approval'],
-                      ['everything', 'Instant file search across the entire disk via Voidtools Everything'],
+                      ['everything', 'Instant file search across the entire disk via Voidtools Everything — requires Everything to be installed and running in the background, otherwise it falls back to a narrower search'],
                     ]
                   },
                   {
@@ -858,6 +858,7 @@ Example: "Drawing a star for you! [draw: M 50 15 L 61 38 L 87 41 L 68 59 L 72 85
                 ))}
               </div>
               <Callout type="warn">Shell, file-write, and computer-control operations always require explicit user approval via an in-app confirmation prompt before executing.</Callout>
+              <Callout type="info">The <code>everything</code> tool downloads the Everything SDK DLL automatically, but that DLL is just a client — it has no index of its own. It only returns full-disk results if the actual <a href="https://www.voidtools.com" target="_blank" rel="noreferrer" className="underline">Everything app</a> is installed and running in the background. If it isn't, JARVIS transparently falls back to Windows Search or a limited local folder scan and tells you it did so, rather than silently presenting incomplete results as a full search.</Callout>
             </Section>
 
             {/* Integrations */}
