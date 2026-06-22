@@ -158,6 +158,7 @@ export const JarvisMain: React.FC = () => {
       }, 500);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [tts.isSpeaking, isStreaming, isListening]);
 
   useEffect(() => {

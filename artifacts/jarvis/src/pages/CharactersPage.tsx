@@ -13,6 +13,7 @@ export const CharactersPage: React.FC = () => {
   const [activeAnimation, setActiveAnimation] = useState<CharacterAnimation>('idle');
   const [activeTab, setActiveTab] = useState<'builtin' | 'custom'>('builtin');
   const [editingCustomChar, setEditingCustomChar] = useState<string | null>(null);
+  const [movementInterval, setMovementInterval] = useLocalStorage('characterMovementInterval', 3);
 
   const updateSettings = useUpdateSettings();
   const queryClient = useQueryClient();
@@ -81,6 +82,32 @@ export const CharactersPage: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* Movement Interval Setting */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 mb-6 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex-1">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            ⏱️ Movement Interval
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Controls how often your desktop companion moves around your screen. A higher interval prevents the character from roaming too frequently.
+          </p>
+        </div>
+        <div className="flex items-center gap-4 min-w-[280px]">
+          <input 
+            type="range" 
+            min="1" 
+            max="30" 
+            step="0.5" 
+            value={movementInterval} 
+            onChange={(e) => setMovementInterval(parseFloat(e.target.value))}
+            className="flex-1 accent-primary h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+          />
+          <span className="text-sm font-medium bg-slate-100 px-3 py-1.5 rounded-lg border text-foreground w-20 text-center whitespace-nowrap">
+            {movementInterval.toFixed(1)}s
+          </span>
+        </div>
+      </div>
 
       {/* Animation filter */}
       <div className="flex gap-2 overflow-x-auto pb-3 mb-6 shrink-0">

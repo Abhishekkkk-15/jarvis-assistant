@@ -78,6 +78,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [posY, setPosY] = useLocalStorage('characterPositionY', window.innerHeight - 145);
   const [autonomousMode] = useLocalStorage('jarvisAutonomousMode', false);
   const [muteCharacterNotifications] = useLocalStorage('muteCharacterNotifications', false);
+  const [movementInterval] = useLocalStorage('characterMovementInterval', 3);
 
   // JARVIS global state
   const [isListening] = useLocalStorage('jarvisIsListening', false);
@@ -621,13 +622,13 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
       const duration = nextStyle === 'dash' ? 800 : (nextStyle === 'jump' ? 1200 : (nextStyle === 'sneak' || nextStyle === 'crawl' ? 4000 : 2000));
       setTimeout(() => setBaseAnimation(isProcessing ? 'walk' : 'idle'), duration);
-    }, 1500 + Math.random() * 2000); // move every 1.5 to 3.5 seconds (SUPER HYPERACTIVE)
+    }, movementInterval * 1000 + Math.random() * 1000); // customized movement frequency
 
     return () => {
       clearTimeout(idleTimer);
       clearInterval(moveTimer);
     };
-  }, [autonomousMode, isDragging, isListening, isSpeaking, isTrackingCursor, isPhysicsActive, isDancingToMusic, posX, setPosX, setPosY, baseAnimation, isProcessing, streamStatus]);
+  }, [autonomousMode, isDragging, isListening, isSpeaking, isTrackingCursor, isPhysicsActive, isDancingToMusic, posX, setPosX, setPosY, baseAnimation, isProcessing, streamStatus, movementInterval]);
 
   useEffect(() => {
     // Reset timer when Jarvis state changes (e.g. finishes speaking/listening)
