@@ -63,6 +63,7 @@ export const JarvisMain: React.FC = () => {
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
+  const [droppedFile, setDroppedFile] = useState<{ name: string; path?: string; type: string; base64?: string } | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingDuration, setThinkingDuration] = useState<number | null>(null);
   const [thinkingPlan, setThinkingPlan] = useState<PlanStep[] | null>(null);
@@ -620,18 +621,11 @@ export const JarvisMain: React.FC = () => {
     const filePath = (file as any).path || '';
     const isAbsolutePath = filePath && (filePath.includes('\\') || filePath.includes('/'));
 
-    if (file.name.toLowerCase().endsWith('.pdf')) {
-      if (isAbsolutePath) {
-        handleSendMessage(`Please read and summarize this PDF file: "${filePath}"`);
-      } else {
-        handleSendMessage(`Please find and then read/summarize the PDF file: "${file.name}". Search for it using search_everything first since I dragged and dropped it but the browser sandbox hid its path.`);
-      }
-    } else if (file.type.startsWith('image/')) {
+    if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const rawBase64 = event.target?.result as string;
         if (rawBase64) {
-          // Resize image to max 1024x1024 to prevent 400 Payload Too Large from APIs
           const img = new Image();
           img.onload = () => {
             const canvas = document.createElement('canvas');
@@ -653,9 +647,9 @@ export const JarvisMain: React.FC = () => {
             if (ctx) {
               ctx.drawImage(img, 0, 0, width, height);
               const resizedBase64 = canvas.toDataURL('image/jpeg', 0.85);
-              handleSendMessage(`I just dropped an image named \`${file.name}\`. Take a look at it!`, resizedBase64);
+              setDroppedFile({ name: file.name, path: filePath || undefined, type: file.type, base64: resizedBase64 });
             } else {
-              handleSendMessage(`I just dropped an image named \`${file.name}\`. Take a look at it!`, rawBase64);
+              setDroppedFile({ name: file.name, path: filePath || undefined, type: file.type, base64: rawBase64 });
             }
           };
           img.src = rawBase64;
@@ -663,12 +657,7 @@ export const JarvisMain: React.FC = () => {
       };
       reader.readAsDataURL(file);
     } else {
-      // Treat other files as text/code files
-      if (isAbsolutePath) {
-        handleSendMessage(`Please read and analyze this file: "${filePath}"`);
-      } else {
-        handleSendMessage(`Please find and then read/analyze this file: "${file.name}". Search for it using search_everything first since I dragged and dropped it but the browser sandbox hid its path.`);
-      }
+      setDroppedFile({ name: file.name, path: filePath || undefined, type: file.type });
     }
   };
 
@@ -878,54 +867,97 @@ export const JarvisMain: React.FC = () => {
                       e.preventDefault();
                       const form = e.target as HTMLFormElement;
                       const textarea = form.elements.namedItem('manualInput') as HTMLTextAreaElement;
-                      if (textarea.value.trim()) {
+                      const text = textarea.value.trim();
+                      if (text || droppedFile) {
                         wasLastInteractionVoiceRef.current = false;
-                        handleSendMessage(textarea.value.trim());
+                        let messageToSend = text;
+                        let imgBase64: string | undefined = undefined;
+
+                        if (droppedFile) {
+                          if (droppedFile.type.startsWith('image/')) {
+                            messageToSend = text || `I just dropped an image named \`${droppedFile.name}\`. Take a look at it!`;
+                            imgBase64 = droppedFile.base64;
+                          } else {
+                            const isPdf = droppedFile.name.toLowerCase().endsWith('.pdf');
+                            const filePrompt = droppedFile.path 
+                              ? `Please read and analyze this file: "${droppedFile.path}"`
+                              : `Please find and then read/analyze this file: "${droppedFile.name}". Search for it using search_everything first since I dragged and dropped it but the browser sandbox hid its path.`;
+                            const defaultFilePrompt = isPdf
+                              ? (droppedFile.path ? `Please read and summarize this PDF file: "${droppedFile.path}"` : `Please find and then read/summarize the PDF file: "${droppedFile.name}". Search for it using search_everything first since I dragged and dropped it but the browser sandbox hid its path.`)
+                              : filePrompt;
+
+                            if (text) {
+                              messageToSend = `${text}\n\n[Attached File: ${droppedFile.name}]\n${defaultFilePrompt}`;
+                            } else {
+                              messageToSend = defaultFilePrompt;
+                            }
+                          }
+                          setDroppedFile(null);
+                        }
+                        handleSendMessage(messageToSend, imgBase64);
                         textarea.value = '';
+                        textarea.style.height = 'auto';
                       }
                     }}
-                    className="relative flex items-center w-full"
+                    className="relative flex flex-col w-full"
                   >
-                    <textarea
-                      name="manualInput"
-                      rows={1}
-                      placeholder={transcript || "Ask JARVIS or type a command..."}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          const form = e.currentTarget.form;
-                          if (form) {
-                            form.requestSubmit();
-                          }
-                        }
-                      }}
-                      className="w-full bg-transparent border-0 py-2 pr-20 text-sm text-foreground focus:outline-none placeholder:text-muted-foreground/75 resize-none min-h-[32px] max-h-[160px] overflow-y-auto no-scrollbar"
-                      data-testid="input-manual-chat"
-                      ref={(el) => {
-                        if (el) {
-                          el.style.height = 'auto';
-                          el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
-                        }
-                      }}
-                      onChange={(e) => {
-                        e.target.style.height = 'auto';
-                        e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
-                      }}
-                    />
-                    <div className="absolute right-0 bottom-2 flex items-center gap-2 z-10">
-                      {commandSuggestions && commandSuggestions.flatMap(c => c.examples).length > 0 && (
+                    {droppedFile && (
+                      <div className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200/80 transition-colors px-2.5 py-1 rounded-lg text-xs w-fit mb-1.5 text-slate-700">
+                        <span className="font-semibold text-primary">📎 {droppedFile.name}</span>
                         <button
                           type="button"
-                          onClick={() => setShowQuickActions(prev => !prev)}
-                          className={`p-1 rounded hover:bg-slate-100 transition-colors text-muted-foreground hover:text-foreground`}
-                          title={showQuickActions ? "Hide suggestions" : "Show suggestions"}
+                          onClick={() => setDroppedFile(null)}
+                          className="p-0.5 rounded-full hover:bg-slate-300/50 text-slate-500 hover:text-slate-800 transition-colors"
+                          title="Remove file"
                         >
-                          {showQuickActions ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <path d="M18 6 6 18M6 6l12 12"/>
+                          </svg>
                         </button>
-                      )}
-                      <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground opacity-70">
-                        <span className="text-[10px]">↵</span> Enter
-                      </kbd>
+                      </div>
+                    )}
+                    <div className="relative flex items-center w-full">
+                      <textarea
+                        name="manualInput"
+                        rows={1}
+                        placeholder={transcript || "Ask JARVIS or type a command..."}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            const form = e.currentTarget.form;
+                            if (form) {
+                              form.requestSubmit();
+                            }
+                          }
+                        }}
+                        className="w-full bg-transparent border-0 py-2 pr-20 text-sm text-foreground focus:outline-none placeholder:text-muted-foreground/75 resize-none min-h-[32px] max-h-[160px] overflow-y-auto no-scrollbar"
+                        data-testid="input-manual-chat"
+                        ref={(el) => {
+                          if (el) {
+                            el.style.height = 'auto';
+                            el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+                          }
+                        }}
+                        onChange={(e) => {
+                          e.target.style.height = 'auto';
+                          e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+                        }}
+                      />
+                      <div className="absolute right-0 bottom-2 flex items-center gap-2 z-10">
+                        {commandSuggestions && commandSuggestions.flatMap(c => c.examples).length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setShowQuickActions(prev => !prev)}
+                            className={`p-1 rounded hover:bg-slate-100 transition-colors text-muted-foreground hover:text-foreground`}
+                            title={showQuickActions ? "Hide suggestions" : "Show suggestions"}
+                          >
+                            {showQuickActions ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                          </button>
+                        )}
+                        <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground opacity-70">
+                          <span className="text-[10px]">↵</span> Enter
+                        </kbd>
+                      </div>
                     </div>
                   </form>
                 )}
@@ -946,11 +978,11 @@ export const JarvisMain: React.FC = () => {
                   <button
                     onClick={() => {
                       const textarea = document.querySelector('textarea[name="manualInput"]') as HTMLTextAreaElement;
-                      if (textarea && textarea.value.trim()) {
-                        wasLastInteractionVoiceRef.current = false;
-                        handleSendMessage(textarea.value.trim());
-                        textarea.value = '';
-                        textarea.style.height = 'auto';
+                      if (textarea) {
+                        const form = textarea.form;
+                        if (form) {
+                          form.requestSubmit();
+                        }
                       }
                     }}
                     disabled={isStreaming}
