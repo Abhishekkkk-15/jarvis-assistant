@@ -163,11 +163,13 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   // Derived animation state (Overrides base movement animation with emotions/listening state)
   const animation = isListening
     ? 'excited'
-    : (baseAnimation === 'courier'
-      ? 'courier'
-      : (personality.emotionAnimation
-        ? personality.emotionAnimation
-        : (isDancingToMusic && !isDragging && !isPhysicsActive ? 'dance' : baseAnimation)));
+    : (isProcessing
+      ? 'thinking'
+      : (baseAnimation === 'courier'
+        ? 'courier'
+        : (personality.emotionAnimation
+          ? personality.emotionAnimation
+          : (isDancingToMusic && !isDragging && !isPhysicsActive ? 'dance' : baseAnimation))));
 
   // Sync transparent window mouse events dynamically for drag and drop support
   useEffect(() => {
@@ -507,7 +509,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
   // Randomize tracking state
   useEffect(() => {
-    if (isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic) return;
+    if (isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic || isProcessing) return;
     const trackingTimer = setInterval(() => {
       const startTracking = Math.random() > 0.7;
       setIsTrackingCursor(startTracking);
@@ -517,7 +519,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       }
     }, 10000);
     return () => clearInterval(trackingTimer);
-  }, [isDragging, isListening, isSpeaking, isPhysicsActive, isDancingToMusic, posX]);
+  }, [isDragging, isListening, isSpeaking, isPhysicsActive, isDancingToMusic, posX, isProcessing]);
 
   // Idle look-around fidget: occasionally glances left or right while idle
   useEffect(() => {
@@ -525,7 +527,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       if (
         !isDragging && !isListening && !isSpeaking &&
         !isPhysicsActive && !isDancingToMusic && !isTrackingCursor &&
-        baseAnimation === 'idle'
+        !isProcessing && baseAnimation === 'idle'
       ) {
         if (Math.random() < 0.35) {
           setFlipped(f => !f);
@@ -534,18 +536,18 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       }
     }, 11000);
     return () => clearInterval(timer);
-  }, [isDragging, isListening, isSpeaking, isPhysicsActive, isDancingToMusic, isTrackingCursor, baseAnimation]);
+  }, [isDragging, isListening, isSpeaking, isPhysicsActive, isDancingToMusic, isTrackingCursor, baseAnimation, isProcessing]);
 
   // Autonomous movement
   useEffect(() => {
-    if (autonomousMode || isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic) return;
+    if (autonomousMode || isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic || isProcessing) return;
 
     const idleTimer = setTimeout(() => {
       if (baseAnimation === 'idle' && !isTrackingCursor) setBaseAnimation('sleep');
     }, 20000);
 
     const moveTimer = setInterval(() => {
-      if (isTrackingCursor) return;
+      if (isTrackingCursor || isProcessing) return;
       if (baseAnimation !== 'idle' && baseAnimation !== 'sleep') return;
 
       const maxX = window.innerWidth - 120;
@@ -604,7 +606,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       clearTimeout(idleTimer);
       clearInterval(moveTimer);
     };
-  }, [autonomousMode, isDragging, isListening, isSpeaking, isTrackingCursor, isPhysicsActive, isDancingToMusic, posX, setPosX, setPosY, baseAnimation]);
+  }, [autonomousMode, isDragging, isListening, isSpeaking, isTrackingCursor, isPhysicsActive, isDancingToMusic, posX, setPosX, setPosY, baseAnimation, isProcessing]);
 
   useEffect(() => {
     // Reset timer when Jarvis state changes (e.g. finishes speaking/listening)
@@ -613,7 +615,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
   // Attention Seeker logic (15 minutes of inactivity)
   useEffect(() => {
-    if (isDragging || isListening || isSpeaking || !isMinimized) return;
+    if (isDragging || isListening || isSpeaking || !isMinimized || isProcessing) return;
 
     const checkAttention = async (force = false) => {
       if (force || Date.now() - lastInteractionTime.current > 15 * 60 * 1000) {
@@ -710,7 +712,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
     const attentionTimer = setInterval(checkAttention, 10000); // Check every 10 seconds
     return () => clearInterval(attentionTimer);
-  }, [isDragging, isListening, isSpeaking, isMinimized, posX, posY]);
+  }, [isDragging, isListening, isSpeaking, isMinimized, posX, posY, isProcessing]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
@@ -855,7 +857,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
   // Wandering Idle Timer (Triggers every 5-10 minutes of inactivity)
   useEffect(() => {
-    if (isDragging || isListening || isSpeaking || !isMinimized || !autonomousMode) return;
+    if (isDragging || isListening || isSpeaking || !isMinimized || !autonomousMode || isProcessing) return;
     const wanderTimer = setInterval(() => {
       // If we haven't interacted for 5 minutes, 30% chance to wander
       if (Date.now() - lastInteractionTime.current > 5 * 60 * 1000) {
@@ -869,7 +871,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     (window as any).testWander = triggerWander;
 
     return () => clearInterval(wanderTimer);
-  }, [isDragging, isListening, isSpeaking, isMinimized, autonomousMode]);
+  }, [isDragging, isListening, isSpeaking, isMinimized, autonomousMode, isProcessing]);
 
   const startPhysicsLoop = (startX: number, startY: number) => {
     let currentX = startX;
