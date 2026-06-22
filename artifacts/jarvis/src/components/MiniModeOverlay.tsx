@@ -79,6 +79,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
   const [autonomousMode] = useLocalStorage('jarvisAutonomousMode', false);
   const [muteCharacterNotifications] = useLocalStorage('muteCharacterNotifications', false);
   const [movementInterval] = useLocalStorage('characterMovementInterval', 3);
+  const [persona] = useLocalStorage('jarvisPersona', 'Friendly');
 
   // JARVIS global state
   const [isListening] = useLocalStorage('jarvisIsListening', false);
@@ -243,11 +244,30 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       const { text } = e.detail;
       if (!text) return;
 
-      setReplyBubble(text);
-      personality.triggerEmotion(text);
-      window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text } }));
+      // Extract and trigger animation tags e.g. [anim: happy]
+      const animRegex = /\[anim:\s*(\w+)\]/i;
+      const animMatch = text.match(animRegex);
+      if (animMatch && animMatch[1]) {
+        const animTag = animMatch[1].toLowerCase();
+        window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: animTag } }));
+      }
 
-      const readTime = Math.min(10000, Math.max(4000, text.length * 60));
+      // Extract and trigger draw tags e.g. [draw: M10 10 L20 20]
+      const drawRegex = /\[draw:\s*([^\]]+)\]/i;
+      const drawMatch = text.match(drawRegex);
+      if (drawMatch && drawMatch[1]) {
+        const drawPath = drawMatch[1];
+        window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: 'draw', path: drawPath } }));
+      }
+
+      // Strip all bracketed tag structures from text for clean bubble display and speech
+      const cleanText = text.replace(/\[\s*\w+\s*:\s*[^\]]+\]/g, '').trim();
+
+      setReplyBubble(cleanText);
+      personality.triggerEmotion(cleanText);
+      window.dispatchEvent(new CustomEvent('jarvis-speak', { detail: { text: cleanText } }));
+
+      const readTime = Math.min(10000, Math.max(4000, cleanText.length * 60));
       setTimeout(() => setReplyBubble(''), readTime);
     };
     window.addEventListener('jarvis-autonomous-speech', handleAutonomousSpeech);
@@ -735,6 +755,53 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     const attentionTimer = setInterval(checkAttention, 10000); // Check every 10 seconds
     return () => clearInterval(attentionTimer);
   }, [isDragging, isListening, isSpeaking, isMinimized, posX, posY, isProcessing]);
+
+  // Option C: Periodic Screen Change & Visual Task Assistance
+  useEffect(() => {
+    if (!autonomousMode || !isMinimized) return;
+
+    let lastScreenTitle = '';
+
+    const checkVisualTaskHelp = async () => {
+      if (isDragging || isListening || isSpeaking || isProcessing || showContextMenu) return;
+
+      const activeWin = (window as any).lastActiveWindow;
+      if (!activeWin || !activeWin.title) return;
+
+      if (activeWin.title === lastScreenTitle) return;
+      lastScreenTitle = activeWin.title;
+
+      try {
+        if (window.electronAPI && typeof window.electronAPI.captureScreen === 'function') {
+          const imageBase64 = await window.electronAPI.captureScreen();
+          if (imageBase64) {
+            const response = await fetch('http://localhost:4444/api/autonomous', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                context: `The user is focused on the application "${activeWin.owner?.name || 'Unknown'}" with window title "${activeWin.title || ''}". Inspect their screen visually. If you see a complex task, error, or coding problem they are working on, offer a helpful proactive automation suggestion or tip. Keep it to 1-2 friendly sentences in character. If nothing interesting is happening, do NOT speak and return empty response.`,
+                persona: persona,
+                imageBase64
+              })
+            });
+            if (response.ok) {
+              const data = await response.json();
+              if (data.message && data.message.trim() && !data.message.toLowerCase().includes('refuse') && !data.message.toLowerCase().includes('nothing interesting')) {
+                window.dispatchEvent(new CustomEvent('jarvis-autonomous-speech', {
+                  detail: { text: data.message }
+                }));
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to run periodic visual task check:", err);
+      }
+    };
+
+    const interval = setInterval(checkVisualTaskHelp, 120000); // every 2 minutes
+    return () => clearInterval(interval);
+  }, [autonomousMode, isMinimized, isDragging, isListening, isSpeaking, isProcessing, showContextMenu, persona]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;

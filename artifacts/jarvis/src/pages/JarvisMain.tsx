@@ -384,12 +384,19 @@ export const JarvisMain: React.FC = () => {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    const autonomousMode = localStorage.getItem('jarvisAutonomousMode') === 'true';
+    const activeWin = (window as any).lastActiveWindow;
+    let contextPrefix = `[System Note - Your Relationship with User: ${mood} (Affection Score: ${Math.round(affectionScore)}/100)]\n`;
+    if (autonomousMode && activeWin) {
+      contextPrefix += `[User Active Window Context - Application: ${activeWin.owner?.name || 'Unknown'}, Window Title: "${activeWin.title || ''}"]\n`;
+    }
+
     try {
       const response = await fetch('http://localhost:4444/api/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: `[System Note - Your Relationship with User: ${mood} (Affection Score: ${Math.round(affectionScore)}/100)]\n\n${text}`,
+          message: `${contextPrefix}\n${text}`,
           conversationId: activeConversationId || undefined,
           model: settings?.selectedModel,
           provider: settings?.selectedProvider,

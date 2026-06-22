@@ -4,7 +4,9 @@ import { toast } from '@/hooks/use-toast';
 
 export function useVisionEngine() {
   const [autonomousMode] = useLocalStorage('jarvisAutonomousMode', false);
+  const [persona] = useLocalStorage('jarvisPersona', 'Friendly');
   const lastTitleRef = useRef('');
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!autonomousMode) return;
@@ -13,58 +15,44 @@ export function useVisionEngine() {
       const { winInfo } = e.detail;
       if (!winInfo || !winInfo.title) return;
 
-      const title = winInfo.title.toLowerCase();
-      const owner = winInfo.owner ? winInfo.owner.name.toLowerCase() : '';
+      // Store globally for Option A
+      (window as any).lastActiveWindow = winInfo;
 
-      let reactionText = '';
-      let reactionAnim = '';
-
-      if (title.includes('youtube') || title.includes('netflix') || title.includes('hulu')) {
-        reactionText = "Ooh, what are we watching?";
-        reactionAnim = "happy";
-      } else if (title.includes('visual studio code') || title.includes('cursor') || owner.includes('code') || title.includes('intellij')) {
-        reactionText = "Time to write some code! Let's crush some bugs.";
-        reactionAnim = "thinking";
-      } else if (title.includes('discord') || title.includes('slack') || title.includes('teams') || title.includes('telegram')) {
-        reactionText = "Who are we talking to?";
-        reactionAnim = "cool";
-      } else if (title.includes('settings') || title.includes('control panel')) {
-        reactionText = "Ah, looking under the hood?";
-        reactionAnim = "sneak";
-      } else if (title.includes('github') || title.includes('gitlab')) {
-        reactionText = "Time to push some commits!";
-        reactionAnim = "excited";
-      } else if (title.includes('spotify') || title.includes('music') || title.includes('apple music')) {
-        reactionText = "Ooh, put on some good tunes!";
-        reactionAnim = "dance";
-      } else if (title.includes('reddit') || title.includes('twitter') || title.includes('x.com')) {
-        reactionText = "Scrolling the timeline, huh?";
-        reactionAnim = "bored";
-      } else if (title.includes('gmail') || title.includes('outlook') || title.includes('mail')) {
-        reactionText = "Checking emails? Sounds like work.";
-        reactionAnim = "idle";
-      } else if (owner.includes('chrome') || owner.includes('edge') || owner.includes('firefox') || owner.includes('brave') || owner.includes('arc')) {
-        reactionText = "Browsing the web, I see.";
-        reactionAnim = "idle";
-      } else {
-        // Generic fallback for any other app
-        const appName = winInfo.owner?.name || "this app";
-        reactionText = `What are we doing in ${appName}?`;
-        reactionAnim = "thinking";
+      // Option B: Debounced Proactive LLM Comments
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
 
-      if (reactionText) {
-        // Dispatch instant speech!
-        window.dispatchEvent(new CustomEvent('jarvis-autonomous-speech', {
-          detail: { text: `${reactionText} [anim: ${reactionAnim}]` }
-        }));
-      }
+      debounceTimerRef.current = setTimeout(async () => {
+        if ((window as any).lastActiveWindow !== winInfo) return;
+        try {
+          const response = await fetch('http://localhost:4444/api/autonomous', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              context: `The user has been working in the application "${winInfo.owner?.name || 'Unknown'}" with window title "${winInfo.title || ''}" for over 30 seconds. Make a brief, highly contextual comment, tip, or witty remark in character. Do not repeat generic greetings.`,
+              persona: persona
+            })
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.message) {
+              window.dispatchEvent(new CustomEvent('jarvis-autonomous-speech', {
+                detail: { text: data.message }
+              }));
+            }
+          }
+        } catch (err) {
+          console.error("Failed to generate proactive comment:", err);
+        }
+      }, 30000); // 30 seconds focused activity
     };
 
     window.addEventListener('active-window-changed', handleWindowChanged);
 
     return () => {
       window.removeEventListener('active-window-changed', handleWindowChanged);
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
-  }, [autonomousMode]);
+  }, [autonomousMode, persona]);
 }
