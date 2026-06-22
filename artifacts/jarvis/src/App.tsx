@@ -14,6 +14,7 @@ import { ConversationsPage } from "@/pages/ConversationsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { QuickInputPage } from "@/pages/QuickInputPage";
 import { SchedulerPage } from "@/pages/SchedulerPage";
+import { BootSequence } from "@/components/BootSequence";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,23 +58,7 @@ function useBackendReady() {
 }
 
 function StartupSplash() {
-  const [slow, setSlow] = React.useState(false);
-
-  React.useEffect(() => {
-    const t = setTimeout(() => setSlow(true), 10000);
-    return () => clearTimeout(t);
-  }, []);
-
-  return (
-    <div className="h-[100dvh] w-full flex items-center justify-center bg-background text-foreground">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-        <p className="text-sm text-muted-foreground">
-          {slow ? "Still starting… this is taking longer than usual." : "Starting JARVIS…"}
-        </p>
-      </div>
-    </div>
-  );
+  return <BootSequence />;
 }
 
 function AppContent() {
