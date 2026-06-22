@@ -172,7 +172,7 @@ export async function fallbackSearch(query: string, maxResults: number): Promise
 export const everythingTools = [
   new DynamicStructuredTool({
     name: "search_everything",
-    description: "Instantly search the entire Windows NTFS file system for files or folders using Voidtools Everything (or fallback recursive home directory search). Returns a list of absolute file paths.",
+    description: "Instantly search the entire Windows file system for files or folders using Voidtools Everything. Requires the Everything app (voidtools.com) to be installed and running in the background — if it isn't, this transparently falls back to a narrower Windows Search/local-folder scan and says so in the result. Returns a list of absolute file paths.",
     schema: z.object({
       query: z.string().describe("The search query (supports wildcards like *.pdf, or simple text like 'tax receipt')"),
       maxResults: z.number().default(20).describe("Maximum number of results to return"),
@@ -237,8 +237,13 @@ export const everythingTools = [
           }
         }
 
-        // Fallback search in user home directory if Everything fails or returns no results
-        return await fallbackSearch(query, maxResults);
+        // Voidtools Everything's SDK is just an IPC client — it returned nothing because
+        // Everything itself isn't installed/running (or genuinely found nothing), so fall back
+        // to the Windows Search index or a limited local scan and say so, instead of silently
+        // presenting a narrower result set as if it were a full-disk Everything search.
+        const fallbackResult = await fallbackSearch(query, maxResults);
+        const fallbackNote = "[Note: Voidtools Everything was not available (not installed, or not running in the background), so this used Windows' built-in search index or a limited local folder scan instead. Coverage may be less complete than a real Everything search. Install Everything from voidtools.com and make sure it's running for full, instant full-disk search.]\n\n";
+        return fallbackNote + fallbackResult;
       } catch (err: any) {
         return `Error in search_everything: ${err.message}`;
       }
