@@ -309,9 +309,9 @@ F11               — Toggle application fullscreen mode`}</Code>
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="px-2.5 py-1 text-xs font-bold text-green-700 bg-green-50 rounded-full">Screen Vision</span>
-                    <code className="text-sm font-semibold font-mono text-foreground">Configurable (Default: llama-3.2-90b-vision-preview via Groq)</code>
+                    <code className="text-sm font-semibold font-mono text-foreground">Configurable (Default: meta-llama/llama-4-scout-17b-16e-instruct via Groq)</code>
                   </div>
-                  <P>Activated automatically when a prompt includes an image or screen capture. The vision provider and model are independently configurable (separate from the text model) and support all major vision models like GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Flash, and Llama 3.2 Vision.</P>
+                  <P>Activated automatically when a prompt includes an image or screen capture. The vision provider and model are independently configurable (separate from the text model) and support all major vision models like GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Flash, and Llama 4 Scout.</P>
                 </div>
 
                 <div className="p-4 rounded-xl border border-border bg-white shadow-sm">
@@ -582,16 +582,16 @@ Ctrl+Shift+M  (Windows 10/11)
               <P>When you ask JARVIS to "look at your screen", it:</P>
               <Code lang="text">{`1. Captures a screenshot of the active window (or full screen)
 2. Compresses the image and attaches it to the message
-3. Sends it to the configured vision model (default: llama-3.2-90b-vision-preview via Groq)
+3. Sends it to the configured vision model (default: meta-llama/llama-4-scout-17b-16e-instruct via Groq)
 4. The model returns a description, and JARVIS acts on it`}</Code>
 
               <H2>Configuration</H2>
               <P>Vision model and provider are configured in <strong>Settings → Model Configuration</strong>. The defaults use Groq's vision endpoint:</P>
               <Code lang="json">{`{
-  "visionProvider": "groq",                       // "groq" | "openai" | "anthropic" | ...
-  "visionModel":   "llama-3.2-90b-vision-preview" // any vision-capable model on the provider
+  "visionProvider": "groq",                                       // groq | nvidia | openai | anthropic | mistral | openrouter | gemini | custom
+  "visionModel":   "meta-llama/llama-4-scout-17b-16e-instruct"     // any vision-capable model on the provider
 }`}</Code>
-              <Callout type="warn">Screen vision is opt-in per-prompt. JARVIS only captures your screen when you explicitly ask it to look at something — it does not continuously monitor your display.</Callout>
+              <Callout type="warn">Per-prompt screen vision is opt-in — JARVIS only captures your screen when you explicitly ask it to look at something. The exception is Autonomous Mode (see Contextual Awareness below), which periodically captures and inspects your screen on its own while enabled.</Callout>
             </Section>
 
             {/* Drawing */}
@@ -606,17 +606,12 @@ Ctrl+Shift+M  (Windows 10/11)
 "Clear the drawing"
 "Draw step-by-step how to do this"`}</Code>
 
-              <H2>Drawing API</H2>
-              <Code lang="typescript">{`interface DrawCommand {
-  type: 'arrow' | 'circle' | 'rect' | 'text' | 'highlight' | 'clear';
-  x: number;         // screen coordinate (0–1 normalized)
-  y: number;
-  width?: number;
-  height?: number;
-  label?: string;    // text for annotations
-  color?: string;    // defaults to primary brand color
-  duration?: number; // ms before auto-clear (0 = permanent)
-}`}</Code>
+              <H2>How it works</H2>
+              <P>There's no structured drawing API — JARVIS embeds a single tag in its reply, and the floating MiniMode character physically traces that exact path on a full-screen transparent canvas overlay:</P>
+              <Code lang="text">{`[draw: <svg path "d" attribute string>]
+
+Example: "Drawing a star for you! [draw: M 50 15 L 61 38 L 87 41 L 68 59 L 72 85 L 50 73 L 28 85 L 32 59 L 13 41 L 39 38 Z]"`}</Code>
+              <Callout type="warn">JARVIS isn't given pixel coordinates of your UI elements — it draws whatever path shape it decides best fits your request, traced from wherever the character currently is. It isn't a precise "circle this exact button" tool.</Callout>
             </Section>
 
             {/* Relationship Engine */}
@@ -682,6 +677,21 @@ Ctrl+Shift+M  (Windows 10/11)
                   </div>
                 ))}
               </div>
+
+              <H2>Proactive comments</H2>
+              <P>With Contextual Awareness Mode on, two independent checks run in the background and speak up in character when they have something worth saying — otherwise they stay silent:</P>
+              <div className="space-y-2 my-4 text-sm">
+                {[
+                  ['💬 Window-switch comment', 'About 30 seconds after you switch to a different application, JARVIS asks the LLM for a brief, contextual remark based on the app/window title alone (no screenshot). Runs whether or not MiniMode is active.'],
+                  ['🖼️ Periodic visual check', 'While the floating MiniMode character is out, JARVIS takes a screenshot roughly every 2 minutes (only when the active window has changed since the last check) and asks the vision model whether it spots an error, a task, or anything worth offering help with.'],
+                ].map(([icon, desc]) => (
+                  <div key={icon as string} className="flex gap-3 p-3 rounded-xl border border-border bg-white">
+                    <span className="text-xl">{icon}</span>
+                    <span className="text-muted-foreground">{desc}</span>
+                  </div>
+                ))}
+              </div>
+              <P>Your active window is also quietly attached as context to every message you type while Contextual Awareness Mode is on, even outside of these proactive checks — so JARVIS already knows what app you're in when you ask it something.</P>
 
               <H2>Attention seeker</H2>
               <P>If JARVIS is in MiniMode and you have not interacted for <strong>15 minutes</strong>, it will grab your attention using one of three behaviours (chosen randomly):</P>
@@ -749,7 +759,7 @@ Ctrl+Shift+M  (Windows 10/11)
               </div>
 
               <H2>Tools & automation capabilities</H2>
-              <P>Agents have access to 32 tool modules across 8 categories. Each tool call is displayed as an emoji accessory badge on the character overlay in real time.</P>
+              <P>Agents have access to dozens of tools across 8 categories. Each tool call is displayed as an emoji accessory badge on the character overlay in real time.</P>
               <div className="space-y-4 my-4">
                 {[
                   {
@@ -759,7 +769,7 @@ Ctrl+Shift+M  (Windows 10/11)
                       ['get_current_datetime', 'Returns the current date, time, and timezone'],
                       ['calculate', 'Evaluates a mathematical expression and returns the numeric result'],
                       ['get_weather', 'Fetches current weather conditions for any city or location'],
-                      ['open_app', 'Launches any application on Windows by name or executable'],
+                      ['launch_application', 'Launches an installed app by name. Honestly reports back when an app can\'t be found or started — never claims success it didn\'t verify'],
                     ]
                   },
                   {
@@ -768,7 +778,7 @@ Ctrl+Shift+M  (Windows 10/11)
                     tools: [
                       ['search_web', 'Full-text web search with result summaries'],
                       ['open_website', 'Open a URL in the system browser'],
-                      ['browser (Playwright)', 'Headless browser — fill forms, click buttons, scrape dynamic pages'],
+                      ['browser (Puppeteer)', 'A disposable, visible Chromium window — not your default browser or profile — fills forms, clicks elements, scrapes dynamic pages, and pierces iframes/shadow DOM'],
                       ['cdpBrowser', 'Chrome DevTools Protocol — low-level browser automation'],
                       ['web', 'Fetch and parse raw HTML or JSON from any URL'],
                     ]
@@ -778,9 +788,9 @@ Ctrl+Shift+M  (Windows 10/11)
                     badge: '💻 / 🚀',
                     tools: [
                       ['shell / run_command', 'Execute PowerShell, CMD, or Bash commands (requires user approval)'],
-                      ['computer', 'Mouse clicks, keyboard input, and screenshot capture via RobotJS'],
+                      ['computer', 'Mouse/keyboard control, screenshots, OCR, clipboard access, and window management (minimize/maximize/focus/close) via RobotJS and node-window-manager'],
                       ['uiautomation', 'Windows UI Automation — interact with any native Win32 UI element'],
-                      ['windowsSystem', 'Window management, focus control, taskbar, and system queries'],
+                      ['windowsSystem', 'Media/volume control, display brightness, power management (sleep/restart/shutdown), and registry edits — the latter two require approval'],
                       ['everything', 'Instant file search across the entire disk via Voidtools Everything'],
                     ]
                   },
@@ -807,21 +817,22 @@ Ctrl+Shift+M  (Windows 10/11)
                     category: '🎨 UI & Notifications',
                     badge: '',
                     tools: [
-                      ['drawing', 'Draw arrows, circles, text, and highlights on a screen overlay'],
+                      ['generate_high_quality_drawing', 'Looks up a matching icon for an object/concept (e.g. "a dragon") via Iconify and traces its outline on the screen overlay — for complex drawings beyond a freehand [draw:] tag'],
                       ['notify', 'Send a native OS desktop notification with title and body'],
                       ['describe_image', 'Analyze any image (local file path or URL) using the configured vision model'],
                     ]
                   },
                   {
                     category: '🔗 Integrations',
-                    badge: '📝 🎵 🐙',
+                    badge: '📝 🎵 🐙 📅',
                     tools: [
-                      ['notion', 'Search, read, and query your Notion workspace pages'],
-                      ['spotify', 'Play, pause, skip, search tracks, and control Spotify playback'],
-                      ['github', 'Read repos, list issues/PRs, view files, and check commits'],
-                      ['email', 'Send, read, and manage emails via IMAP/SMTP (Gmail, Outlook, custom)'],
-                      ['send_telegram_message', 'Proactively send a text message or image/screenshot to your Telegram bot chat'],
-                      ['send_discord_message', 'Proactively send a text message or file to the active Discord channel'],
+                      ['notion', 'Search, read, create, and append text to pages in your Notion workspace'],
+                      ['spotify', 'Search tracks, play, and pause — no dedicated skip/next-track tool'],
+                      ['github', 'Search repos, read files, list issues, create new issues, and open pull requests'],
+                      ['calendar', 'List, search, create, update, and delete events on your Google Calendar (write actions require approval)'],
+                      ['email', 'Send, read, search, and read full bodies of emails via IMAP/SMTP (Gmail, Outlook, custom)'],
+                      ['send_telegram_message', 'Proactively send a text message and/or image to your Telegram bot chat'],
+                      ['send_discord_message', 'Proactively send a text message and/or image file to the active Discord channel'],
                     ]
                   },
                   {
@@ -917,7 +928,7 @@ Ctrl+Shift+M  (Windows 10/11)
               <Callout type="warn">The <strong>Message Content Intent</strong> must be enabled in the Discord Developer Portal under Bot → Privileged Gateway Intents, otherwise the bot will not be able to read message text in server channels (DMs are always readable).</Callout>
 
               <H2>3. Notion Workspace</H2>
-              <P>Allow JARVIS to query pages, search documents, and read page content directly from your Notion workspace.</P>
+              <P>Allow JARVIS to search, read, create, and append text to pages directly in your Notion workspace.</P>
               <Code lang="bash">{`# 1. Create a Notion Integration
 #    Go to developers.notion.com, select "My Integrations", create a token.
 
@@ -928,7 +939,7 @@ Ctrl+Shift+M  (Windows 10/11)
 #    Open the Notion page, click Options (...), select "Add connections", and select your integration.`}</Code>
 
               <H2>4. Spotify Player</H2>
-              <P>Command JARVIS to query playlists, play/pause music tracks, skip songs, or fetch playback states.</P>
+              <P>Command JARVIS to search for tracks, and play or pause playback. There's no dedicated skip/next-track tool — skip only works indirectly through the generic OS media-key tool if Spotify is the focused player.</P>
               <Code lang="bash">{`# 1. Create a Spotify Developer App
 #    Go to developer.spotify.com, create an app, and copy Client ID & Client Secret.
 
@@ -939,14 +950,28 @@ Ctrl+Shift+M  (Windows 10/11)
 #    Add redirect URL pointing to the local api-server authentication route.`}</Code>
 
               <H2>5. GitHub Developer Access</H2>
-              <P>Query repository status, list issues/PRs, view files, or check commit details.</P>
+              <P>Search repositories, read files, list open issues, create new issues, and open pull requests.</P>
               <Code lang="bash">{`# 1. Generate GitHub Personal Access Token (PAT)
 #    Go to GitHub → Settings → Developer Settings → Personal Access Tokens → Generate token (classic or fine-grained).
 
 # 2. Save token in JARVIS Settings
 #    Settings → Integrations → githubPat`}</Code>
 
-              <H2>6. Email</H2>
+              <H2>6. Google Calendar</H2>
+              <P>List, search, create, update, and delete events on your Google Calendar. Creating/updating events with attendees, and deleting events, are HIGH-risk actions that require your approval before JARVIS runs them.</P>
+              <Code lang="bash">{`# 1. Create OAuth credentials in Google Cloud Console
+#    Enable the Google Calendar API, then create an OAuth Client ID.
+#    Add this as an authorized redirect URI:
+#      http://localhost:4444/api/auth/google/callback
+
+# 2. Save credentials in JARVIS Settings
+#    Settings → Google Calendar → Client ID & Client Secret → Save
+
+# 3. Authorize
+#    Click "Connect Google Calendar" — a browser tab opens for Google sign-in.
+#    JARVIS stores the resulting refresh token and stays connected.`}</Code>
+
+              <H2>7. Email</H2>
               <P>Allow JARVIS to read and send emails via your IMAP/SMTP mailbox (Gmail, Outlook, or any custom provider).</P>
               <Code lang="bash">{`# 1. Enable IMAP access on your email account
 #    Gmail: Settings → See all settings → Forwarding and POP/IMAP → Enable IMAP
@@ -963,22 +988,33 @@ Ctrl+Shift+M  (Windows 10/11)
             <Section id="config">
               <H1>Configuration</H1>
               <P>Unlike traditional apps, JARVIS persists all settings, memory, and chat history in a local SQLite database file on your machine managed via Drizzle ORM:</P>
-              <Code lang="bash">{`# Windows Database Path
+              <Code lang="bash">{`# Windows Database Path (packaged app)
 %APPDATA%\\JARVIS\\sqlite.db
 
-# Developer Environment Path (Root Workspace)
-E:\\Jarvis-Assistant-Companionzip\\sqlite.db`}</Code>
+# Developer Environment Path
+# Resolved as two levels up from artifacts/api-server's working directory
+# (i.e. <project-root>/sqlite.db), unless overridden via the DB_PATH or
+# DATABASE_URL environment variables.`}</Code>
 
               <H2>Settings Table Schema</H2>
-              <P>When reading or modifying settings via the Drizzle settings schema or backend REST routes, the fields mapped are as follows (A Groq API key is mandatory for STT/TTS; models are pre-selected by default):</P>
+              <P>When reading or modifying settings via the Drizzle settings schema or backend REST routes, the fields mapped are as follows (A Groq API key is mandatory for STT and Orpheus TTS, which always use Groq regardless of your chosen provider; models are pre-selected by default). Provider/model fields aren't limited to two options — every provider field accepts <code>"groq" | "nvidia" | "openai" | "anthropic" | "mistral" | "openrouter" | "gemini" | "custom"</code>:</P>
               <Code lang="json">{`{
   "id": 1,
   "groqApiKey": "gsk_...",              // Groq API Key (masked on frontend)
   "nvidiaApiKey": "nvapi-...",          // NVIDIA API Key (masked on frontend)
-  "selectedProvider": "groq",           // "groq" | "nvidia"
+  "openaiApiKey": "sk-...",             // OpenAI API Key
+  "anthropicApiKey": "sk-ant-...",      // Anthropic API Key
+  "mistralApiKey": "...",               // Mistral API Key
+  "openrouterApiKey": "sk-or-...",      // OpenRouter API Key
+  "geminiApiKey": "...",                // Gemini API Key
+  "customTextApiUrl": "https://...",    // Custom OpenAI-compatible endpoint (text)
+  "customTextApiKey": "...",
+  "customVisionApiUrl": "https://...",  // Custom OpenAI-compatible endpoint (vision)
+  "customVisionApiKey": "...",
+  "selectedProvider": "groq",           // see provider list above
   "selectedModel": "llama-3.3-70b-versatile",
   "visionProvider": "groq",
-  "visionModel": "llama-3.2-90b-vision-preview",
+  "visionModel": "meta-llama/llama-4-scout-17b-16e-instruct",
   "wakeWord": "hey jarvis",
   "voiceEnabled": true,
   "continuousVoiceMode": false,         // Auto-restart mic after speaking
@@ -993,6 +1029,9 @@ E:\\Jarvis-Assistant-Companionzip\\sqlite.db`}</Code>
   "spotifyClientId": "4a...",           // Spotify Developer API key
   "spotifyClientSecret": "e7...",       // Spotify Client Secret key
   "githubPat": "ghp_...",               // GitHub Personal Access Token
+  "googleClientId": "...",              // Google OAuth2 Client ID (Calendar)
+  "googleClientSecret": "...",          // Google OAuth2 Client Secret
+  "googleRefreshToken": "...",          // Stored automatically after you connect
   "emailAddress": "you@gmail.com",      // Email integration address
   "emailPassword": "app-password",      // IMAP/SMTP app password
   "emailProvider": "gmail"              // "gmail" | "outlook" | "yahoo" | custom SMTP host
