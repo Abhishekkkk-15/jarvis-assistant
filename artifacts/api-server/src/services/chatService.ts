@@ -257,7 +257,7 @@ export async function processChatRequest(parsedData: any) {
   let isFallback = false;
 
   let modelName = hasImage
-    ? (settings.visionModel || "llama-3.2-90b-vision-preview")
+    ? (settings.visionModel || "meta-llama/llama-4-scout-17b-16e-instruct")
     : (settings.selectedModel || "llama-3.3-70b-versatile");
 
   const getApiKey = (p: string) => {
@@ -294,7 +294,7 @@ export async function processChatRequest(parsedData: any) {
 
   const getDefaultModel = (p: string, isVision: boolean) => {
     if (isVision) {
-      if (p === "groq") return "llama-3.2-90b-vision-preview";
+      if (p === "groq") return "meta-llama/llama-4-scout-17b-16e-instruct";
       if (p === "nvidia") return "nvidia/llama-3.2-11b-vision-instruct";
       if (p === "openai") return "gpt-4o";
       if (p === "anthropic") return "claude-3-5-sonnet-20241022";
@@ -671,7 +671,7 @@ export async function* processChatRequestStream(parsedData: any): AsyncGenerator
   let isFallback = false;
 
   let modelName = hasImage
-    ? (settings.visionModel || "llama-3.2-90b-vision-preview")
+    ? (settings.visionModel || "meta-llama/llama-4-scout-17b-16e-instruct")
     : (settings.selectedModel || "llama-3.3-70b-versatile");
 
   const getApiKey = (p: string) => {
@@ -709,7 +709,7 @@ export async function* processChatRequestStream(parsedData: any): AsyncGenerator
 
   const getDefaultModel = (p: string, isVision: boolean) => {
     if (isVision) {
-      if (p === "groq") return "llama-3.2-90b-vision-preview";
+      if (p === "groq") return "meta-llama/llama-4-scout-17b-16e-instruct";
       if (p === "nvidia") return "nvidia/llama-3.2-11b-vision-instruct";
       if (p === "openai") return "gpt-4o";
       if (p === "anthropic") return "claude-3-5-sonnet-20241022";

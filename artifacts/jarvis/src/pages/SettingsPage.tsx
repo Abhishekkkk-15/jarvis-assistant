@@ -61,7 +61,7 @@ export const SettingsPage: React.FC = () => {
       selectedProvider: 'groq',
       selectedModel: 'llama-3.3-70b-versatile',
       visionProvider: 'groq',
-      visionModel: 'llama-3.2-90b-vision-preview',
+      visionModel: 'meta-llama/llama-4-scout-17b-16e-instruct',
       telegramBotToken: '',
       discordBotToken: '',
       notionApiKey: '',
@@ -109,7 +109,7 @@ export const SettingsPage: React.FC = () => {
         selectedProvider: settings.selectedProvider || 'groq',
         selectedModel: settings.selectedModel || 'llama-3.3-70b-versatile',
         visionProvider: settings.visionProvider || 'groq',
-        visionModel: settings.visionModel || 'llama-3.2-90b-vision-preview',
+        visionModel: settings.visionModel || 'meta-llama/llama-4-scout-17b-16e-instruct',
       });
     }
   }, [settings, form]);
