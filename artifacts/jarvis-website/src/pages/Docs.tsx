@@ -702,15 +702,14 @@ Ctrl+Shift+M  (Windows 10/11)
             {/* Drag & Drop */}
             <Section id="dragdrop">
               <H1>Drag & Drop Files</H1>
-              <P>You can drag files directly onto the floating MiniMode character — it will read the file and automatically send its contents to the AI for analysis or action.</P>
+              <P>You can drag files directly onto the chat window or the floating MiniMode character. Unlike before, dropped files are not instantly sent to the AI. Instead, they are staged as active attachments, allowing you to add custom instructions or comments in the input textarea and send them together.</P>
 
-              <H2>Supported file types</H2>
+              <H2>Supported file types & Behavior</H2>
               <div className="space-y-3 my-4">
                 {[
-                  ['🖼️ Images (PNG, JPG, GIF, WebP)', 'Character jumps excitedly, says "Ooh, yummy data!", then sends the image to the vision model for analysis. You get a full description and can ask follow-up questions about it.'],
-                  ['📄 Text & Code files (.txt, .ts, .py, .md, ...)', 'File contents are read as UTF-8 text and sent to the AI. Useful for asking JARVIS to review, explain, or edit a file instantly.'],
-                  ['🚫 Video / Audio files', 'Not supported yet. JARVIS will show a "can\'t eat this" message.'],
-                  ['🚫 Files over 2 MB', 'Rejected with a "too big" message to avoid overloading context.'],
+                  ['🖼️ Images (PNG, JPG, GIF, WebP)', 'The image is compressed and staged as an attachment. You can type a query or description in the textarea, then click Send to analyze it using the vision model.'],
+                  ['📄 Text & Code files (.txt, .ts, .py, .md, ...)', 'The file path or name is staged as an attachment. You can append your own questions or comments before sending, and JARVIS will automatically locate and analyze the file content.'],
+                  ['📎 Attachment Control', 'Staged attachments are shown as a pill above your text input. You can click the "x" on the file pill to remove the file if you change your mind before sending.'],
                 ].map(([type, desc]) => (
                   <div key={type as string} className="p-3 rounded-xl border border-border bg-white">
                     <div className="font-semibold text-sm mb-1">{type}</div>
@@ -718,7 +717,7 @@ Ctrl+Shift+M  (Windows 10/11)
                   </div>
                 ))}
               </div>
-              <Callout type="tip">Dropping a file also gives JARVIS a <strong>+2 affection boost</strong> — it treats it as you sharing something with it.</Callout>
+              <Callout type="tip">Dropping a file onto the character also gives JARVIS a <strong>+2 affection boost</strong> — it treats it as you sharing something with it.</Callout>
             </Section>
 
             {/* Agents */}
