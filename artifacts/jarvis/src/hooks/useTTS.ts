@@ -58,7 +58,7 @@ export interface TTSOptions {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function stripAnimTags(text: string): string {
   return text
-    .replace(/\[anim:\s*\w+\]\s*/gi, "")
+    .replace(/\[\s*\w+\s*:\s*[^\]]+\]\s*/g, "")
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/\*(.*?)\*/g, "$1")
     .replace(/#{1,6}\s/g, "")

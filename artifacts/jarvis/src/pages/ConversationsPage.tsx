@@ -18,9 +18,10 @@ export const ConversationsPage: React.FC = () => {
       return content.replace(/^\[System Note - Your Relationship with User:.*?\]\s*/is, '');
     } else {
       return content
-        .replace(/\[anim:\s*[a-zA-Z0-9_-]+\]/gi, '')
+        .replace(/\[anim:\s*[^\]]+?\s*\]/gi, '')
         .replace(/\[draw:\s*.+?\]/gi, '')
         .replace(/\[Orchestrator\]:/g, '')
+        .replace(/\[\s*\w+\s*:\s*[^\]]+\]/g, '')
         .trim();
     }
   };

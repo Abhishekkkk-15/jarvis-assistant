@@ -115,9 +115,10 @@ export const JarvisMain: React.FC = () => {
         .replace(/^\[User Active Window Context - Application:.*?, Window Title: ".*?"\]\s*/is, '');
     } else {
       return content
-        .replace(/\[anim:\s*[a-zA-Z0-9_-]+\]/gi, '')
+        .replace(/\[anim:\s*[^\]]+?\s*\]/gi, '')
         .replace(/\[draw:\s*.+?\]/gi, '')
         .replace(/\[Orchestrator\]:/g, '')
+        .replace(/\[\s*\w+\s*:\s*[^\]]+\]/g, '')
         .trim();
     }
   };
@@ -484,11 +485,17 @@ export const JarvisMain: React.FC = () => {
 
               let finalReply = finalText.replace(/\[Orchestrator\]:/g, '').trim();
               let animTag = '';
-              const animMatch = finalReply.match(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i);
-              if (animMatch) { animTag = animMatch[1]; finalReply = finalReply.replace(/\[anim:\s*([a-zA-Z0-9_-]+)\]/i, '').trim(); }
+              // Lenient match: the model doesn't always butt the tag name right up against "]"
+              // (e.g. "[anim: cool ]" with a trailing space) -- a strict alphanumeric-only class
+              // fails on that and silently leaves the raw tag in the visible/spoken text.
+              const animMatch = finalReply.match(/\[anim:\s*([^\]]+?)\s*\]/i);
+              if (animMatch) { animTag = animMatch[1].trim(); finalReply = finalReply.replace(/\[anim:\s*[^\]]+?\s*\]/i, '').trim(); }
               let drawPath = '';
               const drawMatch = finalReply.match(/\[draw:\s*(.+?)\]/i);
               if (drawMatch) { drawPath = drawMatch[1].trim(); finalReply = finalReply.replace(/\[draw:\s*(.+?)\]/i, '').trim(); }
+              // Safety net: mop up any other bracketed tag the model emits that we don't
+              // explicitly handle above, so it never leaks into the bubble/speech/history.
+              finalReply = finalReply.replace(/\[\s*\w+\s*:\s*[^\]]+\]/g, '').trim();
 
               if (finalReply) {
                 setMessages(prev => [...prev, {

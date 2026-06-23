@@ -250,10 +250,10 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       if (!text) return;
 
       // Extract and trigger animation tags e.g. [anim: happy]
-      const animRegex = /\[anim:\s*(\w+)\]/i;
+      const animRegex = /\[anim:\s*([^\]]+?)\s*\]/i;
       const animMatch = text.match(animRegex);
       if (animMatch && animMatch[1]) {
-        const animTag = animMatch[1].toLowerCase();
+        const animTag = animMatch[1].trim().toLowerCase();
         window.dispatchEvent(new CustomEvent('jarvis-action', { detail: { action: animTag } }));
       }
 
