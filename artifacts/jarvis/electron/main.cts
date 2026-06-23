@@ -392,17 +392,11 @@ ipcMain.handle('get-startup-launch', () => {
 ipcMain.on('send-to-main', (event, msg) => {
   let win = mainWindow;
   if (win) {
-    if (!win.isVisible()) {
-      win.show();
-    }
-    win.focus();
     win.webContents.send('message-from-quick-input', msg);
   } else {
     createWindow();
     win = mainWindow;
     win?.once('ready-to-show', () => {
-      win?.show();
-      win?.focus();
       win?.webContents.send('message-from-quick-input', msg);
     });
   }

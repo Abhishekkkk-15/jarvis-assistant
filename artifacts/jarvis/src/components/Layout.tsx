@@ -35,6 +35,45 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return () => window.removeEventListener('toggle-minimode', handleToggleMiniMode);
   }, [setMinimized]);
 
+  const locationRef = React.useRef(location);
+  const minimizedRef = React.useRef(minimized);
+
+  React.useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
+
+  React.useEffect(() => {
+    minimizedRef.current = minimized;
+  }, [minimized]);
+
+  React.useEffect(() => {
+    const handleGlobalMessage = (e: any) => {
+      const { message, imageBase64, skipAutoScreenshot } = e.detail || {};
+      
+      // If we are already on "/", JarvisMain will handle it directly
+      if (locationRef.current === '/') {
+        return;
+      }
+
+      // Intercept the event to navigate to the chat page first
+      e.stopImmediatePropagation();
+
+      if (locationRef.current !== '/') {
+        setLocation('/');
+      }
+
+      // Re-dispatch after a short timeout so JarvisMain has mounted and is listening
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('jarvis-send-message', {
+          detail: { message, imageBase64, skipAutoScreenshot }
+        }));
+      }, 100);
+    };
+
+    window.addEventListener('jarvis-send-message', handleGlobalMessage, true); // Capture phase listener
+    return () => window.removeEventListener('jarvis-send-message', handleGlobalMessage, true);
+  }, [setLocation]);
+
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F11') {
