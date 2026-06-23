@@ -126,6 +126,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
   // Attention Seeker Tracker
   const lastInteractionTime = useRef(Date.now());
+  const lastMoveTimeRef = useRef(Date.now());
 
   // Last screen title seen by the periodic visual task check — kept outside the effect
   // so it survives the effect re-running when isDragging/isListening/isProcessing etc. change.
@@ -582,77 +583,88 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     return () => clearInterval(timer);
   }, [isDragging, isListening, isSpeaking, isPhysicsActive, isDancingToMusic, isTrackingCursor, baseAnimation, isProcessing]);
 
-  // Autonomous movement
+  // Autonomous movement & idle sleep stable ticks
+  const randomOffsetRef = useRef(Math.random() * 1000);
   useEffect(() => {
-    if (autonomousMode || isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic) return;
-    if (isProcessing && streamStatus !== 'Executor') return;
-
-    const idleTimer = setTimeout(() => {
-      if (baseAnimation === 'idle' && !isTrackingCursor) setBaseAnimation('sleep');
-    }, 20000);
+    if (!isMinimized) return;
 
     const moveTimer = setInterval(() => {
-      if (isTrackingCursor) return;
+      // 1. Idle sleep check: if inactive for 20 seconds, go to sleep
+      const idleElapsed = Date.now() - lastInteractionTime.current;
+      if (idleElapsed >= 20000 && baseAnimation === 'idle' && !isTrackingCursor && !isDragging && !isListening && !isSpeaking && !isPhysicsActive && !isDancingToMusic && !isProcessing) {
+        setBaseAnimation('sleep');
+      }
+
+      // 2. Roaming movement check
+      if (autonomousMode || isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic) return;
       if (isProcessing && streamStatus !== 'Executor') return;
+      if (isTrackingCursor) return;
       if (baseAnimation !== 'idle' && baseAnimation !== 'sleep' && baseAnimation !== 'walk' && baseAnimation !== 'thinking') return;
 
-      const maxX = window.innerWidth - 120;
-      const maxY = window.innerHeight - 120;
+      const elapsed = Date.now() - lastMoveTimeRef.current;
+      const targetDelay = movementInterval * 1000 + randomOffsetRef.current;
 
-      // Calculate a local roaming destination (200px to 600px away for bigger movements)
-      const angle = Math.random() * Math.PI * 2;
-      const distance = 200 + Math.random() * 400;
+      if (elapsed >= targetDelay) {
+        lastMoveTimeRef.current = Date.now();
+        randomOffsetRef.current = Math.random() * 1000; // Recalculate next random offset
 
-      let newX = Math.max(0, Math.min(maxX, posX + Math.cos(angle) * distance));
-      let newY = Math.max(0, Math.min(maxY, posY + Math.sin(angle) * distance));
+        const maxX = window.innerWidth - 120;
+        const maxY = window.innerHeight - 120;
 
-      // 20% chance to occasionally drop to the taskbar/bottom of screen to hang out
-      if (Math.random() > 0.8) {
-        newY = maxY;
+        // Calculate a local roaming destination
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 200 + Math.random() * 400;
+
+        let newX = Math.max(0, Math.min(maxX, posX + Math.cos(angle) * distance));
+        let newY = Math.max(0, Math.min(maxY, posY + Math.sin(angle) * distance));
+
+        // 20% chance to occasionally drop to the taskbar/bottom of screen to hang out
+        if (Math.random() > 0.8) {
+          newY = maxY;
+        }
+
+        const styles: ('float' | 'dash' | 'jump' | 'teleport' | 'spin' | 'bounce' | 'zigzag' | 'crawl' | 'sneak' | 'cartwheel' | 'hover' | 'pace' | 'hide')[] = ['float', 'float', 'dash', 'jump', 'teleport', 'spin', 'bounce', 'zigzag', 'crawl', 'sneak', 'cartwheel', 'hover', 'pace', 'hide'];
+        const nextStyle = styles[Math.floor(Math.random() * styles.length)];
+        setMovementStyle(nextStyle);
+
+        if (nextStyle === 'sneak') {
+          const edge = Math.floor(Math.random() * 4);
+          if (edge === 0) { newX = -60; newY = Math.max(0, Math.min(maxY, Math.random() * maxY)); }
+          else if (edge === 1) { newX = window.innerWidth - 60; newY = Math.max(0, Math.min(maxY, Math.random() * maxY)); }
+          else if (edge === 2) { newY = -60; newX = Math.max(0, Math.min(maxX, Math.random() * maxX)); }
+          else { newY = window.innerHeight - 60; newX = Math.max(0, Math.min(maxX, Math.random() * maxX)); }
+        }
+
+        setFlipped(newX < posX);
+
+        if (nextStyle === 'dash') setBaseAnimation('dash');
+        else if (nextStyle === 'sneak') setBaseAnimation('sneak');
+        else if (nextStyle === 'crawl') { setBaseAnimation('crawl'); setSquash({ x: 1.2, y: 0.6 }); setTimeout(() => setSquash({ x: 1, y: 1 }), 2000); }
+        else if (nextStyle === 'spin') { setBaseAnimation('spin'); setRotation(720); setTimeout(() => setRotation(0), 1000); }
+        else if (nextStyle === 'cartwheel') { setBaseAnimation('cartwheel'); setRotation(1080); setTimeout(() => setRotation(0), 1500); }
+        else if (nextStyle === 'bounce') { setBaseAnimation('bounce'); }
+        else if (nextStyle === 'jump') { setBaseAnimation('jump'); }
+        else if (nextStyle === 'teleport') {
+          setBaseAnimation('teleport');
+          setOpacity(0);
+          setTimeout(() => { setPosX(newX); setPosY(newY); setOpacity(1); }, 400);
+        }
+        else setBaseAnimation('walk');
+
+        if (nextStyle !== 'teleport') {
+          setPosX(newX);
+          setPosY(newY);
+        }
+
+        const duration = nextStyle === 'dash' ? 800 : (nextStyle === 'jump' ? 1200 : (nextStyle === 'sneak' || nextStyle === 'crawl' ? 4000 : 2000));
+        setTimeout(() => setBaseAnimation(isProcessing ? 'walk' : 'idle'), duration);
       }
-
-      const styles: ('float' | 'dash' | 'jump' | 'teleport' | 'spin' | 'bounce' | 'zigzag' | 'crawl' | 'sneak' | 'cartwheel' | 'hover' | 'pace' | 'hide')[] = ['float', 'float', 'dash', 'jump', 'teleport', 'spin', 'bounce', 'zigzag', 'crawl', 'sneak', 'cartwheel', 'hover', 'pace', 'hide'];
-      const nextStyle = styles[Math.floor(Math.random() * styles.length)];
-      setMovementStyle(nextStyle);
-
-      if (nextStyle === 'sneak') {
-        const edge = Math.floor(Math.random() * 4);
-        if (edge === 0) { newX = -60; newY = Math.max(0, Math.min(maxY, Math.random() * maxY)); } // Left
-        else if (edge === 1) { newX = window.innerWidth - 60; newY = Math.max(0, Math.min(maxY, Math.random() * maxY)); } // Right
-        else if (edge === 2) { newY = -60; newX = Math.max(0, Math.min(maxX, Math.random() * maxX)); } // Top
-        else { newY = window.innerHeight - 60; newX = Math.max(0, Math.min(maxX, Math.random() * maxX)); } // Bottom
-      }
-
-      setFlipped(newX < posX);
-
-      if (nextStyle === 'dash') setBaseAnimation('dash');
-      else if (nextStyle === 'sneak') setBaseAnimation('sneak');
-      else if (nextStyle === 'crawl') { setBaseAnimation('crawl'); setSquash({ x: 1.2, y: 0.6 }); setTimeout(() => setSquash({ x: 1, y: 1 }), 2000); }
-      else if (nextStyle === 'spin') { setBaseAnimation('spin'); setRotation(720); setTimeout(() => setRotation(0), 1000); }
-      else if (nextStyle === 'cartwheel') { setBaseAnimation('cartwheel'); setRotation(1080); setTimeout(() => setRotation(0), 1500); }
-      else if (nextStyle === 'bounce') { setBaseAnimation('bounce'); }
-      else if (nextStyle === 'jump') { setBaseAnimation('jump'); }
-      else if (nextStyle === 'teleport') {
-        setBaseAnimation('teleport');
-        setOpacity(0);
-        setTimeout(() => { setPosX(newX); setPosY(newY); setOpacity(1); }, 400);
-      }
-      else setBaseAnimation('walk');
-
-      if (nextStyle !== 'teleport') {
-        setPosX(newX);
-        setPosY(newY);
-      }
-
-      const duration = nextStyle === 'dash' ? 800 : (nextStyle === 'jump' ? 1200 : (nextStyle === 'sneak' || nextStyle === 'crawl' ? 4000 : 2000));
-      setTimeout(() => setBaseAnimation(isProcessing ? 'walk' : 'idle'), duration);
-    }, movementInterval * 1000 + Math.random() * 1000); // customized movement frequency
+    }, 1000);
 
     return () => {
-      clearTimeout(idleTimer);
       clearInterval(moveTimer);
     };
-  }, [autonomousMode, isDragging, isListening, isSpeaking, isTrackingCursor, isPhysicsActive, isDancingToMusic, posX, setPosX, setPosY, baseAnimation, isProcessing, streamStatus, movementInterval]);
+  }, [isMinimized, movementInterval, autonomousMode, isDragging, isListening, isSpeaking, isPhysicsActive, isDancingToMusic, isTrackingCursor, isProcessing, streamStatus, baseAnimation, posX, posY]);
 
   useEffect(() => {
     // Reset timer when Jarvis state changes (e.g. finishes speaking/listening)
