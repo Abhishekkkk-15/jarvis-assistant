@@ -589,9 +589,10 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
     if (!isMinimized) return;
 
     const moveTimer = setInterval(() => {
-      // 1. Idle sleep check: if inactive for 20 seconds, go to sleep
+      // 1. Idle sleep check: if inactive for 5 minutes (or 10 seconds at night), go to sleep
       const idleElapsed = Date.now() - lastInteractionTime.current;
-      if (idleElapsed >= 20000 && baseAnimation === 'idle' && !isTrackingCursor && !isDragging && !isListening && !isSpeaking && !isPhysicsActive && !isDancingToMusic && !isProcessing) {
+      const sleepDelay = phase === 'Night' ? 10000 : 5 * 60 * 1000;
+      if (idleElapsed >= sleepDelay && baseAnimation === 'idle' && !isTrackingCursor && !isDragging && !isListening && !isSpeaking && !isPhysicsActive && !isDancingToMusic && !isProcessing) {
         setBaseAnimation('sleep');
       }
 
