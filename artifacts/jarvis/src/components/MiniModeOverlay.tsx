@@ -585,6 +585,40 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
 
   // Autonomous movement & idle sleep stable ticks
   const randomOffsetRef = useRef(Math.random() * 1000);
+
+  // Mirror the frequently-changing values the roam loop reads, in refs. These all change rapidly
+  // during active task execution (streamStatus/baseAnimation flip on every graph node transition,
+  // posX/posY on every move) -- having them in the loop effect's own dependency array meant the
+  // setInterval below was torn down and recreated before it ever survived a full 1s tick whenever
+  // a task was actively running, so the character kept re-asserting its "walk" animation (from the
+  // separate, simpler thinking-state effect) while never actually getting a chance to move.
+  const autonomousModeRef = useRef(autonomousMode);
+  const isDraggingRef = useRef(isDragging);
+  const isListeningRef = useRef(isListening);
+  const isSpeakingRef = useRef(isSpeaking);
+  const isPhysicsActiveRef = useRef(isPhysicsActive);
+  const isDancingToMusicRef = useRef(isDancingToMusic);
+  const isTrackingCursorRef = useRef(isTrackingCursor);
+  const isProcessingRef = useRef(isProcessing);
+  const streamStatusRef = useRef(streamStatus);
+  const baseAnimationRef = useRef(baseAnimation);
+  const posXRef = useRef(posX);
+  const posYRef = useRef(posY);
+  useEffect(() => {
+    autonomousModeRef.current = autonomousMode;
+    isDraggingRef.current = isDragging;
+    isListeningRef.current = isListening;
+    isSpeakingRef.current = isSpeaking;
+    isPhysicsActiveRef.current = isPhysicsActive;
+    isDancingToMusicRef.current = isDancingToMusic;
+    isTrackingCursorRef.current = isTrackingCursor;
+    isProcessingRef.current = isProcessing;
+    streamStatusRef.current = streamStatus;
+    baseAnimationRef.current = baseAnimation;
+    posXRef.current = posX;
+    posYRef.current = posY;
+  }, [autonomousMode, isDragging, isListening, isSpeaking, isPhysicsActive, isDancingToMusic, isTrackingCursor, isProcessing, streamStatus, baseAnimation, posX, posY]);
+
   useEffect(() => {
     if (!isMinimized) return;
 
@@ -592,15 +626,15 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
       // 1. Idle sleep check: if inactive for 5 minutes (or 10 seconds at night), go to sleep
       const idleElapsed = Date.now() - lastInteractionTime.current;
       const sleepDelay = phase === 'Night' ? 10000 : 5 * 60 * 1000;
-      if (idleElapsed >= sleepDelay && baseAnimation === 'idle' && !isTrackingCursor && !isDragging && !isListening && !isSpeaking && !isPhysicsActive && !isDancingToMusic && !isProcessing) {
+      if (idleElapsed >= sleepDelay && baseAnimationRef.current === 'idle' && !isTrackingCursorRef.current && !isDraggingRef.current && !isListeningRef.current && !isSpeakingRef.current && !isPhysicsActiveRef.current && !isDancingToMusicRef.current && !isProcessingRef.current) {
         setBaseAnimation('sleep');
       }
 
       // 2. Roaming movement check
-      if (autonomousMode || isDragging || isListening || isSpeaking || isPhysicsActive || isDancingToMusic) return;
-      if (isProcessing && streamStatus !== 'Executor') return;
-      if (isTrackingCursor) return;
-      if (baseAnimation !== 'idle' && baseAnimation !== 'sleep' && baseAnimation !== 'walk' && baseAnimation !== 'thinking') return;
+      if (autonomousModeRef.current || isDraggingRef.current || isListeningRef.current || isSpeakingRef.current || isPhysicsActiveRef.current || isDancingToMusicRef.current) return;
+      if (isProcessingRef.current && streamStatusRef.current !== 'Executor') return;
+      if (isTrackingCursorRef.current) return;
+      if (baseAnimationRef.current !== 'idle' && baseAnimationRef.current !== 'sleep' && baseAnimationRef.current !== 'walk' && baseAnimationRef.current !== 'thinking') return;
 
       const elapsed = Date.now() - lastMoveTimeRef.current;
       const targetDelay = movementInterval * 1000 + randomOffsetRef.current;
@@ -616,8 +650,8 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         const angle = Math.random() * Math.PI * 2;
         const distance = 200 + Math.random() * 400;
 
-        let newX = Math.max(0, Math.min(maxX, posX + Math.cos(angle) * distance));
-        let newY = Math.max(0, Math.min(maxY, posY + Math.sin(angle) * distance));
+        let newX = Math.max(0, Math.min(maxX, posXRef.current + Math.cos(angle) * distance));
+        let newY = Math.max(0, Math.min(maxY, posYRef.current + Math.sin(angle) * distance));
 
         // 20% chance to occasionally drop to the taskbar/bottom of screen to hang out
         if (Math.random() > 0.8) {
@@ -636,7 +670,7 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
           else { newY = window.innerHeight - 60; newX = Math.max(0, Math.min(maxX, Math.random() * maxX)); }
         }
 
-        setFlipped(newX < posX);
+        setFlipped(newX < posXRef.current);
 
         if (nextStyle === 'dash') setBaseAnimation('dash');
         else if (nextStyle === 'sneak') setBaseAnimation('sneak');
@@ -658,14 +692,14 @@ export const MiniModeOverlay: React.FC<MiniModeOverlayProps> = ({
         }
 
         const duration = nextStyle === 'dash' ? 800 : (nextStyle === 'jump' ? 1200 : (nextStyle === 'sneak' || nextStyle === 'crawl' ? 4000 : 2000));
-        setTimeout(() => setBaseAnimation(isProcessing ? 'walk' : 'idle'), duration);
+        setTimeout(() => setBaseAnimation(isProcessingRef.current ? 'walk' : 'idle'), duration);
       }
     }, 1000);
 
     return () => {
       clearInterval(moveTimer);
     };
-  }, [isMinimized, movementInterval, autonomousMode, isDragging, isListening, isSpeaking, isPhysicsActive, isDancingToMusic, isTrackingCursor, isProcessing, streamStatus, baseAnimation, posX, posY]);
+  }, [isMinimized, movementInterval]);
 
   useEffect(() => {
     // Reset timer when Jarvis state changes (e.g. finishes speaking/listening)
