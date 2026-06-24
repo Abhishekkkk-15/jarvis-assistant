@@ -836,11 +836,11 @@ Example: "Drawing a star for you! [draw: M 50 15 L 61 38 L 87 41 L 68 59 L 72 85
                     ]
                   },
                   {
-                    category: '🤖 AI Delegation',
+                    category: '🤖 AI Delegation (Experimental)',
                     badge: '🧠',
                     tools: [
-                      ['spawn_claude', 'Open a terminal and launch Claude CLI (or Aider) in any directory with an optional starting prompt'],
-                      ['delegate_to_antigravity', 'Focus Antigravity IDE, open its AI chat, and send a coding task via clipboard paste'],
+                      ['spawn_claude', 'Open a terminal and launch Claude CLI (or Aider) in any directory with an optional starting prompt — experimental, reliability not yet confirmed'],
+                      ['delegate_to_antigravity', 'Focus Antigravity IDE, open its AI chat, and send a coding task via clipboard paste — experimental, reliability not yet confirmed'],
                     ]
                   },
                 ].map(({ category, tools }) => (
