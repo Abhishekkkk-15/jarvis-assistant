@@ -168,9 +168,13 @@ export const HeroSection = () => {
               </span>
             </Link>
           </Button>
-          <Button size="lg" variant="ghost" className="h-14 px-8 text-base text-muted-foreground hover:text-foreground">
-            <Github className="mr-2 h-5 w-5" />
-            <Star className="w-3.5 h-3.5 mr-1" />{stars}
+          <Button size="lg" variant="ghost" className="h-14 px-8 text-base text-muted-foreground hover:text-foreground" asChild>
+            <a href="https://github.com/abhishekkkk-15/jarvis-assistant" target="_blank" rel="noreferrer">
+              <span className="flex items-center">
+                <Github className="mr-2 h-5 w-5" />
+                <Star className="w-3.5 h-3.5 mr-1" />{stars}
+              </span>
+            </a>
           </Button>
         </motion.div>
       </motion.div>
