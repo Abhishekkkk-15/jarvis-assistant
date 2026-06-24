@@ -227,7 +227,9 @@ export function createJarvisGraph(
         .describe(
           "List of atomic execution steps. Leave empty if the request is purely conversational.",
         ),
-    });
+    }).describe(
+      "Produces a conversational reply and/or a step-by-step execution plan to fulfill the user's objective.",
+    );
 
     const plannerLlm = llm.withStructuredOutput(plannerSchema, {
       name: "planner",
@@ -413,7 +415,9 @@ export function createJarvisGraph(
         .describe(
           "List of observations about what changed, current state, and evidence.",
         ),
-    });
+    }).describe(
+      "Records observations about the current state and results after executing a step.",
+    );
 
     const observerLlm = llm.withStructuredOutput(observerSchema, {
       name: "observer",
@@ -449,7 +453,9 @@ export function createJarvisGraph(
       verified: z.boolean(),
       reason: z.string(),
       nextAction: z.enum(["continue", "retry", "replan"]),
-    });
+    }).describe(
+      "Verifies whether the executed step succeeded and decides whether to continue, retry, or replan.",
+    );
 
     const verifierLlm = llm.withStructuredOutput(verifierSchema, {
       name: "verifier",
@@ -504,7 +510,9 @@ export function createJarvisGraph(
           expectedOutcome: z.string(),
         }),
       ),
-    });
+    }).describe(
+      "Generates a revised execution plan after repeated step failures.",
+    );
 
     const replannerLlm = llm.withStructuredOutput(replannerSchema, {
       name: "replanner",
