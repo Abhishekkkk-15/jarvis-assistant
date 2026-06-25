@@ -56,12 +56,3 @@ jobs:
         with:
           name: JARVIS-Windows-Executable
           path: artifacts/jarvis/dist/release/*.exe
-          
-      - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/jarvis/dist/release/*.exe
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
